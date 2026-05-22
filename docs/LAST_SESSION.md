@@ -789,3 +789,12 @@ Verdict: PRINTED — awaiting meta-model review.
 - `docs/PROJECT_STATE.md` §6 keeps items #2, #3, and #5 cleared, item #4 deferred to M3, and item #1 still open/owned by M1 Step 2.
 - `docs/THREAT_MODEL.md` §9 now has dated rows for the Step 2 and Step 3 blocked/evidence states.
 - Files modified during refresh: `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `docs/THREAT_MODEL.md`.
+
+## Debug sweep — M1 Step 4
+
+- Result: escalated
+- Reason: M1 Step 4 seed implementation artifacts are not present on disk. `supabase/migrations/0010_seed.sql` is missing.
+- Prerequisite blocker: M1 Steps 2 and 3 remain blocked/escalated. Expected schema migrations `0001_extensions_and_enums.sql` through `0008_support_chat.sql` and RLS migration `0009_rls_policies.sql` are absent; `supabase/migrations/` still contains the stale pre-Step-2 placeholder layout.
+- Hard-gate status: `pnpm exec supabase db reset` was not run for Step 4 because the seed file and required prior migrations are absent; local Supabase CLI was previously recorded unavailable.
+- Files modified during sweep: `docs/LAST_SESSION.md`
+- HIGH_RIGOR note: no seed, migration, schema, package, or test files were changed during this sweep.
