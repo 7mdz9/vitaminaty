@@ -58,3 +58,10 @@ None.
 ## Next action
 
 Run the Step 6 debug sweep. Then proceed to the M0 CI baseline step after reading `docs/proj_spec.md` M0 CI baseline bullet.
+
+## Debug sweep — Step 6
+
+- Result: clean
+- DoD commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` exited 0.
+- Additional checks: `pnpm format:check` exited 0; `/api/health` returned HTTP 200 with `status: "ok"`; rendered home HTML had zero `ChatBubble` matches.
+- Files modified during sweep: `docs/LAST_SESSION.md`
