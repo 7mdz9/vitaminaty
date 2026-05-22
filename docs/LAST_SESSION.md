@@ -51,3 +51,10 @@ None for Step 1. Supabase CLI and Docker absence is recorded for Step 2 preparat
 ## Next action
 
 Execute M1 Step 2. Read `docs/DB_SCHEMA.md` §2–§8 and §10 before changing migrations.
+
+## Debug sweep — M1 Step 1
+
+- Result: clean
+- DoD commands: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test -- env`, and `pnpm format:check` exited 0.
+- Marker checks passed for `authz`, `.trim()`, `JWT prefix`, and `Recon — M1 entry`.
+- Files modified during sweep: `docs/LAST_SESSION.md`
