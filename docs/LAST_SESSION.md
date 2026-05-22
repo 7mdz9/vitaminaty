@@ -80,3 +80,10 @@ None.
 ## Next action
 
 Run the Step 5 debug sweep. Then proceed to the feature flags and database-prep step after reading `docs/DECISION_CAPTURE.md` section Decision 4 and `docs/DB_SCHEMA.md` feature flags table.
+
+## Debug sweep — Step 5
+
+- Result: clean
+- DoD commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` exited 0.
+- Additional checks: `pnpm format:check` exited 0; support-chat safety text spot-check returned spec text; `src/types/*` imports remain limited to other `src/types/*` files.
+- Files modified during sweep: `docs/LAST_SESSION.md`
