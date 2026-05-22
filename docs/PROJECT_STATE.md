@@ -22,7 +22,7 @@ The platform is admin-driven: products import with minimal data and are progress
 | Layer | Choice |
 |---|---|
 | Framework | Next.js 15 (App Router) + TypeScript |
-| Runtime | Node 20 (Vercel) |
+| Runtime | Node 22 (Vercel) |
 | Database | Supabase Postgres |
 | Auth | Supabase Auth (customer + admin in one system; admin MFA required) |
 | Storage | Supabase Storage (product images, label images) |

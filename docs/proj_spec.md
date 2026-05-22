@@ -159,7 +159,7 @@ Each milestone below is a complete BOB v5 invocation. Read the milestone's secti
 
 **Scope:**
 
-- Initialize Next.js 15 + TypeScript + App Router project.
+- Initialize Next.js 15 + TypeScript + App Router project on Node 22 (amended from Node 20 — Node 22 is current Active LTS as of 2026-05; spec written when 20 was most recent LTS).
 - Configure Tailwind CSS with design tokens extracted from `docs/reference/vitaminaty-prototype.html`.
 - Install Supabase JS client and create the Supabase project (env-specific).
 - Configure environment variables and Zod validation per `ENVIRONMENT_VARIABLES.md`.
