@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-// Authz model: session refresh only; route-level handlers enforce access decisions.
+// authz model: session refresh only; route-level handlers enforce access decisions.
 export async function middleware(request: NextRequest) {
   return updateSession(request);
 }

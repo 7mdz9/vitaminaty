@@ -8,7 +8,10 @@ const blankToUndefined = (value: unknown) => (value === "" ? undefined : value);
 const requiredString = z.string().trim().min(1, "Required");
 const optionalString = z.preprocess(blankToUndefined, z.string().trim().min(1).optional());
 const optionalUrl = z.preprocess(blankToUndefined, z.string().url().optional());
-const requiredSecret = z.string().trim().min(32, "Must be at least 32 characters");
+const requiredSecret = z
+  .string()
+  .transform((value) => value.trim())
+  .pipe(z.string().min(32, "Must be at least 32 characters"));
 const optionalBoolean = z.preprocess((value) => {
   if (value === "" || value === undefined) return undefined;
   if (value === "true") return true;

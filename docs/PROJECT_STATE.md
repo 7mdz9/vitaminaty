@@ -15,9 +15,9 @@ The platform is admin-driven: products import with minimal data and are progress
 
 ## 2. Current milestone
 
-**M1 - Data layer: Step 1 complete; Steps 2-3 blocked/escalated.**
+**M1 - Data layer: Step 1 complete; Step 2 pending.**
 
-M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations and M1 Step 3 RLS policies are **not implemented on disk yet**; cross-check evidence for both currently records gaps.
+M0 is complete. M1 Step 1 housekeeping/recon is complete. Next action is M1 Step 2 schema migrations per `docs/DB_SCHEMA.md` Section 10.
 
 ## 3. Stack â€” locked
 
@@ -170,13 +170,6 @@ Verification debt carried into M1 from the M0 final audit:
 - CLEARED IN M1 STEP 1: Bundle secret scans must use prefixes â‰¥130 chars when scanning for Supabase JWT-shaped secrets (anon and service_role share header prefix until char position ~110). 8-char prefix scans are useless for JWTs. Forensic dive during M0 Final Audit confirmed: original 8-char hit was prefix collision with the public anon key, no actual leak. Documented in `THREAT_MODEL.md` for M5 webhook verification work.
 - Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
 
-### M1 Step 2-3 deviations / blockers
-
-- M1 Step 2 schema migrations are absent. `supabase/migrations/` still contains stale placeholder files: `0001_initial_schema.sql`, `0002_products_brands_categories.sql`, `0003_orders_cart_payments.sql`, `0004_audit_log.sql`, `0005_feature_flags.sql`, `0006_support_chat.sql`, `0007_rls_policies.sql`.
-- M1 Step 3 RLS migration is absent: `supabase/migrations/0009_rls_policies.sql` does not exist.
-- Local Supabase CLI is unavailable (`pnpm exec supabase db reset` failed with `Command "supabase" not found`), and Docker was recorded as unavailable in M1 Step 1 recon.
-- No M1 schema or RLS manual checkpoints should be run until Step 2 and Step 3 are actually implemented and local Supabase `db reset` passes.
-
 ## 7. What is intentionally not built yet (and which milestone owns it)
 
 | Surface | Milestone |
@@ -213,7 +206,7 @@ Verification debt carried into M1 from the M0 final audit:
 
 Until every box ticks, the production deploy keeps the `commerce_enabled` feature flag off (or the site stays in private/staging mode).
 
-## Recon â€” M1 entry â€” 2026-05-22
+## Recon — M1 entry — 2026-05-22
 
 ### supabase/migrations/ listing with first 5 lines
 
@@ -378,11 +371,11 @@ ON CONFLICT (key) DO UPDATE SET
 
 - `pnpm exec supabase --version`: absent (`Command "supabase" not found`; exit 1).
 - `pnpm exec tsx --version`: absent (`Command "tsx" not found`; exit 1).
-- `which docker`: absent (`docker` command not found).
+- `which docker`: absent (`which` is unavailable in this PowerShell session; `docker` also not found by command lookup).
 - `docker --version`: absent (`docker` command not found; exit 1).
 - `src/lib/supabase/types.generated.ts`: exists today.
 
 ---
 
-_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 6._
+_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by M1 Step 1._
 
