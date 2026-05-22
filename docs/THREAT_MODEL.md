@@ -247,7 +247,7 @@ UAE Federal Decree-Law No. 45 of 2021 (Personal Data Protection Law, "PDPL") app
 
 The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant — the other executor reviews):
 
-- **M0 — Foundation.** Cross-check env validation, secret handling, ESLint security rules, structured logger redaction. Env validation, secret handling boundaries, and ESLint security rules implemented in Step 2; structured logger redaction implemented in Step 3. Awaiting cross-check sweep.
+- **M0 — Foundation.** COMPLETE. Cross-check sweeps run clean for Step 2 (env + Supabase + ESLint boundaries) and Step 3 (structured logger redaction). M0 Final Audit (2026-05-22) passed. Documented forensic finding: Supabase JWT-shaped keys share header prefix until ~char 110; bundle secret scans must use prefixes longer than this for JWT-shaped secrets. Carried to M5 (webhook verification) work.
 - **M2 — Admin portal.** Cross-check MFA enrollment, admin authz checks on every server action, audit log writes, bulk-action confirmations.
 - **M3 — Public catalog.** Cross-check RLS policies for `products`, `brands`, `categories`. Confirm `wholesale_price_internal` is never selected by any public query.
 - **M4 — Cart & checkout.** Cross-check server-side cart revalidation, totals recomputation, idempotency key generation, no client-trusted prices.
@@ -271,6 +271,12 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-05-22 | 1.0.8 | M0 Final Audit consolidation: state file alignment + verification debt logged for M1. |
+| 2026-05-22 | 1.0.7 | Step 8.2 of M0: CI placeholder fix for requiredSecret length validation. |
+| 2026-05-22 | 1.0.6 | Step 8.1 of M0: Vercel env-environment matrix correction (Production->production, Preview->staging, Development->development). |
+| 2026-05-22 | 1.0.5 | Step 8.0 of M0: Vercel automation bypass token wired into env, spec, redaction. |
+| 2026-05-22 | 1.0.4 | Step 7.1 of M0: Node version alignment to 22 across engines, CI, spec, state. |
+| 2026-05-22 | 1.0.3 | Step 3.2 of M0: ESLint no-console rule + state file alignment per Step 3 manual checkpoint. |
 | 2026-05-22 | 1.0.2 | Step 3 of M0: structured logger with explicit redaction list. |
 | 2026-05-22 | 1.0.1 | Step 2 of M0: env loader + Supabase clients + ESLint import boundaries implemented. |
 | 2026-05-21 | 1.0 | Initial seed for M0. |

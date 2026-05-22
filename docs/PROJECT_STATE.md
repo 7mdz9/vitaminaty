@@ -15,7 +15,8 @@ The platform is admin-driven: products import with minimal data and are progress
 
 ## 2. Current milestone
 
-**M0 — Foundation.** Repo bootstrap, stack scaffolded, Supabase project created, design tokens extracted from prototype, feature flag infrastructure, env validation, state files. No business surfaces yet.
+**M0 — Foundation: COMPLETE (final audit passed 2026-05-22).**
+Next milestone: M1 — Data layer.
 
 ## 3. Stack — locked
 
@@ -149,7 +150,13 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 
 ## 6. Known issues / open questions
 
-None yet. Will accumulate as milestones progress.
+Verification debt carried into M1 from the M0 final audit:
+- `feature_flags` migration prepared in Step 6 but not yet applied. M1 owns applying it.
+- `src/middleware.ts` (root file) needs a one-line authz comment (Step 2 cross-check carry-forward). Trivial, ride in any M1 commit.
+- `requiredSecret` in `src/lib/env.ts` should be hardened with `.trim()` to protect against accidental whitespace in pasted secrets. Trivial.
+- Middleware matcher in `src/middleware.ts` should be optimized to exclude static asset paths. Scheduled for M3.
+- Bundle secret scans must use prefixes ≥130 chars when scanning for Supabase JWT-shaped secrets (anon and service_role share header prefix until char position ~110). 8-char prefix scans are useless for JWTs. Forensic dive during M0 Final Audit confirmed: original 8-char hit was prefix collision with the public anon key, no actual leak. Document in `THREAT_MODEL.md` for M5 webhook verification work.
+- Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
 
 ## 7. What is intentionally not built yet (and which milestone owns it)
 
