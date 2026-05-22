@@ -1,4 +1,172 @@
 {
   "ignorePatterns": ["next-env.d.ts"],
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "plugins": ["import", "boundaries"],
+  "settings": {
+    "boundaries/elements": [
+      {
+        "type": "app",
+        "pattern": "src/app/**"
+      },
+      {
+        "type": "components",
+        "pattern": "src/components/**"
+      },
+      {
+        "type": "features",
+        "pattern": "src/features/**"
+      },
+      {
+        "type": "lib",
+        "pattern": "src/lib/**"
+      },
+      {
+        "type": "server",
+        "pattern": "src/server/**"
+      },
+      {
+        "type": "types",
+        "pattern": "src/types/**"
+      }
+    ]
+  },
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "MemberExpression[object.name='process'][property.name='env']",
+        "message": "Direct process.env access is restricted to src/lib/env.ts and next.config.ts."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludedFiles": ["src/server/repositories/**/*.{ts,tsx}", "src/lib/supabase/server.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/lib/supabase/server",
+                "message": "The service-role Supabase client may only be imported by src/server/repositories/."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/lib/supabase/server"],
+                "message": "The service-role Supabase client may only be imported by src/server/repositories/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/app/(public)/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/lib/supabase/server",
+                  "**/lib/supabase/server",
+                  "@/app/admin/**",
+                  "src/app/admin/**",
+                  "../../admin/**",
+                  "../admin/**"
+                ],
+                "message": "Public routes may not import admin routes."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/app/admin/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/lib/supabase/server",
+                  "**/lib/supabase/server",
+                  "@/app/(public)/**",
+                  "src/app/(public)/**",
+                  "../(public)/**",
+                  "../../(public)/**"
+                ],
+                "message": "Admin routes may not import public route internals."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/lib/supabase/server", "**/lib/supabase/server"],
+                "message": "The service-role Supabase client may only be imported by src/server/repositories/."
+              },
+              {
+                "group": ["@/server/**", "src/server/**", "../server/**", "../../server/**"],
+                "message": "Components may not import server modules."
+              },
+              {
+                "group": [
+                  "@/features/*/actions",
+                  "src/features/*/actions",
+                  "../features/*/actions",
+                  "../../features/*/actions"
+                ],
+                "message": "Components may not import feature server actions."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/types/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app/**",
+                  "@/components/**",
+                  "@/features/**",
+                  "@/lib/**",
+                  "@/server/**",
+                  "@/lib/supabase/server",
+                  "**/lib/supabase/server"
+                ],
+                "message": "src/types/ may only import from other src/types/ files."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/env.ts", "src/lib/env.public.ts", "next.config.ts"],
+      "rules": {
+        "no-restricted-syntax": "off"
+      }
+    }
+  ]
 }

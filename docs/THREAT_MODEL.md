@@ -246,7 +246,7 @@ UAE Federal Decree-Law No. 45 of 2021 (Personal Data Protection Law, "PDPL") app
 
 The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant — the other executor reviews):
 
-- **M0 — Foundation.** Cross-check env validation, secret handling, ESLint security rules, structured logger redaction.
+- **M0 — Foundation.** Cross-check env validation, secret handling, ESLint security rules, structured logger redaction. Env validation, secret handling boundaries, and ESLint security rules implemented in Step 2; awaiting cross-check sweep. Structured logger redaction remains Step 3 scope.
 - **M2 — Admin portal.** Cross-check MFA enrollment, admin authz checks on every server action, audit log writes, bulk-action confirmations.
 - **M3 — Public catalog.** Cross-check RLS policies for `products`, `brands`, `categories`. Confirm `wholesale_price_internal` is never selected by any public query.
 - **M4 — Cart & checkout.** Cross-check server-side cart revalidation, totals recomputation, idempotency key generation, no client-trusted prices.
@@ -270,8 +270,9 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-05-22 | 1.0.1 | Step 2 of M0: env loader + Supabase clients + ESLint import boundaries implemented. |
 | 2026-05-21 | 1.0 | Initial seed for M0. |
 
 ---
 
-_End of `THREAT_MODEL.md` v1.0._
+_End of `THREAT_MODEL.md` v1.0.1._

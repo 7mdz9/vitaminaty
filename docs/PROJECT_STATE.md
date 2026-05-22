@@ -44,7 +44,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Server actions first.** All mutations go through Next.js Server Actions in `src/features/{feature}/actions.ts`. No standalone REST API routes for app-internal data; `/api/` is reserved for webhooks, health, sitemap.
 - **Repository layer is the only DB access point.** Service-role Supabase client lives in `src/lib/supabase/server.ts` and is imported only by `src/server/repositories/*`. Everything else uses the repository functions.
 - **All money is whole-AED integers.** Type `AedAmount` in `src/lib/money/aed.ts`. No float arithmetic on money anywhere.
-- **All env vars accessed through `src/lib/env.ts`.** Zod-validated. No raw `process.env.X` outside this file.
+- **All env vars accessed through env loaders.** Server-only env goes through `src/lib/env.ts`; client-safe public env goes through `src/lib/env.public.ts`. Both are Zod-validated. Implemented in Step 2.
 - **All slugs immutable once published.** Slug history table tracks old → new slug for 301 redirects.
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
 - **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`.
@@ -63,8 +63,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `.editorconfig` | Shared editor defaults. |
 | `.prettierrc` | Prettier formatting policy. |
 | `.prettierignore` | Prevents broad spec/reference formatting churn during M0. |
-| `.eslintrc.json` | Basic Next.js + TypeScript lint config; import boundary rules land in Step 2. |
-| `next.config.ts` | Minimal Next.js config with default security posture preserved. |
+| `.eslintrc.json` | Next.js + TypeScript lint config with Step 2 import-boundary and direct-env-read restrictions. |
+| `next.config.ts` | Minimal Next.js config with default security posture preserved and build-time env validation. |
 | `postcss.config.mjs` | Tailwind CSS + Autoprefixer PostCSS config. |
 | `tailwind.config.ts` | Tailwind theme extensions mirroring prototype design tokens. |
 | `tsconfig.json` | Strict TypeScript config with `@/*` path alias. |
@@ -74,9 +74,13 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/app/globals.css` | Tailwind base plus verbatim prototype `:root` custom properties. |
 | `src/app/not-found.tsx` | Placeholder 404 boundary. |
 | `src/app/error.tsx` | Placeholder root error boundary. |
-| `src/lib/env.ts` | Type-safe, Zod-validated env access. |
-| `src/lib/supabase/server.ts` | Service-role Supabase client. Server-only. |
-| `src/lib/supabase/client.ts` | Anon Supabase client for client-side. |
+| `src/lib/env.ts` | Type-safe, Zod-validated server env access with structured multi-error reporting. |
+| `src/lib/env.public.ts` | Client-safe `NEXT_PUBLIC_*` env split. |
+| `src/lib/supabase/server.ts` | Service-role Supabase client. Server-only and repository-only by ESLint boundary. |
+| `src/lib/supabase/client.ts` | Anon Supabase browser client for client-side, RLS-enforced use. |
+| `src/lib/supabase/middleware.ts` | Supabase SSR session refresh helper. |
+| `src/middleware.ts` | Next.js middleware wiring session refresh outside `/_next/*` and `/api/health`. |
+| `tests/unit/env.test.ts` | Env validation tests for missing required vars, enum validation, and public/server split. |
 | `src/lib/money/aed.ts` | AedAmount integer type + arithmetic helpers. |
 | `src/lib/money/vat.ts` | VAT 5%-inclusive math. |
 | `src/lib/logger.ts` | Structured logger with secret redaction. |
@@ -135,4 +139,4 @@ Until every box ticks, the production deploy keeps the `commerce_enabled` featur
 
 ---
 
-_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 1._
+_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 2._
