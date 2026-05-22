@@ -45,6 +45,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Repository layer is the only DB access point.** Service-role Supabase client lives in `src/lib/supabase/server.ts` and is imported only by `src/server/repositories/*`. Everything else uses the repository functions.
 - **All money is whole-AED integers.** Type `AedAmount` in `src/lib/money/aed.ts`. No float arithmetic on money anywhere.
 - **All env vars accessed through env loaders.** Server-only env goes through `src/lib/env.ts`; client-safe public env goes through `src/lib/env.public.ts`. Both are Zod-validated. Implemented in Step 2.
+- **Logger with explicit redaction list.** Structured logs flow through `src/lib/logger.ts`, which exports the auditable `REDACTION_KEYS` set and redacts secrets, PII keys, JWT-like values, Supabase key-like values, and PEM blocks. Implemented in Step 3.
 - **All slugs immutable once published.** Slug history table tracks old → new slug for 301 redirects.
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
 - **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`.
@@ -83,7 +84,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `tests/unit/env.test.ts` | Env validation tests for missing required vars, enum validation, and public/server split. |
 | `src/lib/money/aed.ts` | AedAmount integer type + arithmetic helpers. |
 | `src/lib/money/vat.ts` | VAT 5%-inclusive math. |
-| `src/lib/logger.ts` | Structured logger with secret redaction. |
+| `src/lib/logger.ts` | Structured logger with explicit secret and PII redaction. |
+| `src/lib/__tests__/logger.test.ts` | Logger redaction, level filtering, and request-context tests. |
 | `src/features/feature-flags/flags.ts` | Flag definitions. |
 | `src/features/feature-flags/eval.ts` | Runtime flag evaluation. |
 | `src/lib/paymob/adapter.ts` | `PaymentAdapter` interface. |
@@ -139,4 +141,4 @@ Until every box ticks, the production deploy keeps the `commerce_enabled` featur
 
 ---
 
-_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 2._
+_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 3._

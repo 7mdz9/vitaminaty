@@ -35,6 +35,6 @@ export default defineConfig({
       IDEMPOTENCY_HMAC_SECRET: "b".repeat(32),
       SUPPORT_CHAT_PROVIDER: "null",
     },
-    include: ["tests/**/*.test.ts"],
+    include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
   },
 });
