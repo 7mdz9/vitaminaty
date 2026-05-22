@@ -50,7 +50,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Adapter pattern.** Payment, shipping, and support chat each expose stable interfaces plus stub/null implementations and selector functions. Implemented in Step 5.
 - **All slugs immutable once published.** Slug history table tracks old → new slug for 301 redirects.
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
-- **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`.
+- **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`. Implemented in Step 6 with `FF_*` env override, repository lookup, then default fallback.
 - **Adaptive product rendering follows v1.1 Cases A–G.** See `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` §7.
 - **PDP sections render only if data exists.** No empty placeholders, no "coming soon" labels on public side. Admin preview is the exception.
 - **All cart state untrusted at checkout.** Server revalidates prices, stock, totals, VAT, delivery before order creation.
@@ -73,6 +73,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `tsconfig.json` | Strict TypeScript config with `@/*` path alias. |
 | `next-env.d.ts` | Conventional Next.js type references for local typechecking. |
 | `src/app/layout.tsx` | Root App Router layout. |
+| `src/app/(public)/layout.tsx` | Public route-group wrapper with server-evaluated support chat visibility. |
 | `src/app/page.tsx` | M0 placeholder homepage proving Tailwind tokens are active. |
 | `src/app/globals.css` | Tailwind base plus verbatim prototype `:root` custom properties. |
 | `src/app/not-found.tsx` | Placeholder 404 boundary. |
@@ -83,6 +84,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/lib/supabase/client.ts` | Anon Supabase browser client for client-side, RLS-enforced use. |
 | `src/lib/supabase/middleware.ts` | Supabase SSR session refresh helper. |
 | `src/middleware.ts` | Next.js middleware wiring session refresh outside `/_next/*` and `/api/health`. |
+| `src/app/api/health/route.ts` | Unauthenticated healthcheck returning status, git SHA, app env, and timestamp. |
 | `tests/unit/env.test.ts` | Env validation tests for missing required vars, enum validation, and public/server split. |
 | `src/lib/rate-limit.ts` | RateLimiter interface with in-memory implementation and Upstash stub. |
 | `src/lib/errors.ts` | Stable application error classes and `isAppError` helper. |
@@ -111,8 +113,12 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/types/audit-log.ts` | Audit log shared type. |
 | `src/types/feature-flag.ts` | Feature flag shared type. |
 | `src/types/support-chat.ts` | Support chat conversation/message shared types. |
-| `src/features/feature-flags/flags.ts` | TODO(M2) placeholder for feature flag definitions. |
-| `src/features/feature-flags/eval.ts` | TODO(M2) placeholder for runtime feature flag evaluation. |
+| `src/features/feature-flags/flags.ts` | Decision 4 feature flag definitions and defaults. |
+| `src/features/feature-flags/eval.ts` | Runtime flag evaluation with `FF_*` override, repository lookup, and default fallback. |
+| `src/features/feature-flags/admin-actions.ts` | TODO(M2) placeholder for admin flag-toggle server actions. |
+| `src/features/feature-flags/__tests__/eval.test.ts` | Feature flag inventory and precedence tests. |
+| `src/server/repositories/feature-flag-repository.ts` | M0 null-read repository for feature flag DB access; M1 fills Supabase read after migration apply. |
+| `src/components/chat/ChatBubble.tsx` | Client support chat placeholder bubble controlled by server-evaluated visibility prop. |
 | `src/lib/paymob/types.ts` | Paymob adapter domain types. |
 | `src/lib/paymob/adapter.ts` | `PaymentAdapter` interface. |
 | `src/lib/paymob/stub-adapter.ts` | Stub payment adapter for M0–M4. |
@@ -125,6 +131,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/features/support-chat/null-provider.ts` | Null support chat provider. |
 | `src/features/support-chat/safety-boundaries.ts` | Support chat safety scope and refusal text constants. |
 | `src/features/support-chat/index.ts` | Support chat provider selector. |
+| `supabase/migrations/0005_feature_flags.sql` | Prepared feature flags migration; not applied until M1. |
+| `supabase/seed/feature-flags.sql` | Prepared default feature flag seed values; not applied until M1. |
 | `docs/PROJECT_STATE.md` | This file. |
 | `docs/LAST_SESSION.md` | What just happened. |
 | `docs/THREAT_MODEL.md` | Security threat model. |
@@ -140,6 +148,7 @@ None yet. Will accumulate as milestones progress.
 | Surface | Milestone |
 |---|---|
 | Database schema | M1 |
+| Feature flag table migration | Prepared in M0 Step 6; applied in M1 |
 | MD catalog import script | M1 |
 | Admin portal (auth, product editor, image uploader) | M2 |
 | Public catalog pages (listing, brand, search, PDP) | M3 |
@@ -172,4 +181,4 @@ Until every box ticks, the production deploy keeps the `commerce_enabled` featur
 
 ---
 
-_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 5._
+_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 6._
