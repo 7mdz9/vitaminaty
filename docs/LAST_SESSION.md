@@ -51,3 +51,9 @@ None.
 ## Next action
 
 Execute M0 Step 4. Read `docs/proj_spec.md` section M0 for lib utilities and money primitives before implementation.
+
+## Debug sweep — Step 3
+
+- Result: clean
+- Redaction-list-empty sanity check: passed
+- Files modified: `docs/LAST_SESSION.md`
