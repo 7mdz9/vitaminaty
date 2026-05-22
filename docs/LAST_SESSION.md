@@ -64,3 +64,8 @@ Execute M0 Step 2. Read `docs/ENVIRONMENT_VARIABLES.md`, `docs/THREAT_MODEL.md` 
 ## Commit note
 
 Final Step 1 commit should include: `spec-correction: removed orphan tree-listing reference per pre-M0 review`.
+
+## Debug sweep — Step 1
+
+- Result: fixed 1
+- Files modified during sweep: `README.md`, `docs/LAST_SESSION.md`
