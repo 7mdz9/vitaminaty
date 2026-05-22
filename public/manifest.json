@@ -1,0 +1,8 @@
+{
+  "name": "Vitaminaty",
+  "short_name": "Vitaminaty",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF0F0",
+  "theme_color": "#FF0000"
+}
