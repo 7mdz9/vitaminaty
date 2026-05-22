@@ -798,3 +798,12 @@ Verdict: PRINTED — awaiting meta-model review.
 - Hard-gate status: `pnpm exec supabase db reset` was not run for Step 4 because the seed file and required prior migrations are absent; local Supabase CLI was previously recorded unavailable.
 - Files modified during sweep: `docs/LAST_SESSION.md`
 - HIGH_RIGOR note: no seed, migration, schema, package, or test files were changed during this sweep.
+
+## Debug sweep — M1 Step 5
+
+- Result: escalated
+- Reason: M1 Step 5 implementation artifacts are not present on disk. `src/server/db/` is missing, so `src/server/db/supabase-admin.ts` and `src/server/db/supabase-server.ts` are absent. `scripts/scan-bundle-secrets.sh` is also absent.
+- Package/config status: `package.json` has no `db:types` or `scan:bundle-secrets` scripts, and `.eslintrc.json` has not been extended for the new `src/server/db/*` import boundaries.
+- Hard-gate status: bundle scan was not run because the scan script is absent. `pnpm db:types` was not run because the script is absent and prior schema/local Supabase prerequisites remain blocked.
+- Files modified during sweep: `docs/LAST_SESSION.md`
+- HIGH_RIGOR note: no bundle-scan rule, ESLint boundary, package script, DB wrapper, generated type, or source files were changed during this sweep.
