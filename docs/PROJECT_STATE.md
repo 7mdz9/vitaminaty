@@ -44,6 +44,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Server actions first.** All mutations go through Next.js Server Actions in `src/features/{feature}/actions.ts`. No standalone REST API routes for app-internal data; `/api/` is reserved for webhooks, health, sitemap.
 - **Repository layer is the only DB access point.** Service-role Supabase client lives in `src/lib/supabase/server.ts` and is imported only by `src/server/repositories/*`. Everything else uses the repository functions.
 - **All money is whole-AED integers.** Type `AedAmount` in `src/lib/money/aed.ts`. No float arithmetic on money anywhere.
+- **Money math via `src/lib/money/aed.ts`.** AED values use a branded whole-integer type, with VAT-inclusive breakdown in `src/lib/money/vat.ts`.
 - **All env vars accessed through env loaders.** Server-only env goes through `src/lib/env.ts`; client-safe public env goes through `src/lib/env.public.ts`. Both are Zod-validated. Implemented in Step 2.
 - **Logger with explicit redaction list.** Structured logs flow through `src/lib/logger.ts`, which exports the auditable `REDACTION_KEYS` set and redacts secrets, PII keys, JWT-like values, Supabase key-like values, and PEM blocks. Implemented in Step 3.
 - **All slugs immutable once published.** Slug history table tracks old → new slug for 301 redirects.
@@ -82,8 +83,14 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/lib/supabase/middleware.ts` | Supabase SSR session refresh helper. |
 | `src/middleware.ts` | Next.js middleware wiring session refresh outside `/_next/*` and `/api/health`. |
 | `tests/unit/env.test.ts` | Env validation tests for missing required vars, enum validation, and public/server split. |
-| `src/lib/money/aed.ts` | TODO(M3) placeholder for AED integer money primitives. |
-| `src/lib/money/vat.ts` | TODO(M3) placeholder for VAT calculation primitives. |
+| `src/lib/rate-limit.ts` | RateLimiter interface with in-memory implementation and Upstash stub. |
+| `src/lib/errors.ts` | Stable application error classes and `isAppError` helper. |
+| `src/lib/slug.ts` | Product slug generation and pure collision suffix helpers. |
+| `src/lib/idempotency.ts` | M4 stub locking the idempotency-key derivation convention. |
+| `src/lib/crypto.ts` | M5 stub locking HMAC and hashing helper signatures. |
+| `src/lib/money/aed.ts` | Branded whole-integer AED type and arithmetic helpers. |
+| `src/lib/money/vat.ts` | VAT-inclusive 5% net/VAT breakdown using banker's rounding. |
+| `src/lib/money/format.ts` | AED display formatting helper. |
 | `src/lib/logger.ts` | Structured logger with explicit secret and PII redaction. |
 | `src/lib/__tests__/logger.test.ts` | Logger redaction, level filtering, and request-context tests. |
 | `src/features/feature-flags/flags.ts` | TODO(M2) placeholder for feature flag definitions. |
