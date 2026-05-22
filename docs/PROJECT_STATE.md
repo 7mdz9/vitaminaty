@@ -96,10 +96,16 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/lib/money/format.ts` | AED display formatting helper. |
 | `src/lib/logger.ts` | Structured logger with explicit secret and PII redaction. |
 | `src/lib/__tests__/logger.test.ts` | Logger redaction, level filtering, and request-context tests. |
+| `src/lib/__tests__/money.test.ts` | AED money and VAT primitive tests. |
+| `src/lib/__tests__/slug.test.ts` | Product slug generation and collision suffix tests. |
+| `src/lib/__tests__/errors-rate-limit.test.ts` | App error and rate limiter tests. |
+| `src/lib/__tests__/stubs.test.ts` | Idempotency and crypto future-stub tests. |
 | `src/lib/validation/product.ts` | Zod schemas for product create/update and field-status updates. |
 | `src/lib/validation/order.ts` | Zod schemas for order creation and status transitions. |
 | `src/lib/validation/address.ts` | Zod schema for UAE addresses and phone format. |
 | `src/lib/validation/webhook-payloads.ts` | M5/M6 webhook payload schema placeholders. |
+| `src/lib/__tests__/validation.test.ts` | Validation schema tests. |
+| `src/lib/__tests__/adapters.test.ts` | Payment, shipping, and support-chat adapter stub tests. |
 | `src/types/product.ts` | Product, field-status, image, content, and label-data shared types. |
 | `src/types/brand.ts` | Brand shared type. |
 | `src/types/category.ts` | Category and goal shared types. |

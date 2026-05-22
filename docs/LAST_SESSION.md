@@ -65,3 +65,11 @@ Run the Step 6 debug sweep. Then proceed to the M0 CI baseline step after readin
 - DoD commands: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` exited 0.
 - Additional checks: `pnpm format:check` exited 0; `/api/health` returned HTTP 200 with `status: "ok"`; rendered home HTML had zero `ChatBubble` matches.
 - Files modified during sweep: `docs/LAST_SESSION.md`
+
+## State refresh before Step 7
+
+- Result: fixed documentation drift.
+- `docs/PROJECT_STATE.md` key-file paths all exist on disk.
+- Recent code changes from `HEAD~6..HEAD` were compared against `docs/PROJECT_STATE.md` section 5.
+- Fix applied: added missing key-file rows for Step 4 and Step 5 test suites under `src/lib/__tests__/`.
+- Files modified during refresh: `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`
