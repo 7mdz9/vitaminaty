@@ -58,3 +58,12 @@ Execute M1 Step 2. Read `docs/DB_SCHEMA.md` §2–§8 and §10 before changing m
 - DoD commands: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test -- env`, and `pnpm format:check` exited 0.
 - Marker checks passed for `authz`, `.trim()`, `JWT prefix`, and `Recon — M1 entry`.
 - Files modified during sweep: `docs/LAST_SESSION.md`
+
+## Debug sweep — M1 Step 2
+
+- Result: escalated
+- Reason: M1 Step 2 implementation artifacts are not present on disk. `supabase/migrations/` still contains the pre-Step-2 placeholder layout including `supabase/migrations/0005_feature_flags.sql`; the expected `0001_extensions_and_enums.sql` through `0008_support_chat.sql` files are absent.
+- Hard-gate command attempted: `pnpm exec supabase db reset`.
+- Failure: `Command "supabase" not found`; local Supabase CLI is not installed in the workspace, and Docker was already recorded as unavailable in the M1 Step 1 recon.
+- Files modified during sweep: `docs/LAST_SESSION.md`
+- HIGH_RIGOR note: no migration files, package scripts, dependencies, or schema content were changed during this sweep.
