@@ -47,6 +47,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Money math via `src/lib/money/aed.ts`.** AED values use a branded whole-integer type, with VAT-inclusive breakdown in `src/lib/money/vat.ts`.
 - **All env vars accessed through env loaders.** Server-only env goes through `src/lib/env.ts`; client-safe public env goes through `src/lib/env.public.ts`. Both are Zod-validated. Implemented in Step 2.
 - **Logger with explicit redaction list.** Structured logs flow through `src/lib/logger.ts`, which exports the auditable `REDACTION_KEYS` set and redacts secrets, PII keys, JWT-like values, Supabase key-like values, and PEM blocks. Implemented in Step 3.
+- **Adapter pattern.** Payment, shipping, and support chat each expose stable interfaces plus stub/null implementations and selector functions. Implemented in Step 5.
 - **All slugs immutable once published.** Slug history table tracks old → new slug for 301 redirects.
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
 - **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`.
@@ -93,14 +94,37 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/lib/money/format.ts` | AED display formatting helper. |
 | `src/lib/logger.ts` | Structured logger with explicit secret and PII redaction. |
 | `src/lib/__tests__/logger.test.ts` | Logger redaction, level filtering, and request-context tests. |
+| `src/lib/validation/product.ts` | Zod schemas for product create/update and field-status updates. |
+| `src/lib/validation/order.ts` | Zod schemas for order creation and status transitions. |
+| `src/lib/validation/address.ts` | Zod schema for UAE addresses and phone format. |
+| `src/lib/validation/webhook-payloads.ts` | M5/M6 webhook payload schema placeholders. |
+| `src/types/product.ts` | Product, field-status, image, content, and label-data shared types. |
+| `src/types/brand.ts` | Brand shared type. |
+| `src/types/category.ts` | Category and goal shared types. |
+| `src/types/order.ts` | Order and order-item shared types. |
+| `src/types/cart.ts` | Cart line and revalidation shared types. |
+| `src/types/address.ts` | UAE address shared types. |
+| `src/types/customer.ts` | Customer shared type. |
+| `src/types/admin.ts` | Admin user shared type skeleton. |
+| `src/types/payment.ts` | Payment method, status, and event shared types. |
+| `src/types/shipment.ts` | Shipment status and record shared types. |
+| `src/types/audit-log.ts` | Audit log shared type. |
+| `src/types/feature-flag.ts` | Feature flag shared type. |
+| `src/types/support-chat.ts` | Support chat conversation/message shared types. |
 | `src/features/feature-flags/flags.ts` | TODO(M2) placeholder for feature flag definitions. |
 | `src/features/feature-flags/eval.ts` | TODO(M2) placeholder for runtime feature flag evaluation. |
-| `src/lib/paymob/adapter.ts` | TODO(M5) placeholder for `PaymentAdapter` interface. |
-| `src/lib/paymob/stub-adapter.ts` | TODO(M5) placeholder for stub Paymob implementation for M0–M4. |
-| `src/lib/icarry/adapter.ts` | TODO(M6) placeholder for `ShippingAdapter` interface. |
-| `src/lib/icarry/stub-adapter.ts` | TODO(M6) placeholder for stub iCarry implementation for M0–M5. |
-| `src/features/support-chat/provider.ts` | TODO(P1) placeholder for `SupportChatProvider` interface. |
-| `src/features/support-chat/null-provider.ts` | TODO(P1) placeholder for null support chat implementation. |
+| `src/lib/paymob/types.ts` | Paymob adapter domain types. |
+| `src/lib/paymob/adapter.ts` | `PaymentAdapter` interface. |
+| `src/lib/paymob/stub-adapter.ts` | Stub payment adapter for M0–M4. |
+| `src/lib/paymob/index.ts` | Payment adapter selector. |
+| `src/lib/icarry/types.ts` | iCarry adapter domain types. |
+| `src/lib/icarry/adapter.ts` | `ShippingAdapter` interface. |
+| `src/lib/icarry/stub-adapter.ts` | Stub shipping adapter for M0–M5. |
+| `src/lib/icarry/index.ts` | Shipping adapter selector. |
+| `src/features/support-chat/provider.ts` | `SupportChatProvider` interface. |
+| `src/features/support-chat/null-provider.ts` | Null support chat provider. |
+| `src/features/support-chat/safety-boundaries.ts` | Support chat safety scope and refusal text constants. |
+| `src/features/support-chat/index.ts` | Support chat provider selector. |
 | `docs/PROJECT_STATE.md` | This file. |
 | `docs/LAST_SESSION.md` | What just happened. |
 | `docs/THREAT_MODEL.md` | Security threat model. |
@@ -148,4 +172,4 @@ Until every box ticks, the production deploy keeps the `commerce_enabled` featur
 
 ---
 
-_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 3._
+_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 5._
