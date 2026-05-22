@@ -120,6 +120,12 @@ This pattern prevents the common `process.env.STRIPE_KEY` typo bug.
 | `SUPPORT_CHAT_PROVIDER` | Yes | enum `null\|anthropic` | No | M0 default `null`. Future milestone flips to `anthropic`. |
 | `ANTHROPIC_API_KEY` | Future | string | No | Required when `SUPPORT_CHAT_PROVIDER=anthropic`. |
 
+### 2.11 Platform / Automation
+
+| Name | Required | Type | Public? | Purpose |
+|---|---|---|---|---|
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | No | string | No | Optional High-sensitivity server-only secret used only for automated verification of protected Vercel previews. Where set: Vercel dashboard -> Deployment Protection -> Protection Bypass for Automation. Use: passed as `x-vercel-protection-bypass` header or query param to authenticated curl requests against preview deploys during verification steps. Rotation: rotate immediately on team member departure or suspected leak. |
+
 ---
 
 ## 3. Secret rotation & storage policy
@@ -218,6 +224,10 @@ UPSTASH_REDIS_REST_TOKEN=
 # ─── Cryptographic ───
 IDEMPOTENCY_HMAC_SECRET=
 WEBHOOK_REPLAY_WINDOW_SECONDS=300
+
+# â”€â”€â”€ Platform / Automation â”€â”€â”€
+# Generated in Vercel dashboard -> Settings -> Deployment Protection
+VERCEL_AUTOMATION_BYPASS_SECRET=
 
 # ─── AI support (null in MVP) ───
 SUPPORT_CHAT_PROVIDER=null

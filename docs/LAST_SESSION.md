@@ -66,3 +66,21 @@ Complete Preflight H3: create/connect the Vercel project, add real environment v
 - `docs/PROJECT_STATE.md` §3 Stack table: Node 20 → Node 22
 - Human action pending: set Vercel Project Settings → Node.js Version to 22.x in dashboard (CODEX cannot do this).
 - After human action and redeploy, Step 8 verification resumes.
+
+## Step 8.0 — Vercel automation bypass wiring (Path B)
+
+Vercel Deployment Protection is enabled on previews. The standard verification curl pattern for protected preview URLs is:
+
+    curl -i -sS \
+      -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
+      -H "x-vercel-set-bypass-cookie: samesitenone" \
+      https://<PREVIEW_URL>/<path>
+
+Or as query params:
+
+    curl -i -sS \
+      "https://<PREVIEW_URL>/<path>?x-vercel-protection-bypass=$VERCEL_AUTOMATION_BYPASS_SECRET&x-vercel-set-bypass-cookie=samesitenone"
+
+The bypass token MUST NOT be hardcoded, committed, or logged. It is loaded from .env.local for local invocations and from Vercel project env settings for CI invocations.
+
+Forward action for M5+: when real customer / payment data flows through preview deploys, review whether bypass token rotation cadence should tighten (currently same as other High-sensitivity operational secrets per ENVIRONMENT_VARIABLES.md §3 rotation policy).

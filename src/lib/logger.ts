@@ -8,7 +8,8 @@ import { env } from "@/lib/env";
 // log under the canonical key, and the bare suffix is generic enough
 // that adding it would over-redact unrelated integrations. Verified
 // by the Step 3 manual checkpoint (TEST 2 finding) and intentionally
-// not changed.
+// not changed. Vercel automation bypass redaction follows the same
+// canonical env-var-name pattern.
 
 const REDACTED = "[REDACTED]";
 const CIRCULAR = "[CIRCULAR]";
@@ -45,6 +46,7 @@ export const REDACTION_KEYS: ReadonlySet<string> = Object.freeze(
     "supabase_db_password",
     "admin_session_secret",
     "upstash_redis_rest_token",
+    "vercel_automation_bypass_secret",
     "sentry_dsn",
     "email",
     "phone",

@@ -81,6 +81,8 @@ export const envSchema = publicEnvSchema.extend({
 
   // Platform-injected by Vercel (not in spec inventory); read by /api/health for build identification.
   VERCEL_GIT_COMMIT_SHA: optionalString,
+  // Vercel "Protection Bypass for Automation" token. Used by verification scripts to hit protected preview deploys. Generated in the Vercel dashboard, set via Vercel env settings. Treated as a High-sensitivity operational secret per THREAT_MODEL.md §2.3.
+  VERCEL_AUTOMATION_BYPASS_SECRET: optionalString,
 });
 
 export type Env = Readonly<z.infer<typeof envSchema>>;

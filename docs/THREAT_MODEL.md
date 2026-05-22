@@ -58,6 +58,7 @@ It does **not** cover:
 | iCarry API key | High | Vercel env |
 | iCarry webhook secret | High | Vercel env |
 | HMAC secrets (idempotency, sessions) | High | Vercel env |
+| Vercel automation bypass token | High — grants preview deployment access without Vercel auth | Vercel env, never in repo |
 
 ---
 
