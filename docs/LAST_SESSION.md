@@ -99,3 +99,12 @@ This is important because env keys downstream behavior including:
 - Sentry environment tagging (M8)
 
 Re-verification of /api/health on the corrected preview returned env="staging" as expected.
+
+## Debug sweep — Step 8
+
+- Result: clean
+- State-file commits confirmed in git history: `3989145` Step 8.0 bypass wiring and `88dec2c` Step 8.1 env matrix correction.
+- Protected preview verification used the Vercel automation bypass token from `.env.local` without printing the token or bypass cookie.
+- `/api/health` on `vitaminaty-assiuzikn-mohamed-ss-project.vercel.app` returned HTTP 200 JSON with `status: "ok"`, `env: "staging"`, and version `88dec2c5e4cad5d8af4a788bf165487e1673b974`.
+- `x-vercel-id` included `fra1`, confirming the expected region route.
+- Files modified during sweep: `docs/LAST_SESSION.md`
