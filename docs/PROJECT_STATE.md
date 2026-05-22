@@ -1,6 +1,6 @@
-# PROJECT_STATE.md
+﻿# PROJECT_STATE.md
 
-**Project:** Vitaminaty — UAE multi-brand supplement e-commerce
+**Project:** Vitaminaty â€” UAE multi-brand supplement e-commerce
 **Document version:** v1.0 (seeded for M0)
 **Audience:** BOB v5 reads this every session to ground itself in current state.
 **Update policy:** Updated by v5 or by the developer at the end of every milestone. Never let drift.
@@ -15,10 +15,11 @@ The platform is admin-driven: products import with minimal data and are progress
 
 ## 2. Current milestone
 
-**M0 — Foundation: COMPLETE (final audit passed 2026-05-22).**
-Next milestone: M1 — Data layer.
+**M1 - Data layer: Step 1 complete; Steps 2-3 blocked/escalated.**
 
-## 3. Stack — locked
+M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations and M1 Step 3 RLS policies are **not implemented on disk yet**; cross-check evidence for both currently records gaps.
+
+## 3. Stack â€” locked
 
 | Layer | Choice |
 |---|---|
@@ -31,7 +32,7 @@ Next milestone: M1 — Data layer.
 | Styling | Tailwind CSS (tokens extracted from `docs/reference/vitaminaty-prototype.html`) |
 | Forms | React Hook Form + Zod |
 | Tests | Vitest (unit/integration) + Playwright (e2e) |
-| Email | Stub provider in M0–M6, Resend from M7 |
+| Email | Stub provider in M0â€“M6, Resend from M7 |
 | Rate limiting | Upstash Redis (production), in-memory (development) |
 | Payments | `PaymentAdapter` interface with stub implementation; real Paymob in M5 |
 | Shipping | `ShippingAdapter` interface with stub implementation; real iCarry in M6 |
@@ -49,10 +50,12 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **All env vars accessed through env loaders.** Server-only env goes through `src/lib/env.ts`; client-safe public env goes through `src/lib/env.public.ts`. Both are Zod-validated. Implemented in Step 2.
 - **Logger with explicit redaction list.** Structured logs flow through `src/lib/logger.ts`, which exports the auditable `REDACTION_KEYS` set and redacts secrets, PII keys, JWT-like values, Supabase key-like values, and PEM blocks. Implemented in Step 3.
 - **Adapter pattern.** Payment, shipping, and support chat each expose stable interfaces plus stub/null implementations and selector functions. Implemented in Step 5.
-- **All slugs immutable once published.** Slug history table tracks old → new slug for 301 redirects.
+- **All slugs immutable once published.** Slug history table tracks old â†’ new slug for 301 redirects.
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
 - **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`. Implemented in Step 6 with `FF_*` env override, repository lookup, then default fallback.
-- **Adaptive product rendering follows v1.1 Cases A–G.** See `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` §7.
+- **M1 database migration pattern - NOT YET ESTABLISHED.** Expected pattern is: migrations in `supabase/migrations/` follow `docs/DB_SCHEMA.md` Section 10 4-digit numeric order. Current disk state still has the pre-Step-2 placeholder layout and must not be treated as schema-complete.
+- **M1 RLS-active pattern - NOT YET ESTABLISHED.** Expected pattern is: RLS active on every PII/admin-only table, with `is_admin()` as the single DB role-check predicate. Current disk state has no `supabase/migrations/0009_rls_policies.sql`.
+- **Adaptive product rendering follows v1.1 Cases Aâ€“G.** See `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Â§7.
 - **PDP sections render only if data exists.** No empty placeholders, no "coming soon" labels on public side. Admin preview is the exception.
 - **All cart state untrusted at checkout.** Server revalidates prices, stock, totals, VAT, delivery before order creation.
 - **HIGH_RIGOR domains in play:** payments, auth, secrets, PII, production data paths. Cryptographic primitives fire on webhook verification + idempotency.
@@ -130,17 +133,26 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/components/chat/ChatBubble.tsx` | Client support chat placeholder bubble controlled by server-evaluated visibility prop. |
 | `src/lib/paymob/types.ts` | Paymob adapter domain types. |
 | `src/lib/paymob/adapter.ts` | `PaymentAdapter` interface. |
-| `src/lib/paymob/stub-adapter.ts` | Stub payment adapter for M0–M4. |
+| `src/lib/paymob/stub-adapter.ts` | Stub payment adapter for M0â€“M4. |
 | `src/lib/paymob/index.ts` | Payment adapter selector. |
 | `src/lib/icarry/types.ts` | iCarry adapter domain types. |
 | `src/lib/icarry/adapter.ts` | `ShippingAdapter` interface. |
-| `src/lib/icarry/stub-adapter.ts` | Stub shipping adapter for M0–M5. |
+| `src/lib/icarry/stub-adapter.ts` | Stub shipping adapter for M0â€“M5. |
 | `src/lib/icarry/index.ts` | Shipping adapter selector. |
 | `src/features/support-chat/provider.ts` | `SupportChatProvider` interface. |
 | `src/features/support-chat/null-provider.ts` | Null support chat provider. |
 | `src/features/support-chat/safety-boundaries.ts` | Support chat safety scope and refusal text constants. |
 | `src/features/support-chat/index.ts` | Support chat provider selector. |
 | `supabase/migrations/0005_feature_flags.sql` | Prepared feature flags migration; not applied until M1. |
+| `supabase/migrations/0001_extensions_and_enums.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0002_reference_tables.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0003_products.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0004_customers_addresses.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0005_orders.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0006_events.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0007_operations.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0008_support_chat.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0009_rls_policies.sql` | MISSING. Expected M1 Step 3 migration per `docs/DB_SCHEMA.md` Sections 9-10. |
 | `supabase/seed/feature-flags.sql` | Prepared default feature flag seed values; not applied until M1. |
 | `docs/PROJECT_STATE.md` | This file. |
 | `docs/LAST_SESSION.md` | What just happened. |
@@ -151,12 +163,19 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 ## 6. Known issues / open questions
 
 Verification debt carried into M1 from the M0 final audit:
-- OWNED BY M1 STEP 2: `feature_flags` migration prepared in Step 6 but not yet applied. M1 owns applying it.
+- OWNED BY M1 STEP 2 / STILL OPEN: `feature_flags` migration prepared in Step 6 but not yet applied. Step 2 has not landed; stale `supabase/migrations/0005_feature_flags.sql` still exists.
 - CLEARED IN M1 STEP 1: `src/middleware.ts` (root file) needs a one-line authz comment (Step 2 cross-check carry-forward).
 - CLEARED IN M1 STEP 1: `requiredSecret` in `src/lib/env.ts` hardened with `.trim()` to protect against accidental whitespace in pasted secrets.
 - DEFERRED TO M3: Middleware matcher in `src/middleware.ts` should be optimized to exclude static asset paths.
-- CLEARED IN M1 STEP 1: Bundle secret scans must use prefixes ≥130 chars when scanning for Supabase JWT-shaped secrets (anon and service_role share header prefix until char position ~110). 8-char prefix scans are useless for JWTs. Forensic dive during M0 Final Audit confirmed: original 8-char hit was prefix collision with the public anon key, no actual leak. Documented in `THREAT_MODEL.md` for M5 webhook verification work.
+- CLEARED IN M1 STEP 1: Bundle secret scans must use prefixes â‰¥130 chars when scanning for Supabase JWT-shaped secrets (anon and service_role share header prefix until char position ~110). 8-char prefix scans are useless for JWTs. Forensic dive during M0 Final Audit confirmed: original 8-char hit was prefix collision with the public anon key, no actual leak. Documented in `THREAT_MODEL.md` for M5 webhook verification work.
 - Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
+
+### M1 Step 2-3 deviations / blockers
+
+- M1 Step 2 schema migrations are absent. `supabase/migrations/` still contains stale placeholder files: `0001_initial_schema.sql`, `0002_products_brands_categories.sql`, `0003_orders_cart_payments.sql`, `0004_audit_log.sql`, `0005_feature_flags.sql`, `0006_support_chat.sql`, `0007_rls_policies.sql`.
+- M1 Step 3 RLS migration is absent: `supabase/migrations/0009_rls_policies.sql` does not exist.
+- Local Supabase CLI is unavailable (`pnpm exec supabase db reset` failed with `Command "supabase" not found`), and Docker was recorded as unavailable in M1 Step 1 recon.
+- No M1 schema or RLS manual checkpoints should be run until Step 2 and Step 3 are actually implemented and local Supabase `db reset` passes.
 
 ## 7. What is intentionally not built yet (and which milestone owns it)
 
@@ -178,7 +197,7 @@ Verification debt carried into M1 from the M0 final audit:
 | Arabic content translation | Post-MVP |
 | B2B / wholesale portal | Post-MVP |
 
-## 8. Public launch readiness checklist (from the spec — gate on all)
+## 8. Public launch readiness checklist (from the spec â€” gate on all)
 
 - [ ] Public catalog works (M3 complete)
 - [ ] Admin product publishing works (M2 complete)
@@ -194,7 +213,7 @@ Verification debt carried into M1 from the M0 final audit:
 
 Until every box ticks, the production deploy keeps the `commerce_enabled` feature flag off (or the site stays in private/staging mode).
 
-## Recon — M1 entry — 2026-05-22
+## Recon â€” M1 entry â€” 2026-05-22
 
 ### supabase/migrations/ listing with first 5 lines
 
@@ -366,3 +385,4 @@ ON CONFLICT (key) DO UPDATE SET
 ---
 
 _End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by Step 6._
+
