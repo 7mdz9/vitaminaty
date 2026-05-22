@@ -108,3 +108,10 @@ Re-verification of /api/health on the corrected preview returned env="staging" a
 - `/api/health` on `vitaminaty-assiuzikn-mohamed-ss-project.vercel.app` returned HTTP 200 JSON with `status: "ok"`, `env: "staging"`, and version `88dec2c5e4cad5d8af4a788bf165487e1673b974`.
 - `x-vercel-id` included `fra1`, confirming the expected region route.
 - Files modified during sweep: `docs/LAST_SESSION.md`
+
+## Step 8.2 — CI env placeholder fix
+
+- Latest GitHub Actions CI failed because the workflow env placeholders for `ADMIN_SESSION_SECRET` and `IDEMPOTENCY_HMAC_SECRET` did not satisfy the `requiredSecret` validation rule in `src/lib/env.ts`.
+- Confirmed `requiredSecret` is used only for `ADMIN_SESSION_SECRET` and `IDEMPOTENCY_HMAC_SECRET`.
+- Replaced the CI placeholders with obvious fake 32+ character strings: `ci-placeholder-admin-session-secret-min32chars` and `ci-placeholder-idempotency-hmac-secret-min32chars`.
+- Validation rules were not changed; CI placeholders now adapt to the existing env contract.

@@ -28,12 +28,12 @@ jobs:
       EMAIL_FROM_ADDRESS: orders@vitaminaty.ae
       EMAIL_FROM_NAME: Vitaminaty
       EMAIL_REPLY_TO: support@vitaminaty.ae
-      ADMIN_SESSION_SECRET: 00000000000000000000000000000000
+      ADMIN_SESSION_SECRET: ci-placeholder-admin-session-secret-min32chars
       INITIAL_ADMIN_EMAIL: admin@vitaminaty.ae
       MFA_ISSUER_NAME: Vitaminaty Admin
       FEATURE_FLAGS_PROVIDER: database
       RATE_LIMIT_BACKEND: memory
-      IDEMPOTENCY_HMAC_SECRET: 11111111111111111111111111111111
+      IDEMPOTENCY_HMAC_SECRET: ci-placeholder-idempotency-hmac-secret-min32chars
       SUPPORT_CHAT_PROVIDER: "null"
 
     steps:
