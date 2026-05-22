@@ -31,7 +31,7 @@
 
 - `pnpm typecheck` exited 0.
 - `pnpm lint` exited 0.
-- `pnpm test` exited 0; 14 tests passed across env and logger suites.
+- `pnpm test` exited 0; 15 tests passed across env and logger suites.
 - `pnpm build` exited 0.
 - `pnpm format:check` exited 0.
 - `rg "console.log" src` returned no matches.
@@ -95,3 +95,19 @@ Carried minor recommendations from Step 2 (still applicable, can be picked up an
 - Add a one-line authz comment to src/middleware.ts (the root file).
 - Change requiredSecret from z.string().min(32) to z.string().trim().min(32).
 - Optimize the middleware matcher in M3 to exclude static asset paths.
+
+## Manual checkpoint findings — Step 3
+
+- TEST 1 (direct redaction): pass
+- TEST 2 (nested redaction): the test surfaced that bare-suffix env
+  key `integration_id_cards` is not redacted. Resolution: NOT a gap.
+  Documented as an intentional design choice in src/lib/logger.ts.
+  Adding bare-suffix keys would over-redact unrelated integrations.
+- TEST 3 (JWT-pattern redaction): pass
+- TEST 4 (console.log rejection): failed. Resolution: added `no-console`
+  rule to .eslintrc.json. Now a build-time error.
+- TEST 5 (circular reference): pass
+- TEST 6 (production JSON validity): pass
+
+Both real findings have been addressed in step 3.2. Manual checkpoint
+considered passed after remediation.

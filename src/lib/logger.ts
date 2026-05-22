@@ -2,6 +2,13 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { env } from "@/lib/env";
 
 // Authz model: Logger has no authz -- any caller may invoke. Containment is via redaction, not access control.
+// Redaction key design: env-var-named keys are stored with their full
+// canonical name (e.g. paymob_integration_id_cards), not bare suffixes
+// (e.g. integration_id_cards). Rationale: the env loader and adapters
+// log under the canonical key, and the bare suffix is generic enough
+// that adding it would over-redact unrelated integrations. Verified
+// by the Step 3 manual checkpoint (TEST 2 finding) and intentionally
+// not changed.
 
 const REDACTED = "[REDACTED]";
 const CIRCULAR = "[CIRCULAR]";

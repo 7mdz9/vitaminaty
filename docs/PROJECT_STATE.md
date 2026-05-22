@@ -82,18 +82,18 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/lib/supabase/middleware.ts` | Supabase SSR session refresh helper. |
 | `src/middleware.ts` | Next.js middleware wiring session refresh outside `/_next/*` and `/api/health`. |
 | `tests/unit/env.test.ts` | Env validation tests for missing required vars, enum validation, and public/server split. |
-| `src/lib/money/aed.ts` | AedAmount integer type + arithmetic helpers. |
-| `src/lib/money/vat.ts` | VAT 5%-inclusive math. |
+| `src/lib/money/aed.ts` | TODO(M3) placeholder for AED integer money primitives. |
+| `src/lib/money/vat.ts` | TODO(M3) placeholder for VAT calculation primitives. |
 | `src/lib/logger.ts` | Structured logger with explicit secret and PII redaction. |
 | `src/lib/__tests__/logger.test.ts` | Logger redaction, level filtering, and request-context tests. |
-| `src/features/feature-flags/flags.ts` | Flag definitions. |
-| `src/features/feature-flags/eval.ts` | Runtime flag evaluation. |
-| `src/lib/paymob/adapter.ts` | `PaymentAdapter` interface. |
-| `src/lib/paymob/stub-adapter.ts` | Stub implementation for M0–M4. |
-| `src/lib/icarry/adapter.ts` | `ShippingAdapter` interface. |
-| `src/lib/icarry/stub-adapter.ts` | Stub implementation. |
-| `src/features/support-chat/provider.ts` | `SupportChatProvider` interface + safety boundaries. |
-| `src/features/support-chat/null-provider.ts` | Null implementation. |
+| `src/features/feature-flags/flags.ts` | TODO(M2) placeholder for feature flag definitions. |
+| `src/features/feature-flags/eval.ts` | TODO(M2) placeholder for runtime feature flag evaluation. |
+| `src/lib/paymob/adapter.ts` | TODO(M5) placeholder for `PaymentAdapter` interface. |
+| `src/lib/paymob/stub-adapter.ts` | TODO(M5) placeholder for stub Paymob implementation for M0–M4. |
+| `src/lib/icarry/adapter.ts` | TODO(M6) placeholder for `ShippingAdapter` interface. |
+| `src/lib/icarry/stub-adapter.ts` | TODO(M6) placeholder for stub iCarry implementation for M0–M5. |
+| `src/features/support-chat/provider.ts` | TODO(P1) placeholder for `SupportChatProvider` interface. |
+| `src/features/support-chat/null-provider.ts` | TODO(P1) placeholder for null support chat implementation. |
 | `docs/PROJECT_STATE.md` | This file. |
 | `docs/LAST_SESSION.md` | What just happened. |
 | `docs/THREAT_MODEL.md` | Security threat model. |
