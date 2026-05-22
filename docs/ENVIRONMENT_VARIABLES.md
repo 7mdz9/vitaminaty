@@ -26,7 +26,7 @@ This pattern prevents the common `process.env.STRIPE_KEY` typo bug.
 | Name | Required | Type | Public? | Purpose |
 |---|---|---|---|---|
 | `VITAMINATY_APP_URL` | Yes | URL | No | Canonical app origin, e.g. `https://vitaminaty.ae`. Used for absolute URLs in emails, webhooks, OG tags. |
-| `VITAMINATY_APP_ENV` | Yes | enum `development\|staging\|production` | No | Drives env-specific behavior. |
+| `VITAMINATY_APP_ENV` | Yes | enum `development\|staging\|production` | No | Drives env-specific behavior. **Vercel matrix:** When setting in Vercel dashboard Environment Variables, the three Vercel environments must map as follows: Production -> "production", Preview -> "staging", Development -> "development". Setting the same value across all three is a misconfiguration that defeats environment-based behavior switching downstream (logger format, future CSP, future rate-limit tuning). The matrix applies to both VITAMINATY_APP_ENV and NEXT_PUBLIC_APP_ENV. |
 | `NEXT_PUBLIC_APP_URL` | Yes | URL | Yes | Mirror of `VITAMINATY_APP_URL` for client-side use. |
 | `NEXT_PUBLIC_APP_ENV` | Yes | enum | Yes | Mirror for client. |
 | `NEXT_PUBLIC_SITE_NAME` | Yes | string | Yes | Defaults to "Vitaminaty". |

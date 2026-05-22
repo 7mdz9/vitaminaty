@@ -84,3 +84,18 @@ Or as query params:
 The bypass token MUST NOT be hardcoded, committed, or logged. It is loaded from .env.local for local invocations and from Vercel project env settings for CI invocations.
 
 Forward action for M5+: when real customer / payment data flows through preview deploys, review whether bypass token rotation cadence should tighten (currently same as other High-sensitivity operational secrets per ENVIRONMENT_VARIABLES.md §3 rotation policy).
+
+## Step 8.1 — Vercel env-environment matrix correction
+
+During Step 8 functional verification, /api/health on the preview deploy returned env="development" because VITAMINATY_APP_ENV + NEXT_PUBLIC_APP_ENV were uniformly set to "development" across all three Vercel environments. Corrected the matrix to:
+
+- Production env: VITAMINATY_APP_ENV=production, NEXT_PUBLIC_APP_ENV=production
+- Preview env: VITAMINATY_APP_ENV=staging, NEXT_PUBLIC_APP_ENV=staging
+- Development env: VITAMINATY_APP_ENV=development, NEXT_PUBLIC_APP_ENV=development
+
+This is important because env keys downstream behavior including:
+- Logger output format (pretty in dev, NDJSON in staging/production)
+- Future CSP strictness, cookie settings, rate-limit thresholds
+- Sentry environment tagging (M8)
+
+Re-verification of /api/health on the corrected preview returned env="staging" as expected.
