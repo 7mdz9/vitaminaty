@@ -13,13 +13,13 @@ Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vita
 
 The platform is admin-driven: products import with minimal data and are progressively enriched by the admin team through a purpose-built admin portal. The public site adapts to whatever data exists per product and never shows fake content.
 
-M1 schema is partially landed: migrations 0001-0008 create the schema tables, enums, indexes, and triggers; RLS policies and seed data remain pending in Steps 3-4.
+M1 schema and RLS are partially landed: migrations 0001-0009 create the schema tables, enums, indexes, triggers, and RLS policies; seed data remains pending in Step 4.
 
 ## 2. Current milestone
 
-**M1 - Data layer: Step 2 complete; Step 3 pending.**
+**M1 - Data layer: Step 3 complete; Step 4 pending.**
 
-M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. Next action is M1 Step 3 RLS policies per `docs/DB_SCHEMA.md` Section 9.
+M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. Next action is M1 Step 4 seed data per `docs/DB_SCHEMA.md` Section 10.
 
 ## 3. Stack â€” locked
 
@@ -56,7 +56,9 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
 - **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`. Implemented in Step 6 with `FF_*` env override, repository lookup, then default fallback.
 - **Database schema authored verbatim from DB_SCHEMA.md.** Migrations under `supabase/migrations/` follow `docs/DB_SCHEMA.md` Section 10 4-digit numeric order.
-- **M1 RLS-active pattern - NOT YET ESTABLISHED.** Expected pattern is: RLS active on every PII/admin-only table, with `is_admin()` as the single DB role-check predicate. Current disk state has no `supabase/migrations/0009_rls_policies.sql`.
+- **M1 RLS-active pattern.** RLS is active on every public M1 table; `is_admin()` is the single DB role-check predicate for admin policies.
+- **M1 RLS prose-derived policies.** Policies for `product_variants`, `product_images`, `product_goal_tags`, `slug_history`, `categories`, `goals`, and `md_category_mapping` are authored from DB_SCHEMA.md Section 9 prose and require Step 3 cross-check blessing.
+- **M1 wholesale column isolation.** `products.wholesale_price_internal` uses column-subset SELECT grants for anon/authenticated plus service-role-only access to the wholesale column; local psql reports denied reads as table-level permission denial, while Supabase/Postgres enforcement still prevents access.
 - **Adaptive product rendering follows v1.1 Cases Aâ€“G.** See `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Â§7.
 - **PDP sections render only if data exists.** No empty placeholders, no "coming soon" labels on public side. Admin preview is the exception.
 - **All cart state untrusted at checkout.** Server revalidates prices, stock, totals, VAT, delivery before order creation.
@@ -153,7 +155,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `supabase/migrations/0006_events.sql` | M1 Step 2 payment_events and shipment_events migration. |
 | `supabase/migrations/0007_operations.sql` | M1 Step 2 audit_log and feature_flags migration. |
 | `supabase/migrations/0008_support_chat.sql` | M1 Step 2 support_conversations and support_messages migration. |
-| `supabase/migrations/0009_rls_policies.sql` | MISSING. Expected M1 Step 3 migration per `docs/DB_SCHEMA.md` Sections 9-10. |
+| `supabase/migrations/0009_rls_policies.sql` | M1 Step 3 RLS policies, `is_admin()`, append-only ledger read policies, and wholesale column isolation migration. |
 | `supabase/seed/feature-flags.sql` | Prepared default feature flag seed values; not applied until M1. |
 | `docs/PROJECT_STATE.md` | This file. |
 | `docs/LAST_SESSION.md` | What just happened. |
@@ -169,6 +171,7 @@ Verification debt carried into M1 from the M0 final audit:
 - CLEARED IN M1 STEP 1: `requiredSecret` in `src/lib/env.ts` hardened with `.trim()` to protect against accidental whitespace in pasted secrets.
 - DEFERRED TO M3: Middleware matcher in `src/middleware.ts` should be optimized to exclude static asset paths.
 - CLEARED IN M1 STEP 1: Bundle secret scans must use prefixes â‰¥130 chars when scanning for Supabase JWT-shaped secrets (anon and service_role share header prefix until char position ~110). 8-char prefix scans are useless for JWTs. Forensic dive during M0 Final Audit confirmed: original 8-char hit was prefix collision with the public anon key, no actual leak. Documented in `THREAT_MODEL.md` for M5 webhook verification work.
+- DEVIATION FOR STEP 3 CROSS-CHECK: DB_SCHEMA.md Section 9 authorizes `REVOKE SELECT (wholesale_price_internal)`, but Postgres table-level SELECT grants are additive and cannot be subtractively denied per column. `0009_rls_policies.sql` therefore revokes table SELECT on `products` from anon/authenticated and grants SELECT back on every non-wholesale column. The negative test denies access, but local psql reports `permission denied for table products` rather than `permission denied for column wholesale_price_internal`.
 - Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
 
 ## 7. What is intentionally not built yet (and which milestone owns it)
@@ -211,9 +214,9 @@ Until every box ticks, the production deploy keeps the `commerce_enabled` featur
 
 | Surface | Status |
 |---|---|
-| Production data paths | yes - schema landed |
-| PII | yes - customers/addresses/orders tables created |
-| RLS enforcement | pending Step 3 |
+| Production data paths | yes - schema and RLS landed |
+| PII | yes - customers/addresses/orders tables created and RLS active |
+| RLS enforcement | active as of M1 Step 3 |
 | Seed data | pending Step 4 |
 
 ## Recon — M1 entry — 2026-05-22

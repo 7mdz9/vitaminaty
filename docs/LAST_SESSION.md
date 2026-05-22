@@ -3,70 +3,49 @@
 **Project:** Vitaminaty
 **Last updated:** 2026-05-22
 **Milestone:** M1 - Data layer
-**Step:** Step 2 - schema migrations 0001-0008
+**Step:** Step 3 - RLS policies 0009
 **Status:** complete
 
 ---
 
 ## What succeeded
 
-- Replaced the stale pre-Step-2 placeholder migration layout with the DB_SCHEMA.md Section 10 migration sequence.
-- Deleted the old prepared `supabase/migrations/0005_feature_flags.sql`.
-- Added migrations `0001_extensions_and_enums.sql` through `0008_support_chat.sql`.
-- Folded `feature_flags` table DDL into `0007_operations.sql` after `audit_log`, with DB_SCHEMA.md Section 8.2 winning over the old M0 prepared migration.
-- Did not enable RLS, did not create `is_admin()`, and did not seed data.
-- Added Supabase CLI as a dev dependency and added `db:reset` / `db:apply` scripts.
-- Applied the migrations locally with Supabase and confirmed the idempotency hard gate.
+- Added `supabase/migrations/0009_rls_policies.sql`.
+- Created `is_admin()` from `docs/DB_SCHEMA.md` Section 9.1.
+- Enabled RLS on all 19 public M1 tables.
+- Added explicit DB_SCHEMA.md Section 9 policies plus prose-derived policies for product child tables, categories, goals, and `md_category_mapping`.
+- Kept `payment_events`, `shipment_events`, and `audit_log` append-only from client roles: each has admin SELECT only and no INSERT/UPDATE/DELETE policies.
+- Applied wholesale column isolation for `products.wholesale_price_internal`.
+- Used a transient real-session Supabase JS smoke test for customer order isolation, then deleted the script so TypeScript/lint scopes stay clean.
 
 ## Files touched
 
-- `supabase/migrations/0001_extensions_and_enums.sql`
-- `supabase/migrations/0002_reference_tables.sql`
-- `supabase/migrations/0003_products.sql`
-- `supabase/migrations/0004_customers_addresses.sql`
-- `supabase/migrations/0005_orders.sql`
-- `supabase/migrations/0006_events.sql`
-- `supabase/migrations/0007_operations.sql`
-- `supabase/migrations/0008_support_chat.sql`
-- `package.json`
-- `pnpm-lock.yaml`
+- `supabase/migrations/0009_rls_policies.sql`
 - `docs/PROJECT_STATE.md`
 - `docs/THREAT_MODEL.md`
 - `docs/LAST_SESSION.md`
-
-## Files deleted
-
-- `supabase/migrations/0001_initial_schema.sql`
-- `supabase/migrations/0002_products_brands_categories.sql`
-- `supabase/migrations/0003_orders_cart_payments.sql`
-- `supabase/migrations/0004_audit_log.sql`
-- `supabase/migrations/0005_feature_flags.sql`
-- `supabase/migrations/0006_support_chat.sql`
-- `supabase/migrations/0007_rls_policies.sql`
 
 ## Verification
 
 - `pnpm typecheck` passed.
 - `pnpm lint` passed.
 - `pnpm build` passed.
-- `pnpm format:check` passed.
-- `pnpm exec supabase --version` passed and reported `2.101.0`.
-- `pnpm exec supabase start` passed after Docker Desktop was started.
-- `pnpm exec supabase db reset` passed twice in a row: exit codes `0`, `0`.
-- Migration file inventory contains exactly the expected Step 2 files: `0001_extensions_and_enums.sql` through `0008_support_chat.sql`.
-- Local schema checks passed using `psql` inside the local Supabase Postgres container:
-  - `product_status` enum count: `1`.
-  - `order_status` enum count: `1`.
-  - public tables with RLS enabled: `0`.
-  - `products.wholesale_price_internal` exists.
-  - expected tables, enums, indexes, and triggers all present.
+- `pnpm exec supabase db reset` passed.
+- `pnpm exec supabase db reset` idempotency gate passed twice in a row: exit codes `0`, `0`.
+- `is_admin()` count returned `1`.
+- Public tables with RLS enabled returned `19`.
+- `products_public_read` policy count returned `1`.
+- `anon` SELECT privilege on `products.wholesale_price_internal` returned `0`.
+- INSERT/UPDATE/DELETE policies on `payment_events`, `shipment_events`, and `audit_log` returned `0`.
+- Negative test 1: `set role anon; select wholesale_price_internal from products limit 1; reset role;` failed with permission denied. Postgres reported `permission denied for table products` because the implementation uses column-subset SELECT grants to enforce wholesale isolation.
+- Negative test 2: real Supabase JS session for customer A saw `0` of customer B's orders and `1` of its own seeded orders.
 
 ## Notes
 
-- Host `psql` is not installed on PATH, so read-only DB verification queries were run through Docker Desktop against `supabase_db_vitaminaty` with container-local `psql`.
-- Docker CLI is not on PATH as `docker`, but Docker Desktop's `docker.exe` was available at `C:\Program Files\Docker\Docker\resources\bin\docker.exe`.
-- Supabase local startup printed local development keys and credentials to command output; these are local defaults only and were not copied into state docs.
+- The expected psql wording in the Step 3 prompt was `permission denied for column wholesale_price_internal`. Local Postgres does not produce that wording for a secure column-subset SELECT grant model; it reports table-level permission denial when a denied column is selected. This deviation is recorded in `docs/PROJECT_STATE.md` for cross-check.
+- The transient smoke test did not use `set_config('request.jwt.claims', ...)`; it used `auth.admin.createUser`, `signInWithPassword`, and session-carrying Supabase JS clients.
+- Local PostgREST needed a container restart after reset before the real-session smoke test saw the fresh schema cache.
 
 ## Intended next step
 
-Execute M1 Step 3. Read `docs/DB_SCHEMA.md` Section 9 for RLS policies.
+Execute M1 Step 4 seed data. Read `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Sections 12.2, 13.1, 13.3, and 15, plus `docs/DECISION_CAPTURE.md` Section 4.

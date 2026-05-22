@@ -159,7 +159,7 @@ Researches Vitaminaty specifically. Attempts admin portal compromise via phishin
 
 ### 5.3 Customer data access (Zone 1 → Zone 3)
 
-- RLS policies on every table containing customer data.
+- RLS policies on every table containing customer data. Verified at M1 Step 3.
 - `customers`, `addresses`, `orders`, `order_items` policies: rows visible only when `auth.uid() = customer_id`.
 - Anon key (used in client) cannot bypass RLS. Service role key (used server-side) can, and is only invoked in `src/server/repositories/*`.
 - Server-side mutations validate `customer_id` against `auth.uid()` before any write.
@@ -272,6 +272,7 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-05-22 | 1.0.11 | Step 3 of M1: 0009 RLS applied locally; wholesale REVOKE/GRANT verified; negative tests passed with documented psql table-level denial wording for wholesale column isolation. |
 | 2026-05-22 | 1.0.10 | Step 2 of M1: schema migrations 0001-0008 applied locally. RLS deferred to Step 3. |
 | 2026-05-22 | 1.0.9 | M1 Step 1: M0 verification debt cleanup + M1 data-layer recon; JWT prefix scan rule documented. |
 | 2026-05-22 | 1.0.8 | M0 Final Audit consolidation: state file alignment + verification debt logged for M1. |
