@@ -13,11 +13,13 @@ Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vita
 
 The platform is admin-driven: products import with minimal data and are progressively enriched by the admin team through a purpose-built admin portal. The public site adapts to whatever data exists per product and never shows fake content.
 
+M1 schema is partially landed: migrations 0001-0008 create the schema tables, enums, indexes, and triggers; RLS policies and seed data remain pending in Steps 3-4.
+
 ## 2. Current milestone
 
-**M1 - Data layer: Step 1 complete; Step 2 pending.**
+**M1 - Data layer: Step 2 complete; Step 3 pending.**
 
-M0 is complete. M1 Step 1 housekeeping/recon is complete. Next action is M1 Step 2 schema migrations per `docs/DB_SCHEMA.md` Section 10.
+M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. Next action is M1 Step 3 RLS policies per `docs/DB_SCHEMA.md` Section 9.
 
 ## 3. Stack â€” locked
 
@@ -53,7 +55,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **All slugs immutable once published.** Slug history table tracks old â†’ new slug for 301 redirects.
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
 - **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`. Implemented in Step 6 with `FF_*` env override, repository lookup, then default fallback.
-- **M1 database migration pattern - NOT YET ESTABLISHED.** Expected pattern is: migrations in `supabase/migrations/` follow `docs/DB_SCHEMA.md` Section 10 4-digit numeric order. Current disk state still has the pre-Step-2 placeholder layout and must not be treated as schema-complete.
+- **Database schema authored verbatim from DB_SCHEMA.md.** Migrations under `supabase/migrations/` follow `docs/DB_SCHEMA.md` Section 10 4-digit numeric order.
 - **M1 RLS-active pattern - NOT YET ESTABLISHED.** Expected pattern is: RLS active on every PII/admin-only table, with `is_admin()` as the single DB role-check predicate. Current disk state has no `supabase/migrations/0009_rls_policies.sql`.
 - **Adaptive product rendering follows v1.1 Cases Aâ€“G.** See `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Â§7.
 - **PDP sections render only if data exists.** No empty placeholders, no "coming soon" labels on public side. Admin preview is the exception.
@@ -143,15 +145,14 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/features/support-chat/null-provider.ts` | Null support chat provider. |
 | `src/features/support-chat/safety-boundaries.ts` | Support chat safety scope and refusal text constants. |
 | `src/features/support-chat/index.ts` | Support chat provider selector. |
-| `supabase/migrations/0005_feature_flags.sql` | Prepared feature flags migration; not applied until M1. |
-| `supabase/migrations/0001_extensions_and_enums.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
-| `supabase/migrations/0002_reference_tables.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
-| `supabase/migrations/0003_products.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
-| `supabase/migrations/0004_customers_addresses.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
-| `supabase/migrations/0005_orders.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
-| `supabase/migrations/0006_events.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
-| `supabase/migrations/0007_operations.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
-| `supabase/migrations/0008_support_chat.sql` | MISSING. Expected M1 Step 2 migration per `docs/DB_SCHEMA.md` Section 10. |
+| `supabase/migrations/0001_extensions_and_enums.sql` | M1 Step 2 extensions and enum types migration. |
+| `supabase/migrations/0002_reference_tables.sql` | M1 Step 2 brands, categories, md_category_mapping, and goals migration. |
+| `supabase/migrations/0003_products.sql` | M1 Step 2 products, variants, images, goal tags, slug history, and update trigger migration. |
+| `supabase/migrations/0004_customers_addresses.sql` | M1 Step 2 customers and addresses migration. |
+| `supabase/migrations/0005_orders.sql` | M1 Step 2 orders and order_items migration. |
+| `supabase/migrations/0006_events.sql` | M1 Step 2 payment_events and shipment_events migration. |
+| `supabase/migrations/0007_operations.sql` | M1 Step 2 audit_log and feature_flags migration. |
+| `supabase/migrations/0008_support_chat.sql` | M1 Step 2 support_conversations and support_messages migration. |
 | `supabase/migrations/0009_rls_policies.sql` | MISSING. Expected M1 Step 3 migration per `docs/DB_SCHEMA.md` Sections 9-10. |
 | `supabase/seed/feature-flags.sql` | Prepared default feature flag seed values; not applied until M1. |
 | `docs/PROJECT_STATE.md` | This file. |
@@ -163,7 +164,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 ## 6. Known issues / open questions
 
 Verification debt carried into M1 from the M0 final audit:
-- OWNED BY M1 STEP 2 / STILL OPEN: `feature_flags` migration prepared in Step 6 but not yet applied. Step 2 has not landed; stale `supabase/migrations/0005_feature_flags.sql` still exists.
+- CLEARED IN M1 STEP 2: `feature_flags` table DDL folded into `supabase/migrations/0007_operations.sql`; stale `supabase/migrations/0005_feature_flags.sql` removed. Seed values remain in `supabase/seed/feature-flags.sql` for Step 4.
 - CLEARED IN M1 STEP 1: `src/middleware.ts` (root file) needs a one-line authz comment (Step 2 cross-check carry-forward).
 - CLEARED IN M1 STEP 1: `requiredSecret` in `src/lib/env.ts` hardened with `.trim()` to protect against accidental whitespace in pasted secrets.
 - DEFERRED TO M3: Middleware matcher in `src/middleware.ts` should be optimized to exclude static asset paths.
@@ -205,6 +206,15 @@ Verification debt carried into M1 from the M0 final audit:
 - [ ] Threat model reviewed against final implementation (M8)
 
 Until every box ticks, the production deploy keeps the `commerce_enabled` feature flag off (or the site stays in private/staging mode).
+
+## 9. HIGH_RIGOR Surface
+
+| Surface | Status |
+|---|---|
+| Production data paths | yes - schema landed |
+| PII | yes - customers/addresses/orders tables created |
+| RLS enforcement | pending Step 3 |
+| Seed data | pending Step 4 |
 
 ## Recon — M1 entry — 2026-05-22
 

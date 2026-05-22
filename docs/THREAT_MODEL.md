@@ -272,6 +272,7 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-05-22 | 1.0.10 | Step 2 of M1: schema migrations 0001-0008 applied locally. RLS deferred to Step 3. |
 | 2026-05-22 | 1.0.9 | M1 Step 1: M0 verification debt cleanup + M1 data-layer recon; JWT prefix scan rule documented. |
 | 2026-05-22 | 1.0.8 | M0 Final Audit consolidation: state file alignment + verification debt logged for M1. |
 | 2026-05-22 | 1.0.7 | Step 8.2 of M0: CI placeholder fix for requiredSecret length validation. |
