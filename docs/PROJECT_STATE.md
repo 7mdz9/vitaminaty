@@ -67,6 +67,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `.prettierrc` | Prettier formatting policy. |
 | `.prettierignore` | Prevents broad spec/reference formatting churn during M0. |
 | `.eslintrc.json` | Next.js + TypeScript lint config with Step 2 import-boundary and direct-env-read restrictions. |
+| `.github/workflows/ci.yml` | GitHub Actions CI pipeline for typecheck, lint, format-check, build, and tests. |
+| `vercel.json` | Vercel Next.js project config pinned to `fra1` region. |
 | `next.config.ts` | Minimal Next.js config with default security posture preserved and build-time env validation. |
 | `postcss.config.mjs` | Tailwind CSS + Autoprefixer PostCSS config. |
 | `tailwind.config.ts` | Tailwind theme extensions mirroring prototype design tokens. |
