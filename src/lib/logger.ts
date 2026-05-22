@@ -37,6 +37,8 @@ export const REDACTION_KEYS: ReadonlySet<string> = Object.freeze(
     "supabase_jwt_secret",
     "supabase_db_password",
     "admin_session_secret",
+    "upstash_redis_rest_token",
+    "sentry_dsn",
     "email",
     "phone",
     "phone_number",

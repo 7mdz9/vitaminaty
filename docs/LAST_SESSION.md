@@ -57,3 +57,39 @@ Execute M0 Step 4. Read `docs/proj_spec.md` section M0 for lib utilities and mon
 - Result: clean
 - Redaction-list-empty sanity check: passed
 - Files modified: `docs/LAST_SESSION.md`
+
+## Cross-check sweep — Step 2 (meta-model review)
+
+- Verdict: clean
+- All six SECURITY INVARIANTS (Part 2.2) held.
+- All six M0-specific invariants (I-M0-1 through I-M0-6) held.
+- Pre-M0 review Notes 1, 3, and 4 were correctly applied.
+
+Forward actions carried into Step 3 / future:
+
+- Step 3 must add `upstash_redis_rest_token` and `sentry_dsn` to the `REDACTION_KEYS` set. This was the I-S4 forward-check finding: they are env vars in `docs/ENVIRONMENT_VARIABLES.md` sections 2.7 and 2.8 but were missing from the redaction list specified in the Step 3 prompt.
+
+Minor recommendations, not blocking and still applicable for future steps:
+
+- Add a one-line authz comment to `src/middleware.ts` (the root file).
+- Change `requiredSecret` from `z.string().min(32)` to `z.string().trim().min(32)` to protect against accidental whitespace in secret values.
+- Optimize the middleware matcher in M3 to exclude static asset paths.
+
+## Cross-check sweep — Step 3 (meta-model review)
+
+- Verdict: clean (with one minor forward action)
+- All seven Step 3 invariants (I-S6 through I-S12) held.
+- Redaction key set is single-source-of-truth at `src/lib/logger.ts`; auditable.
+- No escape hatch present; logger object is frozen with only `debug`, `info`, `warn`, and `error`.
+- No Layer-2+ imports; logger remains pure Layer 1.
+- Sanity check (redaction-list-empty) was run during debug sweep and confirmed.
+
+Forward action applied before Step 4:
+
+- Added `upstash_redis_rest_token` and `sentry_dsn` to `REDACTION_KEYS`, carried forward from the Step 2 cross-check finding that the Step 3 prompt's specified redaction list was missing these two env vars from `docs/ENVIRONMENT_VARIABLES.md` sections 2.7 and 2.8.
+
+Carried minor recommendations from Step 2, still applicable and available for any future step:
+
+- Add a one-line authz comment to `src/middleware.ts` (the root file).
+- Change `requiredSecret` from `z.string().min(32)` to `z.string().trim().min(32)`.
+- Optimize the middleware matcher in M3 to exclude static asset paths.
