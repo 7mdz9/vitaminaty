@@ -238,6 +238,7 @@ UAE Federal Decree-Law No. 45 of 2021 (Personal Data Protection Law, "PDPL") app
 | Brute force of order confirmation URLs | Order IDs are UUIDs (128 bits, unpredictable) | UUID entropy sufficient |
 | Webhook from forged source | HMAC signature verification + timestamp window | Adequate |
 | Supabase service role key leak | Strict ESLint rules, no client imports, rotation every 90 days | Defense in depth via RLS still protects most paths |
+| Supabase JWT prefix-collision false positives in bundle secret scans | M1 Step 1 records two coupled rules for M5 and applies the scan rule in M1 Step 5: use live key value prefixes of at least 130 chars for JWT-shaped tokens, never env-var names | Supabase anon and service-role JWTs share header prefix until about char 110; env-var names legitimately appear in compiled bundles due to `src/lib/env.ts` Zod validation |
 | PDPL retention defaults applied before legal sign-off | Defaults in `THREAT_MODEL.md` §5.10 are recommended policy; M8 milestone includes mandatory UAE legal counsel review before launch | Required gate before commerce launch; tracked in `CONTEXT_EXPANSION_NOTES.md` §5 |
 | Paymob/iCarry hypothesis-based interface design | Adapter pattern isolates concrete impl from spec; M5/M6 verify against live docs and revise if needed | See `CONTEXT_EXPANSION_NOTES.md` §3, §4 |
 
@@ -271,6 +272,7 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-05-22 | 1.0.9 | M1 Step 1: M0 verification debt cleanup + M1 data-layer recon; JWT prefix scan rule documented. |
 | 2026-05-22 | 1.0.8 | M0 Final Audit consolidation: state file alignment + verification debt logged for M1. |
 | 2026-05-22 | 1.0.7 | Step 8.2 of M0: CI placeholder fix for requiredSecret length validation. |
 | 2026-05-22 | 1.0.6 | Step 8.1 of M0: Vercel env-environment matrix correction (Production->production, Preview->staging, Development->development). |

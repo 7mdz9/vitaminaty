@@ -58,4 +58,15 @@ describe("env loader", () => {
     expect(parsed.NEXT_PUBLIC_SUPABASE_URL).toBe(validEnv.NEXT_PUBLIC_SUPABASE_URL);
     expect("SUPABASE_SERVICE_ROLE_KEY" in parsed).toBe(false);
   });
+
+  it("trims required secrets before enforcing length", () => {
+    const parsed = parseEnv({
+      ...validEnv,
+      ADMIN_SESSION_SECRET: `  ${"a".repeat(32)}  `,
+      IDEMPOTENCY_HMAC_SECRET: `  ${"b".repeat(32)}  `,
+    });
+
+    expect(parsed.ADMIN_SESSION_SECRET).toBe("a".repeat(32));
+    expect(parsed.IDEMPOTENCY_HMAC_SECRET).toBe("b".repeat(32));
+  });
 });
