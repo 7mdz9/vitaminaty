@@ -79,17 +79,19 @@ Minor recommendations, not blocking and still applicable for future steps:
 
 - Verdict: clean (with one minor forward action)
 - All seven Step 3 invariants (I-S6 through I-S12) held.
-- Redaction key set is single-source-of-truth at `src/lib/logger.ts`; auditable.
-- No escape hatch present; logger object is frozen with only `debug`, `info`, `warn`, and `error`.
+- Redaction key set is single-source-of-truth at src/lib/logger.ts; auditable.
+- No escape hatch present; logger object is frozen with only debug/info/warn/error.
 - No Layer-2+ imports; logger remains pure Layer 1.
 - Sanity check (redaction-list-empty) was run during debug sweep and confirmed.
 
-Forward action applied before Step 4:
+Forward action (applied in this step):
 
-- Added `upstash_redis_rest_token` and `sentry_dsn` to `REDACTION_KEYS`, carried forward from the Step 2 cross-check finding that the Step 3 prompt's specified redaction list was missing these two env vars from `docs/ENVIRONMENT_VARIABLES.md` sections 2.7 and 2.8.
+- Added `upstash_redis_rest_token` and `sentry_dsn` to REDACTION_KEYS — carried forward
+  from Step 2 cross-check finding that the Step 3 prompt's specified redaction list
+  was missing these two env vars from ENVIRONMENT_VARIABLES.md §2.7 and §2.8.
 
-Carried minor recommendations from Step 2, still applicable and available for any future step:
+Carried minor recommendations from Step 2 (still applicable, can be picked up any future step):
 
-- Add a one-line authz comment to `src/middleware.ts` (the root file).
-- Change `requiredSecret` from `z.string().min(32)` to `z.string().trim().min(32)`.
+- Add a one-line authz comment to src/middleware.ts (the root file).
+- Change requiredSecret from z.string().min(32) to z.string().trim().min(32).
 - Optimize the middleware matcher in M3 to exclude static asset paths.
