@@ -1,5 +1,4 @@
 {
-  "_comment": "Deploy functions in fra1 (Frankfurt) for UAE/PDPL data-residency posture per docs/THREAT_MODEL.md section 5.10.",
   "framework": "nextjs",
   "regions": ["fra1"]
 }
