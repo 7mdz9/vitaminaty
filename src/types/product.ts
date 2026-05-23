@@ -52,6 +52,7 @@ export type ProductAdminReviewFlags = Partial<
   Record<
     | "missing_price"
     | "missing_image"
+    | "missing_stock_quantity"
     | "case_pack"
     | "duplicate_suspected"
     | "multiple_price_pairs"
@@ -91,7 +92,7 @@ export interface ProductVariantRecord {
   sku: string | null;
   barcode: string | null;
   price_aed: number;
-  in_stock: boolean;
+  stock_status: "in_stock" | "low_stock" | "out_of_stock";
   stock_quantity: number | null;
   low_stock_threshold: number;
   weight_grams: number | null;

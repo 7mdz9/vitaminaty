@@ -46,6 +46,7 @@ It does **not** cover:
 | Wholesale prices | High — competitor-sensitive | `products.wholesale_price_internal` (RLS-locked to admin only) |
 | Supplier list | Medium | `brands` table relationship to admin notes |
 | Admin user list | High | Supabase Auth `app_metadata.role='admin'` |
+| Inventory movement ledger | Medium - operational integrity | `inventory_movements` table (append-only, admin-read RLS only; no customer PII) |
 | Audit log | High — tampering would mask bad acts | `audit_log` table (append-only) |
 
 ### 2.3 Operational secrets
@@ -163,7 +164,10 @@ Researches Vitaminaty specifically. Attempts admin portal compromise via phishin
 - `customers`, `addresses`, `orders`, `order_items` policies: rows visible only when `auth.uid() = customer_id`.
 - Anon key (used in client) cannot bypass RLS. Service role key (used server-side) can, and is only invoked in `src/server/repositories/*`.
 - Server-side mutations validate `customer_id` against `auth.uid()` before any write.
+- Verified at M1 Step 7 recovery via `tests/integration/repositories/rls-cross-checks.test.ts` (5 assertions plus paired sanity assertions, using real signed Supabase sessions and no `set_config` JWT simulation).
 M1 RLS posture relies on Supabase's default behavior where the service_role bypasses RLS. Any future migration to a non-Supabase service account would require explicit policy updates.
+
+M1 addendum 0012 adds `inventory_movements` as a new admin-read RLS-gated table following the M1 append-only ledger pattern. No customer PII is stored in this table; writes are service-role-only through `src/server/repositories/inventory-movement-repository.ts`, and no INSERT/UPDATE/DELETE RLS policies exist. The new surface does not add customer-data exposure beyond the existing service-role admin write path.
 
 ### 5.4 Admin portal (Zone A)
 
@@ -274,6 +278,11 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-05-23 | 1.0.17 | M1 addendum 0012 of M1 spec evolution: inventory tracking schema landed; `stock_status` trigger-derived; `inventory_movements` append-only with admin-read RLS only; `missing_stock_quantity` flag emitted for 787 imported products. |
+| 2026-05-23 | 1.0.16 | M1 Final Audit recovery: column-level write grants on `wholesale_price_internal` revoked from anon and authenticated via `0011_wholesale_revoke_writes.sql`; defense-in-depth restored to match DB_SCHEMA §9.2 intent; column-revoke regression test added. |
+| 2026-05-23 | 1.0.15 | M1 Step 7 recovery: append-only event repositories split into dedicated files; canonical RLS regression suite added; auth-state coupling with db reset documented. |
+| 2026-05-23 | 1.0.14 | M1 Step 7: PII and operational repositories implemented with local Supabase integration tests for customer/order RLS owner isolation and service-role event/audit/support paths. |
+| 2026-05-23 | 1.0.13 | Steps 4-6 boundary refresh: reference seed, `src/server/db/*` wrappers, bundle scan, and non-PII repositories reflected in state files; admin/public repository split documented. |
 | 2026-05-23 | 1.0.12 | Step 5 of M1: `src/server/db/*` wrappers added; bundle scan implemented as value-prefix scan in `scripts/scan-bundle-secrets.sh`; clean. |
 | 2026-05-22 | 1.0.11 | Step 3 of M1: 0009 RLS applied locally; wholesale REVOKE/GRANT verified; negative tests passed with documented psql table-level denial wording for wholesale column isolation. |
 | 2026-05-22 | 1.0.10 | Step 2 of M1: schema migrations 0001-0008 applied locally. RLS deferred to Step 3. |
@@ -290,4 +299,4 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 ---
 
-_End of `THREAT_MODEL.md` v1.0.1._
+_End of `THREAT_MODEL.md` v1.0.13._

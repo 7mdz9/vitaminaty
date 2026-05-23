@@ -318,6 +318,70 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_movements: {
+        Row: {
+          change_amount: number
+          change_reason_note: string | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_quantity: number
+          order_id: string | null
+          previous_quantity: number | null
+          product_id: string
+          reason: Database["public"]["Enums"]["inventory_movement_reason"]
+          variant_id: string
+        }
+        Insert: {
+          change_amount: number
+          change_reason_note?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_quantity: number
+          order_id?: string | null
+          previous_quantity?: number | null
+          product_id: string
+          reason: Database["public"]["Enums"]["inventory_movement_reason"]
+          variant_id: string
+        }
+        Update: {
+          change_amount?: number
+          change_reason_note?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_quantity?: number
+          order_id?: string | null
+          previous_quantity?: number | null
+          product_id?: string
+          reason?: Database["public"]["Enums"]["inventory_movement_reason"]
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       md_category_mapping: {
         Row: {
           default_public_category_slug: string | null
@@ -649,7 +713,6 @@ export type Database = {
           created_at: string
           flavor: string | null
           id: string
-          in_stock: boolean
           low_stock_threshold: number
           price_aed: number
           product_id: string
@@ -657,6 +720,7 @@ export type Database = {
           sku: string | null
           sort_order: number
           stock_quantity: number | null
+          stock_status: Database["public"]["Enums"]["stock_status"]
           updated_at: string
           weight_grams: number | null
         }
@@ -665,7 +729,6 @@ export type Database = {
           created_at?: string
           flavor?: string | null
           id?: string
-          in_stock?: boolean
           low_stock_threshold?: number
           price_aed: number
           product_id: string
@@ -673,6 +736,7 @@ export type Database = {
           sku?: string | null
           sort_order?: number
           stock_quantity?: number | null
+          stock_status?: Database["public"]["Enums"]["stock_status"]
           updated_at?: string
           weight_grams?: number | null
         }
@@ -681,7 +745,6 @@ export type Database = {
           created_at?: string
           flavor?: string | null
           id?: string
-          in_stock?: boolean
           low_stock_threshold?: number
           price_aed?: number
           product_id?: string
@@ -689,6 +752,7 @@ export type Database = {
           sku?: string | null
           sort_order?: number
           stock_quantity?: number | null
+          stock_status?: Database["public"]["Enums"]["stock_status"]
           updated_at?: string
           weight_grams?: number | null
         }
@@ -986,6 +1050,14 @@ export type Database = {
         | "angle"
         | "open"
         | "lifestyle"
+      inventory_movement_reason:
+        | "manual_adjustment"
+        | "order_placed"
+        | "order_cancelled"
+        | "payment_failed"
+        | "refund_returned"
+        | "stock_recount"
+        | "import_update"
       order_status:
         | "pending_payment"
         | "paid"
@@ -1030,6 +1102,7 @@ export type Database = {
         | "delivery_failed"
         | "returned"
         | "cancelled"
+      stock_status: "in_stock" | "low_stock" | "out_of_stock"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1186,6 +1259,15 @@ export const Constants = {
         "open",
         "lifestyle",
       ],
+      inventory_movement_reason: [
+        "manual_adjustment",
+        "order_placed",
+        "order_cancelled",
+        "payment_failed",
+        "refund_returned",
+        "stock_recount",
+        "import_update",
+      ],
       order_status: [
         "pending_payment",
         "paid",
@@ -1235,6 +1317,7 @@ export const Constants = {
         "returned",
         "cancelled",
       ],
+      stock_status: ["in_stock", "low_stock", "out_of_stock"],
     },
   },
 } as const

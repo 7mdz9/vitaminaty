@@ -1,4 +1,4 @@
-export type PaymentMethod = "cards" | "apple_pay" | "tabby" | "tamara" | "cod";
+export type PaymentMethod = "card" | "apple_pay" | "tabby" | "tamara" | "cod";
 
 export type PaymentStatus =
   | "stub_pending"

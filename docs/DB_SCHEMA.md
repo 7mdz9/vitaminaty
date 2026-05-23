@@ -127,6 +127,26 @@ CREATE TYPE audit_action AS ENUM (
   'image_upload',
   'role_change'
 );
+
+-- Added in M1 addendum migration 0012 (inventory tracking). DDL lives in 0012,
+-- documented here in §3 for catalog completeness. See INVENTORY_SPEC.md.
+CREATE TYPE stock_status AS ENUM (
+  'in_stock',
+  'low_stock',
+  'out_of_stock'
+);
+
+-- Added in M1 addendum migration 0012 (inventory tracking). DDL lives in 0012,
+-- documented here in §3 for catalog completeness. See INVENTORY_SPEC.md §4.3.
+CREATE TYPE inventory_movement_reason AS ENUM (
+  'manual_adjustment',
+  'order_placed',
+  'order_cancelled',
+  'payment_failed',
+  'refund_returned',
+  'stock_recount',
+  'import_update'
+);
 ```
 
 ---
@@ -313,9 +333,13 @@ CREATE TABLE product_variants (
   sku text UNIQUE,
   barcode text,
   price_aed int NOT NULL CHECK (price_aed > 0),
-  in_stock boolean NOT NULL DEFAULT true,
+  -- in_stock boolean dropped in migration 0012; stock_status is now the source of truth.
+  -- See INVENTORY_SPEC.md §3.6 for migration rationale.
   stock_quantity int CHECK (stock_quantity IS NULL OR stock_quantity >= 0),
   low_stock_threshold int NOT NULL DEFAULT 5,
+  -- Added in migration 0012. Computed by the compute_stock_status() trigger; never written directly.
+  -- See INVENTORY_SPEC.md §3.3.
+  stock_status stock_status NOT NULL DEFAULT 'out_of_stock',
   weight_grams int CHECK (weight_grams IS NULL OR weight_grams > 0),
   sort_order int NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -325,12 +349,38 @@ CREATE TABLE product_variants (
 
 CREATE INDEX variants_product_idx ON product_variants(product_id);
 CREATE INDEX variants_sku_idx ON product_variants(sku);
-CREATE INDEX variants_low_stock_idx 
+
+-- Rewritten in migration 0012: filter changed from `in_stock = true AND stock_quantity IS NOT NULL`
+-- to `stock_status = 'low_stock'`. Drives admin /admin/queues/low-stock queue and dashboard widget.
+CREATE INDEX variants_low_stock_idx
   ON product_variants(stock_quantity)
-  WHERE in_stock = true AND stock_quantity IS NOT NULL;
+  WHERE stock_status = 'low_stock';
+
+-- Added in migration 0012. Supports storefront (M3) and admin queue filtering on stock_status.
+CREATE INDEX variants_stock_status_idx
+  ON product_variants(stock_status);
 
 CREATE TRIGGER variants_updated_at BEFORE UPDATE ON product_variants
   FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+-- Added in migration 0012. Maintains stock_status from stock_quantity + low_stock_threshold.
+-- Application code must NEVER write stock_status directly. See INVENTORY_SPEC.md §3.3.
+CREATE OR REPLACE FUNCTION compute_stock_status()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.stock_quantity IS NULL OR NEW.stock_quantity <= 0 THEN
+    NEW.stock_status := 'out_of_stock';
+  ELSIF NEW.stock_quantity <= NEW.low_stock_threshold THEN
+    NEW.stock_status := 'low_stock';
+  ELSE
+    NEW.stock_status := 'in_stock';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER variants_compute_stock_status
+  BEFORE INSERT OR UPDATE OF stock_quantity, low_stock_threshold ON product_variants
+  FOR EACH ROW EXECUTE FUNCTION compute_stock_status();
 ```
 
 ### 5.3 `product_images`
@@ -655,6 +705,43 @@ CREATE TABLE support_messages (
 CREATE INDEX support_messages_convo_idx ON support_messages(conversation_id);
 ```
 
+### 8.4 `inventory_movements` (added in M1 addendum migration 0012)
+
+Append-only ledger of every change to `product_variants.stock_quantity`. Architectural pattern matches `payment_events`, `shipment_events`, `audit_log` (append-only via service role; admin SELECT only; no UPDATE/DELETE policies). Full spec: `INVENTORY_SPEC.md §4`.
+
+```sql
+CREATE TABLE inventory_movements (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  variant_id uuid NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
+  previous_quantity int CHECK (previous_quantity IS NULL OR previous_quantity >= 0),
+  new_quantity int NOT NULL CHECK (new_quantity >= 0),
+  change_amount int NOT NULL,            -- signed: positive=increment, negative=decrement
+  reason inventory_movement_reason NOT NULL,
+  change_reason_note text,               -- optional freetext from admin
+  changed_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  changed_at timestamptz NOT NULL DEFAULT now(),
+  order_id uuid REFERENCES orders(id) ON DELETE SET NULL,
+  -- order_id is populated when reason ∈ {order_placed, order_cancelled, payment_failed, refund_returned}
+  CONSTRAINT inventory_movements_change_consistency
+    CHECK (change_amount = new_quantity - COALESCE(previous_quantity, 0)
+        OR reason = 'stock_recount')
+);
+
+CREATE INDEX inventory_movements_variant_idx
+  ON inventory_movements(variant_id, changed_at DESC);
+
+CREATE INDEX inventory_movements_product_idx
+  ON inventory_movements(product_id, changed_at DESC);
+
+CREATE INDEX inventory_movements_order_idx
+  ON inventory_movements(order_id)
+  WHERE order_id IS NOT NULL;
+
+CREATE INDEX inventory_movements_reason_idx
+  ON inventory_movements(reason, changed_at DESC);
+```
+
 ---
 
 ## 9. RLS policies
@@ -852,13 +939,27 @@ CREATE POLICY support_msg_via_convo ON support_messages
   ));
 ```
 
+### 9.10 Inventory movements (added in M1 addendum migration 0012)
+
+```sql
+ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY inventory_movements_admin_read ON inventory_movements
+  FOR SELECT TO authenticated
+  USING (is_admin());
+
+-- INSERT via service role only.
+-- No UPDATE or DELETE policies. Append-only ledger.
+-- See INVENTORY_SPEC.md §4.4.
+```
+
 ---
 
 ## 10. Migration sequence (M1)
 
 Migrations are applied in numeric order. M1 ships these:
 
-1. `0001_extensions_and_enums.sql` — extensions + ENUM types
+1. `0001_extensions_and_enums.sql` — extensions + ENUM types (core M1 enums only; the inventory enums `stock_status` and `inventory_movement_reason` are documented in §3 for catalog completeness but their CREATE TYPE DDL lives in the 0012 addendum below to keep that addendum self-contained).
 2. `0002_reference_tables.sql` — brands, categories, md_category_mapping, goals
 3. `0003_products.sql` — products + variants + images + goal_tags + slug_history
 4. `0004_customers_addresses.sql`
@@ -868,6 +969,25 @@ Migrations are applied in numeric order. M1 ships these:
 8. `0008_support_chat.sql` — support_conversations + support_messages
 9. `0009_rls_policies.sql` — all RLS policies
 10. `0010_seed.sql` — reference data: categories, goals, md_category_mapping, feature_flags defaults, initial admin user
+
+**M1 Final Audit recovery addenda (shipped 2026-05-23):**
+
+11. `0011_wholesale_revoke_writes.sql` — revokes INSERT/UPDATE/REFERENCES on `products.wholesale_price_internal` from `anon` and `authenticated` to close the defense-in-depth gap surfaced by the M1 Final Audit. See `LAST_SESSION.md` for the recovery context.
+
+**M1 spec-evolution addendum (inventory tracking, planned):**
+
+12. `0012_inventory.sql` — inventory tracking schema additions. Lands as a final M1 addendum step. Touches:
+    - Adds `stock_status` and `inventory_movement_reason` enums (CREATE TYPE statements live here; the §3 reference above documents them at the catalog level but the DDL belongs in 0012 to keep the addendum self-contained).
+    - Drops `product_variants.in_stock` boolean.
+    - Adds `product_variants.stock_status stock_status NOT NULL DEFAULT 'out_of_stock'`.
+    - Adds `compute_stock_status()` trigger function + `variants_compute_stock_status` trigger on INSERT/UPDATE of `stock_quantity` or `low_stock_threshold`.
+    - Drops existing `variants_low_stock_idx`; recreates with `WHERE stock_status = 'low_stock'`.
+    - Adds `variants_stock_status_idx` for storefront and admin queue filtering.
+    - Creates `inventory_movements` table per §8.4.
+    - Enables RLS on `inventory_movements` and adds admin-read policy per §9.10. No INSERT/UPDATE/DELETE policies (append-only via service role).
+    - Backfills `missing_stock_quantity = true` on every existing product (787 imported rows from M1 Step 8). Implementation: UPDATE on `products.admin_review_flags` JSONB. See `PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md §5.4` for the 9-flag shape after this addendum.
+
+Full inventory spec: `INVENTORY_SPEC.md`.
 
 The `scripts/import-products-from-md.ts` runs after migrations to populate `products` from `docs/reference/product.md`.
 
@@ -883,6 +1003,12 @@ Critical indexes (re-stated for review):
 | `products_review_flags_gin` | Admin filter views by review flags |
 | `products_fields_status_gin` | Admin filter views by field status |
 | `products_name_trgm` | Fuzzy search on product names (Phase 2 typo tolerance ready) |
+| `variants_low_stock_idx` (rewritten in 0012) | Admin low-stock queue + dashboard widget; filters on `stock_status='low_stock'` |
+| `variants_stock_status_idx` (added in 0012) | Storefront filtering by stock status (M3) + admin queue queries |
+| `inventory_movements_variant_idx` (added in 0012) | Per-variant inventory history viewer (ADMIN_PORTAL §10.8) |
+| `inventory_movements_product_idx` (added in 0012) | Per-product inventory history |
+| `inventory_movements_order_idx` (added in 0012) | Find stock movements for a given order (M7 restoration audit trail) |
+| `inventory_movements_reason_idx` (added in 0012) | Filtered movement log views by reason |
 | `orders_customer_idx` | Customer order history |
 | `orders_payment_intent_idx` | Webhook handler to find order by Paymob intent ID |
 | `payment_events` unique constraint | Idempotency on webhook re-delivery |

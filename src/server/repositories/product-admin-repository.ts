@@ -146,7 +146,7 @@ export async function bulkUpsertProductVariants(
     .from("product_variants")
     .upsert(rows, { onConflict: "product_id,flavor,size" })
     .select(
-      "id, product_id, flavor, size, sku, barcode, price_aed, in_stock, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
     );
 
   if (error) {

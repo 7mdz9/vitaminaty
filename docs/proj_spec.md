@@ -64,7 +64,7 @@ Explicitly out of scope per `DECISION_CAPTURE.md` and Phase 1 framing:
 - Arabic content (RTL structural prep only; no translated copy)
 - Mobile native apps (responsive web only)
 - B2B / wholesale portal
-- Warehouse automation / inventory sync
+- Warehouse automation / inventory sync (the *automation/sync* layer; inventory **tracking** itself is MVP per `INVENTORY_SPEC.md` — see §9 P8 for the post-MVP boundary)
 - Customer-side MFA (admin MFA only)
 - GCC shipping outside UAE
 - Multi-currency (AED only)
@@ -249,6 +249,13 @@ Each milestone below is a complete BOB v5 invocation. Read the milestone's secti
 **v5 invocation hint:**
 > "Execute M1 of `proj_spec.md`. Read `DB_SCHEMA.md` for the schema and `PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` for import rules. The import script is the heart of this milestone. After import, run the RLS cross-check tests (positive + negative). End by updating `LAST_SESSION.md` and `PROJECT_STATE.md`."
 
+**M1 addendum migrations (post-Final-Audit + spec evolution):**
+
+After M1 ships, two addendum migrations land before M2 begins:
+
+- `0011_wholesale_revoke_writes.sql` — Final Audit recovery closing the column-level defense-in-depth gap on `products.wholesale_price_internal`. Shipped 2026-05-23.
+- `0012_inventory.sql` — inventory tracking schema additions per `INVENTORY_SPEC.md`. Adds `stock_status` enum + column + trigger, drops `in_stock` boolean, creates `inventory_movements` ledger table + RLS, backfills `missing_stock_quantity` flag on existing 787 products. Lands as a final HIGH_RIGOR step at the end of the M1 series; M2 reads this migration as a precondition.
+
 ---
 
 ### M2 — Admin portal
@@ -263,15 +270,16 @@ Build the admin portal per `ADMIN_PORTAL_SPEC.md`. Specifically:
 - Supabase Auth signin flow at `/admin/sign-in` with MFA enforcement (TOTP enrollment on first login).
 - `requireAdmin()` policy helper in `src/lib/auth/policies.ts` — called by every admin server action.
 - Admin layout at `src/app/admin/layout.tsx` with sidebar nav, session timeout banner, MFA-status indicator.
-- Dashboard (`/admin`) with the 5 widgets from `ADMIN_PORTAL_SPEC.md` §4.
-- Product list (`/admin/products`) with filters, sort, pagination, bulk actions per spec §5.
+- Dashboard (`/admin`) with the widgets from `ADMIN_PORTAL_SPEC.md` §4 (expanded set including inventory + missing-data metrics).
+- Product list (`/admin/products`) with filters, sort, pagination, bulk actions per spec §5 — including spreadsheet-style quick edit (§5.4), product side drawer (§5.5), missing-data work queues (§5.6), Save & Next workflow (§5.7), keyboard shortcuts (§5.8), command bar (§5.9), drawer image upload (§5.10), stale-data detection (§5.11).
+- **Inventory editing UX per `ADMIN_PORTAL_SPEC.md §10` and `INVENTORY_SPEC.md §3`** — per-variant `stock_quantity` + `low_stock_threshold` edits via drawer/editor/spreadsheet, stock-recount workflow (§10.3), manual adjustment with audit + `inventory_movements` ledger entry (§10.4), variant creation gate for publish (§10.7), inventory movement log viewer (§10.8). Implements the admin endpoints from `API_SPEC.md §3.1` (`setVariantStock`, `adjustVariantStock`, `recountVariantStock`, `setVariantLowStockThreshold`, `bulkAdjustVariantStock`, `getInventoryHistory`).
 - Product editor (`/admin/products/[id]`) with three-column layout, sections A–I, field-level status display per spec §6.
 - Image upload to Supabase Storage with auto-thumbnail generation.
 - Brand list + editor + brand-normalization tool per spec §7.
 - Category management per spec §8.
 - Order management at `/admin/orders` (functional but populated only after M4+).
 - Homepage curation at `/admin/homepage`.
-- Audit log viewer at `/admin/audit-log`.
+- Audit log viewer at `/admin/audit-log` with the per-field human-readable diff renderer per §12.1.
 - Feature flag toggle UI at `/admin/settings/feature-flags` with HIGH_RIGOR-gated confirmation (MFA re-verify + typed phrase for `commerce_enabled`, `paymob_live_mode`, etc.).
 - Admin user management at `/admin/settings/users`.
 - Every admin server action writes an `audit_log` entry via `src/server/services/audit-service.ts`.
@@ -321,6 +329,7 @@ Build the read-only public site per the prototype design at `docs/reference/vita
 - Listing pages — by category (`/category/[slug]`), by brand (`/brand/[slug]`), by goal (`/goal/[tag]`), search (`/search?q=...`).
 - Brand directory (`/brands`) with heavy/medium/light brand tiers per v1.1 §11.
 - PDP (`/products/[slug]`) with full adaptive rendering per v1.1 §6 (Cases A–G).
+- **Storefront stock display per `INVENTORY_SPEC.md §5`** — variant selector chips show stock_status badges (no exact counts; low-stock badge only per locked decision Q2); out-of-stock variants are not selectable; Add to Cart button disabled or hidden per §5.1 rules. Product listing pages render out-of-stock products with grey overlay + "Out of stock" pill; low-stock products get a subtle badge. "Hide out of stock" filter exists on listing pages, default OFF. Exact integer `stock_quantity` is never rendered publicly.
 - Legal pages: Privacy Policy, T&Cs, Returns Policy, About, FAQ, Contact.
 - Site footer with brand, support, legal, contact links.
 - 404 page.
@@ -341,6 +350,9 @@ All public reads use the anon Supabase client + RLS to enforce visibility.
 - Verify `wholesale_price_internal` is never selected on public paths (grep server services for the column name).
 - Verify no PDP renders a `draft`-status field's content.
 - Verify PDP adaptive rendering hides empty sections — no "no information available" placeholders that look like missing content.
+- **Verify exact `stock_quantity` integer is never rendered in any public-facing component** (grep components for `stock_quantity` direct render; the field may be consumed by server-side logic for badge selection only).
+- **Verify out-of-stock variant is non-selectable and Add to Cart disabled / hidden** per `INVENTORY_SPEC.md §5.1`.
+- **Verify product-level out-of-stock state** (all variants `out_of_stock`) shows banner + Add to Cart hidden, not just disabled.
 - Lighthouse performance > 80 on homepage and PDP.
 - WCAG 2.1 AA pass on homepage and PDP key flows.
 
@@ -371,7 +383,7 @@ All public reads use the anon Supabase client + RLS to enforce visibility.
 - Server-side cart revalidation (`cart.revalidateCart` action per `API_SPEC.md` §2.1).
 - `checkout.placeOrder` server action per `API_SPEC.md` §2.2 with full server-side totals computation.
 - Stub `PaymentAdapter` and `ShippingAdapter` produce realistic responses.
-- Order creation: writes to `orders` + `order_items`, decrements stock atomically, writes audit_log.
+- Order creation: writes to `orders` + `order_items`, decrements stock atomically with `SELECT FOR UPDATE` row locking per `INVENTORY_SPEC.md §6.1` and `§6.3`, writes one `inventory_movements` row per affected variant with `reason='order_placed'` and `order_id` populated, writes audit_log — all in one transaction.
 - Order confirmation page (`/order-confirmation/[orderId]`).
 - Customer auth flows: `/sign-up`, `/sign-in`, `/forgot-password`, `/verify-email`.
 - Customer account: `/account` (profile), `/account/orders`, `/account/orders/[id]`, `/account/addresses`.
@@ -393,7 +405,7 @@ This is the first big HIGH_RIGOR cross-check. Verify all of:
 - **Idempotency:** call `placeOrder` twice with the same idempotency_key — second call returns the same result without creating a duplicate order.
 - **Frozen address snapshot:** modify the customer's address after checkout; the order's `ship_to` JSONB remains the original.
 - **Audit log entries:** every order creation has an audit_log row.
-- **Stock decrement atomicity:** order creation + stock decrement happen in one transaction; failure rolls back both.
+- **Stock decrement atomicity:** order creation + stock decrement + `inventory_movements` row write happen in one transaction per `INVENTORY_SPEC.md §6.1`; failure rolls back all three.
 - **`commerce_enabled` flag:** when OFF, `/cart` and `/checkout` return 404, server actions return `feature_disabled`.
 - **VAT math:** AED 100 inclusive should compute as AED 4.76 VAT + AED 95.24 net (or per UAE 5% inclusive formula — verify in `src/lib/money/vat.ts` tests).
 
@@ -533,6 +545,11 @@ Then implement:
 
 - Customer order history (already shipped in M4 against stub orders; verify against real orders).
 - Admin order detail page with manual status transitions per `ADMIN_PORTAL_SPEC.md` §9.
+- **Inventory restoration flows per `INVENTORY_SPEC.md §6.4`:**
+  - `order_cancelled` — admin cancels via §9.3; stock restored if the order had been decremented.
+  - `payment_failed` — Paymob webhook reports decline for a `pending_payment` order; stock auto-restored with `reason='payment_failed'`.
+  - `refund_returned` — admin issues refund AND checks "Goods returned to inventory"; stock restored. Default is unchecked (refunds without restoration are the safer default for supplements).
+  - Each restoration runs in one transaction: SELECT FOR UPDATE on affected variants → UPDATE stock_quantity → INSERT inventory_movements row → audit_log → COMMIT.
 - Transactional emails:
   - Order confirmation (sent on `orders.status = 'paid'`)
   - Payment received (combined into order confirmation or separate per design call)
@@ -551,7 +568,8 @@ Then implement:
 **Files touched:**
 - `src/lib/email/*` (resend-adapter, stub-adapter, templates)
 - `src/server/services/email-service.ts`
-- `src/features/admin-orders/*` (status transition UI)
+- `src/server/services/inventory-restoration-service.ts` (new — cancel / payment_failed / refund_returned flows)
+- `src/features/admin-orders/*` (status transition UI + refund modal with "Goods returned to inventory" checkbox)
 - `src/features/account/*` (verify order history works)
 - Email templates in `src/lib/email/templates/*.tsx` (React Email or similar)
 
@@ -563,6 +581,12 @@ Then implement:
 - Inbox-placement test (Gmail, iCloud, Outlook).
 - Status transition guards: can't go from `pending_payment` → `delivered` directly.
 - `transactional_emails_enabled` flag respected.
+- **Inventory restoration cross-checks per `INVENTORY_SPEC.md §6.4`:**
+  - Cancel a `paid` order; verify each variant's stock_quantity restored and one `inventory_movements` row written per affected variant with `reason='order_cancelled'`.
+  - Simulate Paymob webhook payment-decline on a `pending_payment` order with decremented stock; verify stock restored and movement rows have `reason='payment_failed'` (distinct from `order_cancelled`).
+  - Issue refund with "Goods returned" UNCHECKED; verify NO `inventory_movements` rows written, payment_events still recorded.
+  - Issue refund with "Goods returned" CHECKED; verify stock restored and movement rows have `reason='refund_returned'`.
+  - Issue partial refund with partial quantity restoration; verify only the specified quantity restored.
 
 **Definition of done:**
 - [ ] All transactional emails fire on the right events.
@@ -628,7 +652,7 @@ Run the full `THREAT_MODEL.md` §7 cross-check sweep. Every domain reviewed.
 | P5 | Customer-side MFA | Higher-risk customer base materializes |
 | P6 | Same-day delivery enablement | iCarry capability confirmed + ops ready |
 | P7 | B2B/wholesale portal | Wholesale customer base materializes |
-| P8 | Warehouse automation / inventory sync | Catalog scale demands it |
+| P8 | Warehouse automation / inventory sync — *only the automation/sync layer*: barcode scanner workflows, supplier purchase orders, automated supplier sync, multi-warehouse / multi-location inventory. Inventory **tracking** itself (per-variant stock, low-stock thresholds, movement ledger, atomic checkout decrement, restoration on cancel/refund/payment_failed) is MVP per `INVENTORY_SPEC.md` — landed in M1 addendum 0012 + admin editing UX in M2 + storefront display in M3 + checkout transaction in M4 + restoration in M7. | Catalog scale or operational complexity demands automation |
 
 ---
 

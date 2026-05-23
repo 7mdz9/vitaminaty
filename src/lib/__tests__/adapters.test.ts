@@ -40,7 +40,7 @@ describe("adapter stubs", () => {
           ship_to: address,
           items: [{ name: "Critical Whey", quantity: 1, unit_price_aed: fromInteger(100) }],
         },
-        method: "cards",
+        method: "card",
         idempotency_key: "idem_123",
       }),
     ).resolves.toMatchObject({

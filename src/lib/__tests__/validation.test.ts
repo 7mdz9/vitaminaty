@@ -96,17 +96,17 @@ describe("validation schemas", () => {
       OrderCreateInputSchema.parse({
         ship_to: address,
         items: [{ product_id: "11111111-1111-4111-8111-111111111111", quantity: 1 }],
-        payment_method: "cards",
+        payment_method: "card",
         shipping_method: "standard",
         idempotency_key: "idem_123",
       }),
-    ).toMatchObject({ payment_method: "cards" });
+    ).toMatchObject({ payment_method: "card" });
 
     expect(() =>
       OrderCreateInputSchema.parse({
         ship_to: address,
         items: [],
-        payment_method: "cards",
+        payment_method: "card",
         shipping_method: "standard",
         idempotency_key: "idem_123",
       }),

@@ -151,7 +151,7 @@ export async function listProductVariants(
   const { data, error } = await supabase
     .from("product_variants")
     .select(
-      "id, product_id, flavor, size, sku, barcode, price_aed, in_stock, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
     )
     .eq("product_id", productId)
     .order("sort_order", { ascending: true });
