@@ -13,13 +13,13 @@ Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vita
 
 The platform is admin-driven: products import with minimal data and are progressively enriched by the admin team through a purpose-built admin portal. The public site adapts to whatever data exists per product and never shows fake content.
 
-M1 schema, RLS, and reference seed data are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows.
+M1 schema, RLS, reference seed data, and repository-facing DB client surface are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories.
 
 ## 2. Current milestone
 
-**M1 - Data layer: Step 4 complete; Step 5 pending.**
+**M1 - Data layer: Step 5 complete; Step 6 pending.**
 
-M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. Next action is M1 Step 5.
+M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. Next action is M1 Step 6.
 
 ## 3. Stack â€” locked
 
@@ -47,6 +47,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 
 - **Server actions first.** All mutations go through Next.js Server Actions in `src/features/{feature}/actions.ts`. No standalone REST API routes for app-internal data; `/api/` is reserved for webhooks, health, sitemap.
 - **Repository layer is the only DB access point.** Service-role Supabase client lives in `src/lib/supabase/server.ts` and is imported only by `src/server/repositories/*`. Everything else uses the repository functions.
+- **Repository-facing DB clients.** Repository-facing DB clients live at `src/server/db/supabase-admin.ts` (service-role) and `src/server/db/supabase-server.ts` (per-request anon with cookie context). M0 `src/lib/supabase/*` clients remain as underlying implementation.
+- **Bundle secret scan.** Bundle secret scan is implemented at `scripts/scan-bundle-secrets.sh`. It reads the live 130+ char prefix of `SUPABASE_SERVICE_ROLE_KEY` from `.env.local` and greps `.next/` for that VALUE prefix. Scanning for the env-var NAME is forbidden (false positive - name appears legitimately via env.ts Zod refs).
 - **All money is whole-AED integers.** Type `AedAmount` in `src/lib/money/aed.ts`. No float arithmetic on money anywhere.
 - **Money math via `src/lib/money/aed.ts`.** AED values use a branded whole-integer type, with VAT-inclusive breakdown in `src/lib/money/vat.ts`.
 - **All env vars accessed through env loaders.** Server-only env goes through `src/lib/env.ts`; client-safe public env goes through `src/lib/env.public.ts`. Both are Zod-validated. Implemented in Step 2.
@@ -96,6 +98,10 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/lib/supabase/server.ts` | Service-role Supabase client. Server-only and repository-only by ESLint boundary. |
 | `src/lib/supabase/client.ts` | Anon Supabase browser client for client-side, RLS-enforced use. |
 | `src/lib/supabase/middleware.ts` | Supabase SSR session refresh helper. |
+| `src/server/db/supabase-admin.ts` | M1 repository-facing service-role Supabase client wrapper. |
+| `src/server/db/supabase-server.ts` | M1 repository-facing per-request anon Supabase client with cookie context and RLS enforcement. |
+| `src/lib/supabase/types.generated.ts` | Generated Supabase TypeScript schema types from local migrations. |
+| `scripts/scan-bundle-secrets.sh` | Client bundle scan for the live service-role key VALUE prefix, never the env-var name. |
 | `src/middleware.ts` | Next.js middleware wiring session refresh outside `/_next/*` and `/api/health`. |
 | `src/app/api/health/route.ts` | Unauthenticated healthcheck returning status, git SHA, app env, and timestamp. |
 | `tests/unit/env.test.ts` | Env validation tests for missing required vars, enum validation, and public/server split. |

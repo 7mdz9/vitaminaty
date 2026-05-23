@@ -16,7 +16,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "db:reset": "supabase db reset",
-    "db:apply": "supabase db push --local"
+    "db:apply": "supabase db push --local",
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/types.generated.ts",
+    "scan:bundle-secrets": "bash scripts/scan-bundle-secrets.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

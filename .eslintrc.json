@@ -43,7 +43,11 @@
   "overrides": [
     {
       "files": ["src/**/*.{ts,tsx}"],
-      "excludedFiles": ["src/server/repositories/**/*.{ts,tsx}", "src/lib/supabase/server.ts"],
+      "excludedFiles": [
+        "src/server/repositories/**/*.{ts,tsx}",
+        "src/server/db/**/*.{ts,tsx}",
+        "src/lib/supabase/server.ts"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -52,12 +56,24 @@
               {
                 "name": "@/lib/supabase/server",
                 "message": "The service-role Supabase client may only be imported by src/server/repositories/."
+              },
+              {
+                "name": "@/server/db/supabase-admin",
+                "message": "The repository-facing Supabase admin client may only be imported by src/server/repositories/."
+              },
+              {
+                "name": "@/server/db/supabase-server",
+                "message": "The repository-facing Supabase server client may only be imported by src/server/repositories/."
               }
             ],
             "patterns": [
               {
                 "group": ["**/lib/supabase/server"],
                 "message": "The service-role Supabase client may only be imported by src/server/repositories/."
+              },
+              {
+                "group": ["**/server/db/supabase-admin", "**/server/db/supabase-server"],
+                "message": "The repository-facing Supabase DB clients may only be imported by src/server/repositories/."
               }
             ]
           }

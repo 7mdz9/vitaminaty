@@ -213,6 +213,7 @@ See `docs/ENVIRONMENT_VARIABLES.md` §3 for full secret rotation policy. Key con
 - All secrets in Vercel env, never in repo.
 - Service role key never in any file under `src/components/`, `src/app/(public)/`, `src/app/(auth)/`. Enforced by ESLint import restrictions.
 - Logger redacts known secret-named keys (`PAYMOB_HMAC_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, etc.) from any log line.
+- Verified at M1 Step 5: bundle scan implemented as `scripts/scan-bundle-secrets.sh`, reads 130+ char prefix of the live `SUPABASE_SERVICE_ROLE_KEY` VALUE from `.env.local`, returns zero matches in `.next/`. Scanning for the env-var NAME was rejected as a false-positive pattern (the name legitimately appears in compiled bundles via env.ts Zod validation; M0 Final Audit finding, THREAT_MODEL Section 6, PROJECT_STATE Section 6 item #5).
 
 ### 5.10 PII handling — UAE PDPL alignment
 
@@ -273,6 +274,7 @@ The following milestones invoke a HIGH_RIGOR cross-check sweep (v5 invariant —
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-05-23 | 1.0.12 | Step 5 of M1: `src/server/db/*` wrappers added; bundle scan implemented as value-prefix scan in `scripts/scan-bundle-secrets.sh`; clean. |
 | 2026-05-22 | 1.0.11 | Step 3 of M1: 0009 RLS applied locally; wholesale REVOKE/GRANT verified; negative tests passed with documented psql table-level denial wording for wholesale column isolation. |
 | 2026-05-22 | 1.0.10 | Step 2 of M1: schema migrations 0001-0008 applied locally. RLS deferred to Step 3. |
 | 2026-05-22 | 1.0.9 | M1 Step 1: M0 verification debt cleanup + M1 data-layer recon; JWT prefix scan rule documented. |
