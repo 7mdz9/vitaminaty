@@ -1,3 +1,4 @@
 docs/**/*.md
 docs/reference/**
 pnpm-lock.yaml
+src/lib/supabase/types.generated.ts

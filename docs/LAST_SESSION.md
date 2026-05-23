@@ -41,6 +41,18 @@
 - Temporary ESLint regression under `src/components/` importing `@/server/db/supabase-admin` failed as expected, then the temp file was removed.
 - `.next/static` scan found no `src/server/db` wrapper imports in the client static bundle.
 
+## Post-step sweep - Step 5
+
+- Result: clean after one idempotency/formatting fix.
+- Read first: `docs/LAST_SESSION.md`, `src/server/db/supabase-admin.ts`, `src/server/db/supabase-server.ts`, `.eslintrc.json`, `package.json`, and the Step 5 handoff.
+- DoD rerun: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm db:types`, `pnpm test`, and `pnpm scan:bundle-secrets` passed.
+- Bundle-scan hard gate passed: `pnpm scan:bundle-secrets` printed `OK no service-role value in bundle`.
+- Temporary ESLint regression under `src/components/` importing `@/server/db/supabase-admin` failed as expected, then the temp file was removed.
+- `.next/static` scan found no `src/server/db` wrapper imports in the client static bundle.
+- Sweep fix: `src/lib/supabase/types.generated.ts` is now kept in Supabase CLI-generated format, and `.prettierignore` excludes it so `pnpm db:types` and `pnpm format:check` can both remain clean.
+- `pnpm format:check` passed after the generated-file ignore fix.
+- Files modified during sweep: `.prettierignore`, `src/lib/supabase/types.generated.ts`, `docs/LAST_SESSION.md`.
+
 ## Intended next step
 
 Execute M1 Step 6. Read `docs/DB_SCHEMA.md` Sections 4-8, `docs/PROJECT_STRUCTURE.md` Section 3 lookup, and `docs/proj_spec.md` M1 "Each repository".
