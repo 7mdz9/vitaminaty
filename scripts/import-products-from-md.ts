@@ -69,6 +69,7 @@ const FIELD_STATUS_KEYS = [
 const REVIEW_FLAG_KEYS = [
   "missing_price",
   "missing_image",
+  "missing_stock_quantity",
   "case_pack",
   "duplicate_suspected",
   "multiple_price_pairs",
@@ -546,6 +547,7 @@ function createReviewFlags(input: {
   return {
     missing_price: input.missingPrice,
     missing_image: true,
+    missing_stock_quantity: true,
     case_pack: input.casePack,
     duplicate_suspected: input.duplicateSuspected,
     multiple_price_pairs: input.multiplePricePairs,
