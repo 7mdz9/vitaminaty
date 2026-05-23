@@ -61,6 +61,7 @@ export const envSchema = publicEnvSchema.extend({
   EMAIL_REPLY_TO: z.string().email(),
 
   ADMIN_SESSION_SECRET: requiredSecret,
+  ADMIN_IP_ALLOWLIST: z.string().trim().default(""),
   INITIAL_ADMIN_EMAIL: z.string().email(),
   MFA_ISSUER_NAME: requiredString,
 

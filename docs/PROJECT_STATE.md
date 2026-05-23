@@ -13,7 +13,7 @@ Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vita
 
 The platform is admin-driven: products import with minimal data and are progressively enriched by the admin team through a purpose-built admin portal. The public site adapts to whatever data exists per product and never shows fake content.
 
-M1 schema, RLS, reference seed data, repository-facing DB client surface, non-PII repositories, PII/operational repositories, canonical RLS regression tests, and the local admin auth seed script are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories; `tests/integration/repositories/rls-cross-checks.test.ts` encodes the M1 RLS cross-checks with real signed Supabase sessions; `scripts/seed-admin-user.ts` idempotently creates the initial Auth-only admin user. M1 addendum 0012 (inventory tracking) is implemented: `product_variants.stock_status` is trigger-derived, `inventory_movements` is append-only with admin-read RLS only, and the importer emits the 9-flag `admin_review_flags` shape.
+M1 schema, RLS, reference seed data, repository-facing DB client surface, non-PII repositories, PII/operational repositories, canonical RLS regression tests, and the local admin auth seed script are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories; `tests/integration/repositories/rls-cross-checks.test.ts` encodes the M1 RLS cross-checks with real signed Supabase sessions; `scripts/seed-admin-user.ts` idempotently creates the initial Auth-only admin user. M1 addendum 0012 (inventory tracking) is implemented: `product_variants.stock_status` is trigger-derived, `inventory_movements` is append-only with admin-read RLS only, and the importer emits the 9-flag `admin_review_flags` shape. M2 Step 1a is implemented locally: `requireAdmin()` and `requireAdminPendingMfa()` exist, `/admin/*` is middleware-gated by signed `vit_admin_session` plus optional `ADMIN_IP_ALLOWLIST`, and migration 0013 extends `audit_action` to the 21-value M2 baseline.
 
 **Spec Compliance - M1 addendum 0012 - Inventory tracking - COMPLETE (2026-05-23).**
 
@@ -25,7 +25,7 @@ M1 schema, RLS, reference seed data, repository-facing DB client surface, non-PI
 
 ## 2. Current milestone
 
-**M1 + addendum: COMPLETE (shipped 2026-05-23). Next: M2 - Admin portal.**
+**M2 - Admin portal: Step 1a auth shell COMPLETE locally (2026-05-23). Next: Step 1b - audit-service foundation.**
 
 M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. M1 Step 6 non-PII repositories are implemented. M1 Step 7 PII and operational repositories are implemented, append-only event repositories are split into dedicated files, and the canonical `rls-cross-checks.test.ts` suite passes. M1 Step 8 import script is lint-clean and recovered after meta-model-blessed brand seed expansion: 787 products import with 44 distinct matched brands. M1 Step 9 admin seed script is implemented and verified locally. M1 Final Audit recovery added `0011_wholesale_revoke_writes.sql` and a column-privilege regression assertion. M1 Final Audit rerun passed; M1 is shipped. The HIGH_RIGOR M1 addendum migration `0012_inventory.sql` is implemented and verified; M2 now reads inventory tracking as a shipped precondition.
 
@@ -237,6 +237,12 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `supabase/migrations/0010_seed.sql` | M1 Step 4 categories, goals, MD category mapping, brands, and feature flag seed migration. |
 | `supabase/migrations/0011_wholesale_revoke_writes.sql` | M1 Final Audit recovery migration revoking anon/authenticated write/reference privileges on `products.wholesale_price_internal` and table-level product writes. |
 | `supabase/migrations/0012_inventory.sql` | M1 addendum inventory migration adding `stock_status`, trigger derivation, `inventory_movements`, and admin-read RLS. |
+| `supabase/migrations/0013_audit_action_extension.sql` | M2 Step 1a migration extending `audit_action` from 9 to 21 enum values for admin audit coverage. |
+| `src/lib/auth/session.ts` | M2 Step 1a signed `vit_admin_session` helper with 4-hour idle and 12-hour absolute timeout. |
+| `src/lib/auth/policies.ts` | M2 Step 1a `requireAdmin()` and `requireAdminPendingMfa()` authorization primitives. |
+| `src/features/auth/admin-session.ts` | M2 Step 1a admin password signin orchestration that issues pending-MFA admin sessions. |
+| `tests/integration/auth/admin-auth.test.ts` | M2 Step 1a middleware auth, role, cookie refresh, and IP allowlist integration tests. |
+| `tests/integration/migrations/0013_audit_action_extension.test.ts` | M2 Step 1a audit enum extension regression test. |
 | `src/server/repositories/inventory-movement-repository.ts` | M1 addendum append-only inventory movement ledger repository. |
 | `tests/integration/repositories/inventory-movement-repository.test.ts` | M1 addendum repository and `compute_stock_status` trigger integration tests. |
 | `supabase/seed/feature-flags.sql` | Prepared default feature flag seed source; inlined into `0010_seed.sql` for migration-driven resets. |
@@ -264,6 +270,7 @@ Verification debt carried into M1 from the M0 final audit:
 - CLEARED AFTER M1 FINAL AUDIT RECOVERY COLUMN REVOKE: `0011_wholesale_revoke_writes.sql` removes anon/authenticated write/reference grants from `products` and `wholesale_price_internal`; `rls-cross-checks.test.ts` now asserts anon/authenticated have zero column privileges for `wholesale_price_internal`.
 - M1 ADDENDUM 0012 DEVIATIONS: none. `0012_inventory.sql` follows the spec schema for the inventory table, enum values, trigger, indexes, and RLS posture. The approved expanded scope migrated existing `in_stock` application projections to `stock_status` and updated the importer to emit the 9-flag admin review shape.
 - SPEC-TEXT CORRECTION FOR `INVENTORY_SPEC.md` §3.6: the bundle text incorrectly claimed no existing application code referenced `in_stock` in the M1 ship state. Live preflight found three references: `src/types/product.ts`, `src/server/repositories/product-repository.ts`, and `src/server/repositories/product-admin-repository.ts`. The 0012 addendum migrated those references to `stock_status` as approved expanded scope; future spec cleanup should correct the stale claim.
+- M2 STEP 1a / 0013 AUDIT ACTION EXTENSION: `supabase/migrations/0013_audit_action_extension.sql` extends `audit_action` from 9 to 21 values: `bulk_operation`, `bulk_publish_override`, `stale_data_override`, `stock_adjustment`, `stock_recount`, `variant_create`, `variant_delete`, `low_stock_threshold_change`, `order_status_change`, `order_refund`, `mfa_reset`, and `integration_credentials_update`. The admin auth shell uses a signed HttpOnly `vit_admin_session` cookie with a 4-hour idle timeout and 12-hour absolute timeout. Password signin now issues a pending-MFA admin session; Step 2 owns real TOTP enrollment and verification.
 - Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
 
 ## 7. What is intentionally not built yet (and which milestone owns it)

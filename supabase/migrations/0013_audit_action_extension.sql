@@ -1,0 +1,12 @@
+alter type audit_action add value if not exists 'bulk_operation';
+alter type audit_action add value if not exists 'bulk_publish_override';
+alter type audit_action add value if not exists 'stale_data_override';
+alter type audit_action add value if not exists 'stock_adjustment';
+alter type audit_action add value if not exists 'stock_recount';
+alter type audit_action add value if not exists 'variant_create';
+alter type audit_action add value if not exists 'variant_delete';
+alter type audit_action add value if not exists 'low_stock_threshold_change';
+alter type audit_action add value if not exists 'order_status_change';
+alter type audit_action add value if not exists 'order_refund';
+alter type audit_action add value if not exists 'mfa_reset';
+alter type audit_action add value if not exists 'integration_credentials_update';

@@ -1037,6 +1037,18 @@ export type Database = {
         | "flag_toggle"
         | "image_upload"
         | "role_change"
+        | "bulk_operation"
+        | "bulk_publish_override"
+        | "stale_data_override"
+        | "stock_adjustment"
+        | "stock_recount"
+        | "variant_create"
+        | "variant_delete"
+        | "low_stock_threshold_change"
+        | "order_status_change"
+        | "order_refund"
+        | "mfa_reset"
+        | "integration_credentials_update"
       goal_tag:
         | "build_muscle"
         | "boost_energy"
@@ -1243,6 +1255,18 @@ export const Constants = {
         "flag_toggle",
         "image_upload",
         "role_change",
+        "bulk_operation",
+        "bulk_publish_override",
+        "stale_data_override",
+        "stock_adjustment",
+        "stock_recount",
+        "variant_create",
+        "variant_delete",
+        "low_stock_threshold_change",
+        "order_status_change",
+        "order_refund",
+        "mfa_reset",
+        "integration_credentials_update",
       ],
       goal_tag: [
         "build_muscle",

@@ -7,7 +7,19 @@ export type AuditAction =
   | "restore"
   | "flag_toggle"
   | "image_upload"
-  | "role_change";
+  | "role_change"
+  | "bulk_operation"
+  | "bulk_publish_override"
+  | "stale_data_override"
+  | "stock_adjustment"
+  | "stock_recount"
+  | "variant_create"
+  | "variant_delete"
+  | "low_stock_threshold_change"
+  | "order_status_change"
+  | "order_refund"
+  | "mfa_reset"
+  | "integration_credentials_update";
 
 export interface AuditLogRecord {
   id: string;
