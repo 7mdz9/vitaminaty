@@ -15,9 +15,17 @@ The platform is admin-driven: products import with minimal data and are progress
 
 M1 schema, RLS, reference seed data, repository-facing DB client surface, non-PII repositories, PII/operational repositories, canonical RLS regression tests, and the local admin auth seed script are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories; `tests/integration/repositories/rls-cross-checks.test.ts` encodes the M1 RLS cross-checks with real signed Supabase sessions; `scripts/seed-admin-user.ts` idempotently creates the initial Auth-only admin user. M1 addendum 0012 (inventory tracking) is implemented: `product_variants.stock_status` is trigger-derived, `inventory_movements` is append-only with admin-read RLS only, and the importer emits the 9-flag `admin_review_flags` shape.
 
+**Spec Compliance - M1 addendum 0012 - Inventory tracking - COMPLETE (2026-05-23).**
+
+- `supabase/migrations/0012_inventory.sql` landed the inventory schema addendum: `stock_status`, `inventory_movement_reason`, `product_variants.stock_status`, `compute_stock_status()`, rewritten stock indexes, and `inventory_movements`.
+- `inventory_movements` follows the M1 append-only ledger pattern: service-role writes only, admin SELECT RLS only, no INSERT/UPDATE/DELETE policies, and no update/delete repository exports.
+- `scripts/import-products-from-md.ts` now emits the 9-flag `admin_review_flags` shape with `missing_stock_quantity=true` for all 787 imported products.
+- Existing `in_stock` app-code projections were migrated to `stock_status` in the shared product type and product repositories.
+- Verification passed: two `supabase db reset` runs, import canonical counts, generated types, typecheck, lint, build, full tests, repository tests, RLS cross-checks, and bundle secret scan.
+
 ## 2. Current milestone
 
-**M1 - Data layer: COMPLETE (shipped 2026-05-23). M1 addendum migration 0012 (inventory tracking) implemented. Next: M2 - Admin portal.**
+**M1 + addendum: COMPLETE (shipped 2026-05-23). Next: M2 - Admin portal.**
 
 M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. M1 Step 6 non-PII repositories are implemented. M1 Step 7 PII and operational repositories are implemented, append-only event repositories are split into dedicated files, and the canonical `rls-cross-checks.test.ts` suite passes. M1 Step 8 import script is lint-clean and recovered after meta-model-blessed brand seed expansion: 787 products import with 44 distinct matched brands. M1 Step 9 admin seed script is implemented and verified locally. M1 Final Audit recovery added `0011_wholesale_revoke_writes.sql` and a column-privilege regression assertion. M1 Final Audit rerun passed; M1 is shipped. The HIGH_RIGOR M1 addendum migration `0012_inventory.sql` is implemented and verified; M2 now reads inventory tracking as a shipped precondition.
 
@@ -255,6 +263,7 @@ Verification debt carried into M1 from the M0 final audit:
 - CLEARED AFTER M1 FINAL AUDIT RECOVERY STEP 7: Append-only payment and shipment event helpers were split from `order-admin-repository.ts` into dedicated event repository files; `audit-log-repository.ts` now uses the required append/read naming with no update/delete exports; `tests/integration/repositories/rls-cross-checks.test.ts` now encodes the five M1 RLS assertions with paired sanity checks and real signed Supabase sessions.
 - CLEARED AFTER M1 FINAL AUDIT RECOVERY COLUMN REVOKE: `0011_wholesale_revoke_writes.sql` removes anon/authenticated write/reference grants from `products` and `wholesale_price_internal`; `rls-cross-checks.test.ts` now asserts anon/authenticated have zero column privileges for `wholesale_price_internal`.
 - M1 ADDENDUM 0012 DEVIATIONS: none. `0012_inventory.sql` follows the spec schema for the inventory table, enum values, trigger, indexes, and RLS posture. The approved expanded scope migrated existing `in_stock` application projections to `stock_status` and updated the importer to emit the 9-flag admin review shape.
+- SPEC-TEXT CORRECTION FOR `INVENTORY_SPEC.md` §3.6: the bundle text incorrectly claimed no existing application code referenced `in_stock` in the M1 ship state. Live preflight found three references: `src/types/product.ts`, `src/server/repositories/product-repository.ts`, and `src/server/repositories/product-admin-repository.ts`. The 0012 addendum migrated those references to `stock_status` as approved expanded scope; future spec cleanup should correct the stale claim.
 - Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
 
 ## 7. What is intentionally not built yet (and which milestone owns it)
