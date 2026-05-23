@@ -1,51 +1,50 @@
 # LAST_SESSION.md
 
 **Project:** Vitaminaty
-**Last updated:** 2026-05-22
+**Last updated:** 2026-05-23
 **Milestone:** M1 - Data layer
-**Step:** Step 3 - RLS policies 0009
+**Step:** Step 4 - seed 0010
 **Status:** complete
 
 ---
 
 ## What succeeded
 
-- Added `supabase/migrations/0009_rls_policies.sql`.
-- Created `is_admin()` from `docs/DB_SCHEMA.md` Section 9.1.
-- Enabled RLS on all 19 public M1 tables.
-- Added explicit DB_SCHEMA.md Section 9 policies plus prose-derived policies for product child tables, categories, goals, and `md_category_mapping`.
-- Kept `payment_events`, `shipment_events`, and `audit_log` append-only from client roles: each has admin SELECT only and no INSERT/UPDATE/DELETE policies.
-- Applied wholesale column isolation for `products.wholesale_price_internal`.
-- Used a transient real-session Supabase JS smoke test for customer order isolation, then deleted the script so TypeScript/lint scopes stay clean.
+- Added `supabase/migrations/0010_seed.sql`.
+- Seeded 16 public categories from `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Section 13.1.
+- Seeded 5 goals from Section 15.
+- Seeded 15 MD category mappings from Section 13.3.
+- Seeded 30 canonical brands from Section 12.2 with non-empty alias arrays.
+- Inlined the 20 feature flag defaults from `supabase/seed/feature-flags.sql` / `docs/DECISION_CAPTURE.md` Section 4.
+- Left `supabase/seed/feature-flags.sql` in place as a cited source file; migration-driven resets now use the inlined `0010_seed.sql` rows.
 
 ## Files touched
 
-- `supabase/migrations/0009_rls_policies.sql`
+- `supabase/migrations/0010_seed.sql`
 - `docs/PROJECT_STATE.md`
-- `docs/THREAT_MODEL.md`
 - `docs/LAST_SESSION.md`
+- `docs/THREAT_MODEL.md` (carried Step 3 follow-up note into this checkpoint)
 
 ## Verification
 
 - `pnpm typecheck` passed.
 - `pnpm lint` passed.
 - `pnpm build` passed.
-- `pnpm exec supabase db reset` passed.
+- `pnpm exec supabase db reset` passed with all 10 migrations.
 - `pnpm exec supabase db reset` idempotency gate passed twice in a row: exit codes `0`, `0`.
-- `is_admin()` count returned `1`.
-- Public tables with RLS enabled returned `19`.
-- `products_public_read` policy count returned `1`.
-- `anon` SELECT privilege on `products.wholesale_price_internal` returned `0`.
-- INSERT/UPDATE/DELETE policies on `payment_events`, `shipment_events`, and `audit_log` returned `0`.
-- Negative test 1: `set role anon; select wholesale_price_internal from products limit 1; reset role;` failed with permission denied. Postgres reported `permission denied for table products` because the implementation uses column-subset SELECT grants to enforce wholesale isolation.
-- Negative test 2: real Supabase JS session for customer A saw `0` of customer B's orders and `1` of its own seeded orders.
+- `categories` count returned `16`.
+- `goals` count returned `5`.
+- `md_category_mapping` count returned `15`.
+- `brands` count returned `30`.
+- `feature_flags` count returned `20`.
+- MD category mapping FK integrity check returned `0` orphaned slugs.
+- Brand empty-alias check returned `0`.
 
 ## Notes
 
-- The expected psql wording in the Step 3 prompt was `permission denied for column wholesale_price_internal`. Local Postgres does not produce that wording for a secure column-subset SELECT grant model; it reports table-level permission denial when a denied column is selected. This deviation is recorded in `docs/PROJECT_STATE.md` for cross-check.
-- The transient smoke test did not use `set_config('request.jwt.claims', ...)`; it used `auth.admin.createUser`, `signInWithPassword`, and session-carrying Supabase JS clients.
-- Local PostgREST needed a container restart after reset before the real-session smoke test saw the fresh schema cache.
+- Docker Desktop was initially not reachable; it was launched locally and Supabase status recovered before the reset checks were rerun.
+- Category slugs follow the existing project slug helper convention: lowercase, non-alphanumeric removed, whitespace collapsed to hyphens.
 
 ## Intended next step
 
-Execute M1 Step 4 seed data. Read `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Sections 12.2, 13.1, 13.3, and 15, plus `docs/DECISION_CAPTURE.md` Section 4.
+Execute M1 Step 5. Read `docs/PROJECT_STRUCTURE.md` Sections 2 and 4, `docs/proj_spec.md` M1 "Files touched", and `docs/THREAT_MODEL.md` Sections 5.3 and 5.9.

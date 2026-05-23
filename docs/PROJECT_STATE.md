@@ -13,13 +13,13 @@ Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vita
 
 The platform is admin-driven: products import with minimal data and are progressively enriched by the admin team through a purpose-built admin portal. The public site adapts to whatever data exists per product and never shows fake content.
 
-M1 schema and RLS are partially landed: migrations 0001-0009 create the schema tables, enums, indexes, triggers, and RLS policies; seed data remains pending in Step 4.
+M1 schema, RLS, and reference seed data are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows.
 
 ## 2. Current milestone
 
-**M1 - Data layer: Step 3 complete; Step 4 pending.**
+**M1 - Data layer: Step 4 complete; Step 5 pending.**
 
-M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. Next action is M1 Step 4 seed data per `docs/DB_SCHEMA.md` Section 10.
+M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. Next action is M1 Step 5.
 
 ## 3. Stack â€” locked
 
@@ -56,8 +56,11 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Audit log entries written for every admin mutation.** Centralized through `src/server/services/audit-service.ts`.
 - **Feature flags evaluated centrally.** No env-var sniffing for feature toggles outside `src/features/feature-flags/eval.ts`. Implemented in Step 6 with `FF_*` env override, repository lookup, then default fallback.
 - **Database schema authored verbatim from DB_SCHEMA.md.** Migrations under `supabase/migrations/` follow `docs/DB_SCHEMA.md` Section 10 4-digit numeric order.
+- **Reference data in migrations.** M1 reference data lives in `supabase/migrations/0010_seed.sql` with `ON CONFLICT` idempotency. The prepared `supabase/seed/feature-flags.sql` remains as a cited source, but reset/apply is driven by the migration.
 - **M1 RLS-active pattern.** RLS is active on every public M1 table; `is_admin()` is the single DB role-check predicate for admin policies.
 - **M1 RLS prose-derived policies.** Policies for `product_variants`, `product_images`, `product_goal_tags`, `slug_history`, `categories`, `goals`, and `md_category_mapping` are authored from DB_SCHEMA.md Section 9 prose and require Step 3 cross-check blessing.
+- **Goals and md_category_mapping public read.** Goals and md_category_mapping have unrestricted public read (`USING (true)`) because they are non-sensitive reference data with no visibility flag. Future schema changes that add sensitive columns to these tables must add column-level REVOKEs or replace the policy.
+- **Slug history public read.** `slug_history` public read is gated on parent product being currently published. Unpublishing a product makes its slug history invisible to anon. M3 slug-redirect logic must be aware of this.
 - **M1 wholesale column isolation.** `products.wholesale_price_internal` uses column-subset SELECT grants for anon/authenticated plus service-role-only access to the wholesale column; local psql reports denied reads as table-level permission denial, while Supabase/Postgres enforcement still prevents access.
 - **Adaptive product rendering follows v1.1 Cases Aâ€“G.** See `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Â§7.
 - **PDP sections render only if data exists.** No empty placeholders, no "coming soon" labels on public side. Admin preview is the exception.
@@ -156,7 +159,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `supabase/migrations/0007_operations.sql` | M1 Step 2 audit_log and feature_flags migration. |
 | `supabase/migrations/0008_support_chat.sql` | M1 Step 2 support_conversations and support_messages migration. |
 | `supabase/migrations/0009_rls_policies.sql` | M1 Step 3 RLS policies, `is_admin()`, append-only ledger read policies, and wholesale column isolation migration. |
-| `supabase/seed/feature-flags.sql` | Prepared default feature flag seed values; not applied until M1. |
+| `supabase/migrations/0010_seed.sql` | M1 Step 4 categories, goals, MD category mapping, brands, and feature flag seed migration. |
+| `supabase/seed/feature-flags.sql` | Prepared default feature flag seed source; inlined into `0010_seed.sql` for migration-driven resets. |
 | `docs/PROJECT_STATE.md` | This file. |
 | `docs/LAST_SESSION.md` | What just happened. |
 | `docs/THREAT_MODEL.md` | Security threat model. |
@@ -166,7 +170,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 ## 6. Known issues / open questions
 
 Verification debt carried into M1 from the M0 final audit:
-- CLEARED IN M1 STEP 2: `feature_flags` table DDL folded into `supabase/migrations/0007_operations.sql`; stale `supabase/migrations/0005_feature_flags.sql` removed. Seed values remain in `supabase/seed/feature-flags.sql` for Step 4.
+- CLEARED IN M1 STEP 4: `feature_flags` table DDL folded into `supabase/migrations/0007_operations.sql`; stale `supabase/migrations/0005_feature_flags.sql` removed; feature flag defaults inlined into `supabase/migrations/0010_seed.sql`.
 - CLEARED IN M1 STEP 1: `src/middleware.ts` (root file) needs a one-line authz comment (Step 2 cross-check carry-forward).
 - CLEARED IN M1 STEP 1: `requiredSecret` in `src/lib/env.ts` hardened with `.trim()` to protect against accidental whitespace in pasted secrets.
 - DEFERRED TO M3: Middleware matcher in `src/middleware.ts` should be optimized to exclude static asset paths.
@@ -217,7 +221,7 @@ Until every box ticks, the production deploy keeps the `commerce_enabled` featur
 | Production data paths | yes - schema and RLS landed |
 | PII | yes - customers/addresses/orders tables created and RLS active |
 | RLS enforcement | active as of M1 Step 3 |
-| Seed data | pending Step 4 |
+| Seed data | active as of M1 Step 4 |
 
 ## Recon — M1 entry — 2026-05-22
 

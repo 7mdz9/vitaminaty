@@ -163,6 +163,7 @@ Researches Vitaminaty specifically. Attempts admin portal compromise via phishin
 - `customers`, `addresses`, `orders`, `order_items` policies: rows visible only when `auth.uid() = customer_id`.
 - Anon key (used in client) cannot bypass RLS. Service role key (used server-side) can, and is only invoked in `src/server/repositories/*`.
 - Server-side mutations validate `customer_id` against `auth.uid()` before any write.
+M1 RLS posture relies on Supabase's default behavior where the service_role bypasses RLS. Any future migration to a non-Supabase service account would require explicit policy updates.
 
 ### 5.4 Admin portal (Zone A)
 
