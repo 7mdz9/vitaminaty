@@ -1,7 +1,7 @@
 import type { AedAmount } from "@/lib/money/aed";
 import type { AddressSnapshot } from "@/types/address";
 
-export type PaymentMethod = "cards" | "apple_pay" | "tabby" | "tamara" | "cod";
+export type PaymentMethod = "card" | "apple_pay" | "tabby" | "tamara" | "cod";
 
 export type PaymentStatus =
   | "stub_pending"

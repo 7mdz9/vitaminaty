@@ -24,7 +24,7 @@ export const OrderCreateInputSchema = z.object({
       }),
     )
     .min(1),
-  payment_method: z.enum(["cards", "apple_pay", "tabby", "tamara", "cod"]),
+  payment_method: z.enum(["card", "apple_pay", "tabby", "tamara", "cod"]),
   shipping_method: z.enum(["standard", "express", "same_day"]),
   idempotency_key: z.string().trim().min(1),
 });
