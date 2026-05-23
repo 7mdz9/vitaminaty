@@ -1,7 +1,7 @@
 import "server-only";
 
 import { FEATURE_FLAGS, type FeatureFlagKey } from "@/features/feature-flags/flags";
-import { getFeatureFlagFromDB } from "@/server/repositories/feature-flag-repository";
+import { getFeatureFlag } from "@/server/repositories/feature-flag-repository";
 
 const dbCache = new Map<FeatureFlagKey, boolean | null>();
 
@@ -47,7 +47,7 @@ async function getCachedDatabaseValue(key: FeatureFlagKey): Promise<boolean | nu
     return dbCache.get(key) ?? null;
   }
 
-  const value = await getFeatureFlagFromDB(key);
+  const value = (await getFeatureFlag(key))?.enabled ?? null;
   dbCache.set(key, value);
   return value;
 }

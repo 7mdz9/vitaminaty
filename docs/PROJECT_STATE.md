@@ -13,13 +13,13 @@ Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vita
 
 The platform is admin-driven: products import with minimal data and are progressively enriched by the admin team through a purpose-built admin portal. The public site adapts to whatever data exists per product and never shows fake content.
 
-M1 schema, RLS, reference seed data, and repository-facing DB client surface are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories.
+M1 schema, RLS, reference seed data, repository-facing DB client surface, and non-PII repositories are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories.
 
 ## 2. Current milestone
 
-**M1 - Data layer: Step 5 complete; Step 6 pending.**
+**M1 - Data layer: Step 6 complete; Step 7 pending.**
 
-M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. Next action is M1 Step 6.
+M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. M1 Step 6 non-PII repositories are implemented. Next action is M1 Step 7.
 
 ## 3. Stack â€” locked
 
@@ -48,6 +48,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Server actions first.** All mutations go through Next.js Server Actions in `src/features/{feature}/actions.ts`. No standalone REST API routes for app-internal data; `/api/` is reserved for webhooks, health, sitemap.
 - **Repository layer is the only DB access point.** Service-role Supabase client lives in `src/lib/supabase/server.ts` and is imported only by `src/server/repositories/*`. Everything else uses the repository functions.
 - **Repository-facing DB clients.** Repository-facing DB clients live at `src/server/db/supabase-admin.ts` (service-role) and `src/server/db/supabase-server.ts` (per-request anon with cookie context). M0 `src/lib/supabase/*` clients remain as underlying implementation.
+- **Repository admin/public split.** Repositories live at `src/server/repositories/`. Admin-scoped reads and writes for an entity live in a sibling `*-admin-repository.ts` file (for example, `product-admin-repository.ts`, `brand-admin-repository.ts`). The plain `*-repository.ts` files contain only public/customer-facing reads. Directory-level greps discriminate admin vs public paths by file suffix. `wholesale_price_internal` may appear only inside `*-admin-repository.ts` files. Variants/images/goal_tags/slug_history are grouped under `product-repository.ts` (public sub-exports) and `product-admin-repository.ts` (admin sub-exports); no separate file per child table.
 - **Bundle secret scan.** Bundle secret scan is implemented at `scripts/scan-bundle-secrets.sh`. It reads the live 130+ char prefix of `SUPABASE_SERVICE_ROLE_KEY` from `.env.local` and greps `.next/` for that VALUE prefix. Scanning for the env-var NAME is forbidden (false positive - name appears legitimately via env.ts Zod refs).
 - **All money is whole-AED integers.** Type `AedAmount` in `src/lib/money/aed.ts`. No float arithmetic on money anywhere.
 - **Money math via `src/lib/money/aed.ts`.** AED values use a branded whole-integer type, with VAT-inclusive breakdown in `src/lib/money/vat.ts`.
@@ -125,9 +126,9 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/lib/validation/webhook-payloads.ts` | M5/M6 webhook payload schema placeholders. |
 | `src/lib/__tests__/validation.test.ts` | Validation schema tests. |
 | `src/lib/__tests__/adapters.test.ts` | Payment, shipping, and support-chat adapter stub tests. |
-| `src/types/product.ts` | Product, field-status, image, content, and label-data shared types. |
+| `src/types/product.ts` | Product, variant, image, goal-tag, slug-history, field-status, content, and label-data shared types. |
 | `src/types/brand.ts` | Brand shared type. |
-| `src/types/category.ts` | Category and goal shared types. |
+| `src/types/category.ts` | Category, goal, and MD category mapping shared types. |
 | `src/types/order.ts` | Order and order-item shared types. |
 | `src/types/cart.ts` | Cart line and revalidation shared types. |
 | `src/types/address.ts` | UAE address shared types. |
@@ -142,7 +143,14 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/features/feature-flags/eval.ts` | Runtime flag evaluation with `FF_*` override, repository lookup, and default fallback. |
 | `src/features/feature-flags/admin-actions.ts` | TODO(M2) placeholder for admin flag-toggle server actions. |
 | `src/features/feature-flags/__tests__/eval.test.ts` | Feature flag inventory and precedence tests. |
-| `src/server/repositories/feature-flag-repository.ts` | M0 null-read repository for feature flag DB access; M1 fills Supabase read after migration apply. |
+| `src/server/repositories/product-repository.ts` | M1 public product repository reads, including variants/images/goal_tags/slug_history public sub-exports. |
+| `src/server/repositories/product-admin-repository.ts` | M1 admin product reads/writes, wholesale column access, and Step 8 bulk import upsert path. |
+| `src/server/repositories/brand-repository.ts` | M1 public brand repository reads. |
+| `src/server/repositories/brand-admin-repository.ts` | M1 admin brand mutations. |
+| `src/server/repositories/category-repository.ts` | M1 category and MD category mapping repository reads plus small admin category update surface. |
+| `src/server/repositories/goal-repository.ts` | M1 goal reference repository reads. |
+| `src/server/repositories/feature-flag-repository.ts` | M1 feature flag repository backed by Supabase with public reads and admin update helper. |
+| `tests/integration/repositories/non-pii-repositories.test.ts` | M1 Step 6 local Supabase integration tests for non-PII repositories. |
 | `src/components/chat/ChatBubble.tsx` | Client support chat placeholder bubble controlled by server-evaluated visibility prop. |
 | `src/lib/paymob/types.ts` | Paymob adapter domain types. |
 | `src/lib/paymob/adapter.ts` | `PaymentAdapter` interface. |

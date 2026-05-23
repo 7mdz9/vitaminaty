@@ -22,3 +22,17 @@ export interface CategoryRecord {
   created_at: string;
   updated_at: string;
 }
+
+export interface GoalRecord {
+  tag: GoalTag;
+  display_name: string;
+  description: string | null;
+  sort_order: number;
+}
+
+export interface MdCategoryMappingRecord {
+  md_category: string;
+  default_public_category_slug: string | null;
+  requires_split: boolean;
+  split_hint: string | null;
+}

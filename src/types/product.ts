@@ -19,10 +19,9 @@ export type FieldStatusValue = FieldStatus["status"];
 
 export type ProductForm =
   | "powder"
-  | "capsules"
-  | "tablets"
-  | "softgels"
-  | "bars"
+  | "capsule"
+  | "tablet"
+  | "softgel"
   | "gummies"
   | "liquid"
   | "rtd"
@@ -84,6 +83,37 @@ export interface ProductImageRecord {
   created_at: string;
 }
 
+export interface ProductVariantRecord {
+  id: string;
+  product_id: string;
+  flavor: string | null;
+  size: string;
+  sku: string | null;
+  barcode: string | null;
+  price_aed: number;
+  in_stock: boolean;
+  stock_quantity: number | null;
+  low_stock_threshold: number;
+  weight_grams: number | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductGoalTagRecord {
+  product_id: string;
+  goal: "build_muscle" | "boost_energy" | "recovery" | "weight_management" | "endurance";
+  is_primary: boolean;
+}
+
+export interface SlugHistoryRecord {
+  id: string;
+  product_id: string;
+  old_slug: string;
+  new_slug: string;
+  changed_at: string;
+}
+
 export interface ProductContent {
   description?: string;
   benefits?: string[];
@@ -136,3 +166,5 @@ export interface ProductRecord {
   updated_at: string;
   published_at: string | null;
 }
+
+export type PublicProductRecord = Omit<ProductRecord, "wholesale_price_internal">;
