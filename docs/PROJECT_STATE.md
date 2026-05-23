@@ -9,17 +9,48 @@
 
 ## 1. What Vitaminaty is
 
-Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vitamins, wellness, and healthy food products. It is **not** a brand. It carries ~30 canonical brands (Scitec, Applied Nutrition, Bucked Up, Allmax, Cellucor, Now Foods, Natural Factors, etc.) sourced from authorized distributors. The catalog has 787 unique products imported from a grouped Markdown source (`docs/reference/product.md`).
+Vitaminaty is a UAE-based multi-brand online retailer for sports nutrition, vitamins, wellness, and healthy food products. It is **not** a brand. The M1 seed now contains 55 canonical brand records, with 44 matched by the current catalog import (Scitec, Applied Nutrition, Bucked Up, AllMax, Cellucor, NOW Foods, Natural Factors, etc.) sourced from authorized distributors. The catalog has 787 unique products imported from a grouped Markdown source (`docs/reference/product.md`).
 
 The platform is admin-driven: products import with minimal data and are progressively enriched by the admin team through a purpose-built admin portal. The public site adapts to whatever data exists per product and never shows fake content.
 
-M1 schema, RLS, reference seed data, repository-facing DB client surface, and non-PII repositories are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories.
+M1 schema, RLS, reference seed data, repository-facing DB client surface, non-PII repositories, PII/operational repositories, canonical RLS regression tests, and the local admin auth seed script are landed: migrations 0001-0010 create the schema tables, enums, indexes, triggers, RLS policies, and reference seed rows; `src/server/db/*` wraps Supabase access for repositories; `tests/integration/repositories/rls-cross-checks.test.ts` encodes the M1 RLS cross-checks with real signed Supabase sessions; `scripts/seed-admin-user.ts` idempotently creates the initial Auth-only admin user.
 
 ## 2. Current milestone
 
-**M1 - Data layer: Step 6 complete; Step 7 pending.**
+**M1 - Data layer: COMPLETE (shipped 2026-05-23). Next: M1 addendum migration 0012 (inventory tracking) -> then M2 - Admin portal.**
 
-M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. M1 Step 6 non-PII repositories are implemented. Next action is M1 Step 7.
+M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. M1 Step 6 non-PII repositories are implemented. M1 Step 7 PII and operational repositories are implemented, append-only event repositories are split into dedicated files, and the canonical `rls-cross-checks.test.ts` suite passes. M1 Step 8 import script is lint-clean and recovered after meta-model-blessed brand seed expansion: 787 products import with 44 distinct matched brands. M1 Step 9 admin seed script is implemented and verified locally. M1 Final Audit recovery added `0011_wholesale_revoke_writes.sql` and a column-privilege regression assertion. M1 Final Audit rerun passed; M1 is shipped. The next pre-M2 task is the HIGH_RIGOR M1 addendum migration `0012_inventory.sql`.
+
+### 2.1 Spec evolution log
+
+**2026-05-23 â€” Inventory tracking added as MVP scope (spec evolution chat).**
+
+The meta-model and human owner expanded MVP scope to include inventory tracking after the M1 Final Audit. Key outputs:
+
+- New file: `docs/INVENTORY_SPEC.md` â€” canonical inventory tracking spec covering the schema additions, storefront display rules, checkout transaction semantics, and restoration triggers.
+- Updated: `docs/ADMIN_PORTAL_SPEC.md` â€” added Â§4 dashboard expansion, Â§5.3 bulk-operation safeguards (including case_pack hard-block carveout), Â§5.4â€“5.13 admin UX enhancements (spreadsheet edit, side drawer, work queues, save & next, keyboard shortcuts, command bar, drawer image upload, optimistic concurrency, composed filters, progress indicator), Â§10 inventory editing surfaces, Â§12.1 audit-log diff view.
+- Updated: `docs/DB_SCHEMA.md` â€” added `stock_status` and `inventory_movement_reason` ENUMs to Â§3 catalog, swapped `product_variants.in_stock` boolean for `stock_status` enum + trigger-computed in Â§5.2, added `inventory_movements` table to Â§8.4, added RLS to Â§9.10, documented 0011 (already shipped) + 0012 (planned) in Â§10 migration sequence.
+- Updated: `docs/API_SPEC.md` â€” added six admin inventory endpoints to Â§3.1, clarified cart revalidation overall_status shape in Â§2.1, expanded placeOrder server flow in Â§2.2 to spell out the SELECT FOR UPDATE + trigger-driven stock_status + inventory_movements write inside the same transaction.
+- Updated: `docs/proj_spec.md` â€” Â§3 non-goal split (only automation/sync is non-goal; tracking is MVP); Â§9 P8 row expanded; Â§M1 gains addendum migrations note; Â§M2 gains inventory editing UX scope; Â§M3 gains storefront stock display scope; Â§M4 cross-check tightened; Â§M7 gains restoration flow scope.
+- Updated: `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` â€” Â§5.4 adds 9th flag `missing_stock_quantity` with derivation rule; Â§22.1 completion_score formula penalty term widened (9 Ã— 5 = 45 max); Â§23.1 filter chip list adds the new flag + stock_status single-select.
+
+Migration routing: the addendum migration `0012_inventory.sql` lands at the end of the M1 series before M2 begins. It is HIGH_RIGOR (production data path + schema mutation on the already-imported 787 products + new RLS on a new table) and runs CODEX-only per the project's executor constraint. The CODEX prompt for the 0012 addendum is at `docs/M1_ADDENDUM_0012_PROMPT.md`.
+
+**Open product decisions resolved in this round** (all locked, all referenced in `INVENTORY_SPEC.md Â§2`):
+- Q1a/Q1b: hard decrement at order creation; no reservation timeout at MVP.
+- Q2: low-stock badge only on storefront; no exact counts to public.
+- Q3: backorders dropped at MVP; `stock_status` is 3-value enum.
+- Q4: variants mandatory for `status='published'`; not for imported.
+- Q5: single-step manual stock adjustment with audit + movement log.
+- Q6: pre-publish stock is real, not phantom.
+- Q7: `missing_stock_quantity` as 9th admin_review_flag; backfilled in 0012.
+- Q8: `in_stock` boolean dropped; `stock_status` enum replaces it.
+- Q9: `inventory_movements` write inside same transaction as order creation.
+- Q10: reason enum has both `manual_adjustment` (general) and `stock_recount` (counted-discrepancy workflow); plus `payment_failed` distinct from `order_cancelled`.
+- Q11: low_stock_threshold is per-variant (confirmed; schema already had it).
+- Q12: bulk publish review-flag override is soft for most flags; **hard-block carveout for `case_pack=true`** (per PRODUCT_CONTENT_SPEC Â§18.2).
+- Q13: `inventory_movements.order_id` FK uses `ON DELETE SET NULL` (preserves immutable history); table is append-only with no UPDATE/DELETE RLS policies (matches `payment_events`/`shipment_events`/`audit_log`).
+- Q14: `stock_status` is stored with a trigger that fires on INSERT/UPDATE of `stock_quantity` or `low_stock_threshold`; indexed for storefront and admin queue queries.
 
 ## 3. Stack â€” locked
 
@@ -46,10 +77,14 @@ M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migra
 M0 Step 1 confirmation: these patterns remain accurate. This step added only the application skeleton, placeholder modules, and root configuration; no business logic or boundary-enforcement changes were introduced.
 
 - **Server actions first.** All mutations go through Next.js Server Actions in `src/features/{feature}/actions.ts`. No standalone REST API routes for app-internal data; `/api/` is reserved for webhooks, health, sitemap.
-- **Repository layer is the only DB access point.** Service-role Supabase client lives in `src/lib/supabase/server.ts` and is imported only by `src/server/repositories/*`. Everything else uses the repository functions.
+- **Repository layer is the only DB access point.** Service-role Supabase access is repository-only. M0 `src/lib/supabase/server.ts` remains restricted; M1 repository-facing service-role access is `src/server/db/supabase-admin.ts`. Everything else uses repository functions.
 - **Repository-facing DB clients.** Repository-facing DB clients live at `src/server/db/supabase-admin.ts` (service-role) and `src/server/db/supabase-server.ts` (per-request anon with cookie context). M0 `src/lib/supabase/*` clients remain as underlying implementation.
 - **Repository admin/public split.** Repositories live at `src/server/repositories/`. Admin-scoped reads and writes for an entity live in a sibling `*-admin-repository.ts` file (for example, `product-admin-repository.ts`, `brand-admin-repository.ts`). The plain `*-repository.ts` files contain only public/customer-facing reads. Directory-level greps discriminate admin vs public paths by file suffix. `wholesale_price_internal` may appear only inside `*-admin-repository.ts` files. Variants/images/goal_tags/slug_history are grouped under `product-repository.ts` (public sub-exports) and `product-admin-repository.ts` (admin sub-exports); no separate file per child table.
+- **PII repository split.** Customer-facing `customer-repository.ts`, `order-repository.ts`, and `support-chat-repository.ts` use RLS-enforced anon/session clients. Service-role paths for bootstrap, checkout/admin writes, and support inserts live in `customer-admin-repository.ts`, `order-admin-repository.ts`, and `support-chat-admin-repository.ts`.
+- **Append-only event repositories.** Append-only ledgers live in dedicated files: `payment-event-repository.ts`, `shipment-event-repository.ts`, and `audit-log-repository.ts`. Each declares a top-of-file Authz model comment and exposes append plus admin read functions, with no update/delete exports.
+- **Canonical RLS regression suite.** `tests/integration/repositories/rls-cross-checks.test.ts` encodes the M1 RLS cross-checks. It uses `createTestCustomerWithSession()` from `tests/fixtures/customers.ts` so every `auth.uid()` assertion runs through a real signed Supabase session, never `set_config('request.jwt.claims', ...)`. It re-seeds the admin user idempotently at suite start so the test survives `supabase db reset`.
 - **Bundle secret scan.** Bundle secret scan is implemented at `scripts/scan-bundle-secrets.sh`. It reads the live 130+ char prefix of `SUPABASE_SERVICE_ROLE_KEY` from `.env.local` and greps `.next/` for that VALUE prefix. Scanning for the env-var NAME is forbidden (false positive - name appears legitimately via env.ts Zod refs).
+- **Local-only Supabase scripts load from CLI status.** One-shot scripts that must never hit remote Supabase read local credentials from `pnpm exec supabase status -o env` at runtime and refuse non-local URLs, rather than trusting possibly stale `.env.local` Supabase values.
 - **All money is whole-AED integers.** Type `AedAmount` in `src/lib/money/aed.ts`. No float arithmetic on money anywhere.
 - **Money math via `src/lib/money/aed.ts`.** AED values use a branded whole-integer type, with VAT-inclusive breakdown in `src/lib/money/vat.ts`.
 - **All env vars accessed through env loaders.** Server-only env goes through `src/lib/env.ts`; client-safe public env goes through `src/lib/env.public.ts`. Both are Zod-validated. Implemented in Step 2.
@@ -65,6 +100,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 - **Goals and md_category_mapping public read.** Goals and md_category_mapping have unrestricted public read (`USING (true)`) because they are non-sensitive reference data with no visibility flag. Future schema changes that add sensitive columns to these tables must add column-level REVOKEs or replace the policy.
 - **Slug history public read.** `slug_history` public read is gated on parent product being currently published. Unpublishing a product makes its slug history invisible to anon. M3 slug-redirect logic must be aware of this.
 - **M1 wholesale column isolation.** `products.wholesale_price_internal` uses column-subset SELECT grants for anon/authenticated plus service-role-only access to the wholesale column; local psql reports denied reads as table-level permission denial, while Supabase/Postgres enforcement still prevents access.
+- **M1 Final Audit recovery cross-check verdicts.** Step 2 schema migrations: clean after `supabase db reset`; Step 3 RLS policies: clean with documented wholesale denial wording; Step 5 DB wrappers/bundle scan: clean value-prefix scan; Step 7 recovery: clean canonical `rls-cross-checks.test.ts` suite with real signed sessions.
+- **Wholesale column write isolation.** `0011_wholesale_revoke_writes.sql` revokes anon/authenticated table-level write/reference grants on `products` plus column-level INSERT/UPDATE/REFERENCES on `wholesale_price_internal`; service-role repositories retain import/admin write access.
 - **Adaptive product rendering follows v1.1 Cases Aâ€“G.** See `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md` Â§7.
 - **PDP sections render only if data exists.** No empty placeholders, no "coming soon" labels on public side. Admin preview is the exception.
 - **All cart state untrusted at checkout.** Server revalidates prices, stock, totals, VAT, delivery before order creation.
@@ -103,6 +140,8 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/server/db/supabase-server.ts` | M1 repository-facing per-request anon Supabase client with cookie context and RLS enforcement. |
 | `src/lib/supabase/types.generated.ts` | Generated Supabase TypeScript schema types from local migrations. |
 | `scripts/scan-bundle-secrets.sh` | Client bundle scan for the live service-role key VALUE prefix, never the env-var name. |
+| `scripts/seed-admin-user.ts` | M1 Step 9 local-only Auth admin seed script; idempotent and password never logged. |
+| `scripts/README.md` | Operator notes for one-shot scripts, including admin seed env requirements and M2 MFA handoff. |
 | `src/middleware.ts` | Next.js middleware wiring session refresh outside `/_next/*` and `/api/health`. |
 | `src/app/api/health/route.ts` | Unauthenticated healthcheck returning status, git SHA, app env, and timestamp. |
 | `tests/unit/env.test.ts` | Env validation tests for missing required vars, enum validation, and public/server split. |
@@ -151,6 +190,19 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/server/repositories/goal-repository.ts` | M1 goal reference repository reads. |
 | `src/server/repositories/feature-flag-repository.ts` | M1 feature flag repository backed by Supabase with public reads and admin update helper. |
 | `tests/integration/repositories/non-pii-repositories.test.ts` | M1 Step 6 local Supabase integration tests for non-PII repositories. |
+| `src/server/repositories/customer-repository.ts` | M1 Step 7 RLS-enforced customer profile and address reads/writes. |
+| `src/server/repositories/customer-admin-repository.ts` | M1 Step 7 service-role customer bootstrap/admin helpers for listing, finding, upserting, and updating `customers` rows. |
+| `src/server/repositories/order-repository.ts` | M1 Step 7 RLS-enforced customer order and order-item reads. |
+| `src/server/repositories/order-admin-repository.ts` | M1 Step 7 service-role order and order item helpers. |
+| `src/server/repositories/payment-event-repository.ts` | M1 Step 7 recovery append-only payment event append/read helpers. |
+| `src/server/repositories/shipment-event-repository.ts` | M1 Step 7 recovery append-only shipment event append/read helpers. |
+| `src/server/repositories/audit-log-repository.ts` | M1 Step 7 recovery append-only audit append/read helpers. |
+| `src/server/repositories/support-chat-repository.ts` | M1 Step 7 RLS-enforced customer reads for `support_conversations` and `support_messages`. |
+| `src/server/repositories/support-chat-admin-repository.ts` | M1 Step 7 service-role writes/reads for `support_conversations` and `support_messages`. |
+| `src/server/repositories/admin-repository.ts` | M1 Step 7 Supabase Auth admin role helper surface. |
+| `tests/integration/repositories/pii-repositories.test.ts` | M1 Step 7 local Supabase integration tests for PII RLS and service-role operational paths. |
+| `tests/integration/repositories/rls-cross-checks.test.ts` | M1 Step 7 recovery canonical RLS cross-check suite with five assertions and paired sanity checks. |
+| `tests/fixtures/customers.ts` | M1 Step 7 recovery real Supabase Auth customer session fixture for RLS tests. |
 | `src/components/chat/ChatBubble.tsx` | Client support chat placeholder bubble controlled by server-evaluated visibility prop. |
 | `src/lib/paymob/types.ts` | Paymob adapter domain types. |
 | `src/lib/paymob/adapter.ts` | `PaymentAdapter` interface. |
@@ -174,6 +226,7 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `supabase/migrations/0008_support_chat.sql` | M1 Step 2 support_conversations and support_messages migration. |
 | `supabase/migrations/0009_rls_policies.sql` | M1 Step 3 RLS policies, `is_admin()`, append-only ledger read policies, and wholesale column isolation migration. |
 | `supabase/migrations/0010_seed.sql` | M1 Step 4 categories, goals, MD category mapping, brands, and feature flag seed migration. |
+| `supabase/migrations/0011_wholesale_revoke_writes.sql` | M1 Final Audit recovery migration revoking anon/authenticated write/reference privileges on `products.wholesale_price_internal` and table-level product writes. |
 | `supabase/seed/feature-flags.sql` | Prepared default feature flag seed source; inlined into `0010_seed.sql` for migration-driven resets. |
 | `docs/PROJECT_STATE.md` | This file. |
 | `docs/LAST_SESSION.md` | What just happened. |
@@ -190,6 +243,13 @@ Verification debt carried into M1 from the M0 final audit:
 - DEFERRED TO M3: Middleware matcher in `src/middleware.ts` should be optimized to exclude static asset paths.
 - CLEARED IN M1 STEP 1: Bundle secret scans must use prefixes â‰¥130 chars when scanning for Supabase JWT-shaped secrets (anon and service_role share header prefix until char position ~110). 8-char prefix scans are useless for JWTs. Forensic dive during M0 Final Audit confirmed: original 8-char hit was prefix collision with the public anon key, no actual leak. Documented in `THREAT_MODEL.md` for M5 webhook verification work.
 - DEVIATION FOR STEP 3 CROSS-CHECK: DB_SCHEMA.md Section 9 authorizes `REVOKE SELECT (wholesale_price_internal)`, but Postgres table-level SELECT grants are additive and cannot be subtractively denied per column. `0009_rls_policies.sql` therefore revokes table SELECT on `products` from anon/authenticated and grants SELECT back on every non-wholesale column. The negative test denies access, but local psql reports `permission denied for table products` rather than `permission denied for column wholesale_price_internal`.
+- CLEARED AFTER M1 FINAL AUDIT RECOVERY STEP C: M1 Step 8 brand coverage recovered. The original §12.2 30-brand seed matched only 19 distinct `brand_id` values. 25 additional canonical brands were added under meta-model blessing on 2026-05-23. Final import count: 787 products, 55 seeded brands, 44 distinct matched brands, 18 `brand_id IS NULL` rows.
+- DEVIATION FOR M1 STEP 8 BRAND SEED: 11 §12.2 canonical brands (`Dymatize`, `EAS`, `GAT Sport`, `Hi-Tech Pharmaceuticals`, `Hydroxycut`, `iSatori`, `MuscleMeds`, `Mutant`, `QNT`, `SuperHuman`, `USPlabs`) are seeded but have zero matching products in the current catalog snapshot. They are retained in seed for future M2 admin inventory additions.
+- DEVIATION FOR M1 STEP 8 SOURCE QUALITY: Source MD contains product rows with `brand_raw` values that are flavor/product-type strings or ambiguous pseudo-brands (`SKITTLES`, `MILKY CHOCOLATE`, `MACA COFFEE`, `MICRO GROUND COFFEE`, `PREMIUM NUTRITION`, `RC`, etc.). These remain `brand_id=NULL` with `needs_brand_review=true` for M2 admin resolution.
+- DEVIATION FOR M1 STEP 8 COUNT DRIFT: `missing_price=369` is within the Step 8 DoD ±10 envelope but outside the original spec's ±5 expected-shift envelope around ~360. The import treats source `N/A` values and one non-integer price as missing to preserve integer-AED schema safety; PRODUCT_CONTENT_SPEC §3 records this as the canonical post-import count.
+- CLEARED AFTER M1 FINAL AUDIT RECOVERY STEP A: `scripts/import-products-from-md.ts` no longer reads or mutates `process.env`; repo-wide `pnpm lint` passes. Step 9 admin seed idempotency re-verified after the lint unblock.
+- CLEARED AFTER M1 FINAL AUDIT RECOVERY STEP 7: Append-only payment and shipment event helpers were split from `order-admin-repository.ts` into dedicated event repository files; `audit-log-repository.ts` now uses the required append/read naming with no update/delete exports; `tests/integration/repositories/rls-cross-checks.test.ts` now encodes the five M1 RLS assertions with paired sanity checks and real signed Supabase sessions.
+- CLEARED AFTER M1 FINAL AUDIT RECOVERY COLUMN REVOKE: `0011_wholesale_revoke_writes.sql` removes anon/authenticated write/reference grants from `products` and `wholesale_price_internal`; `rls-cross-checks.test.ts` now asserts anon/authenticated have zero column privileges for `wholesale_price_internal`.
 - Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
 
 ## 7. What is intentionally not built yet (and which milestone owns it)
@@ -232,10 +292,13 @@ Until every box ticks, the production deploy keeps the `commerce_enabled` featur
 
 | Surface | Status |
 |---|---|
-| Production data paths | yes - schema and RLS landed |
-| PII | yes - customers/addresses/orders tables created and RLS active |
+| Production data paths | yes - schema, RLS, seed, DB wrappers, non-PII repositories, and PII/operational repositories landed |
+| PII | yes - customers/addresses/orders tables created, RLS active, and repository tests cover owner isolation |
 | RLS enforcement | active as of M1 Step 3 |
 | Seed data | active as of M1 Step 4 |
+| Non-PII repositories | active as of M1 Step 6; admin/public suffix split enforced by checks |
+| PII repositories | active as of M1 Step 7 recovery; canonical RLS tests use real signed Supabase sessions and local service-role setup |
+| Admin Auth seed | active as of M1 Step 9; Auth-only admin user uses `app_metadata.role='admin'` and no `customers` row |
 
 ## Recon — M1 entry — 2026-05-22
 
@@ -408,5 +471,5 @@ ON CONFLICT (key) DO UPDATE SET
 
 ---
 
-_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-22 by M1 Step 1._
+_End of `PROJECT_STATE.md` v1.0. Last updated: 2026-05-23 by M1 Final Audit recovery._
 

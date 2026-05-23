@@ -1,15 +1,15 @@
-# PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md
+﻿# PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md
 
 **Project:** Vitaminaty
 **Document version:** v1.1 (admin-driven)
 **Supersedes:** v1.0 (`PRODUCT_CONTENT_SPEC.md`)
-**Document type:** Catalog content model — fields, statuses, lifecycle, publish gates, adaptive rendering, brand and category normalization
+**Document type:** Catalog content model â€” fields, statuses, lifecycle, publish gates, adaptive rendering, brand and category normalization
 **Audience:** BOB v5 / Claude Code / Codex / human reviewers
-**Treated as:** spec text under BOB v5 invariant I1 — character-verbatim, no rephrasing
+**Treated as:** spec text under BOB v5 invariant I1 â€” character-verbatim, no rephrasing
 
 ---
 
-## §1 Purpose & scope
+## Â§1 Purpose & scope
 
 This document defines the **content model** for the Vitaminaty product catalog: what fields exist on a product, what their statuses can be, how a product moves from import to public visibility, what the public site is allowed to render at each stage, and how the admin team enriches the catalog over time.
 
@@ -24,41 +24,41 @@ If a field name, status name, or rule in this document conflicts with another sp
 
 ---
 
-## §2 Core principles
+## Â§2 Core principles
 
 These principles are not negotiable. Every downstream decision in M1-M3 must honor them.
 
-### §2.1 Admin-driven, not import-driven
+### Â§2.1 Admin-driven, not import-driven
 
-The MD import (`docs/reference/product.md`, 817 source rows → 787 unique products) is the **starting point**, not the finished catalog. Every product lands in `status='imported'` with most fields empty. The admin team enriches products one by one over weeks or months. The public site shows only what the admin has explicitly published.
+The MD import (`docs/reference/product.md`, 817 source rows â†’ 787 unique products) is the **starting point**, not the finished catalog. Every product lands in `status='imported'` with most fields empty. The admin team enriches products one by one over weeks or months. The public site shows only what the admin has explicitly published.
 
-### §2.2 Never invent
+### Â§2.2 Never invent
 
 The system **never** generates content that doesn't trace back to a real source:
 - No fabricated supplement facts (no made-up protein-per-serving numbers, no invented ingredient lists)
 - No fabricated reviews (the reviews surface shows only an empty state at MVP)
 - No fabricated discounts (compare-at prices are admin-entered only)
-- No medical claims (we cannot say "treats X" or "cures Y" — only what the manufacturer's label says, verbatim)
+- No medical claims (we cannot say "treats X" or "cures Y" â€” only what the manufacturer's label says, verbatim)
 - No invented brand stories, history, or origin claims
-- No invented descriptions in published state (descriptions can be `draft` and admin-approved → `complete`)
+- No invented descriptions in published state (descriptions can be `draft` and admin-approved â†’ `complete`)
 
-### §2.3 Progressive enrichment
+### Â§2.3 Progressive enrichment
 
 Products do not need to be "complete" to be useful internally. The admin sees imported-but-empty products in the admin list. The public site sees only published products. Between import and publish, the product exists in a workshop state where each field is independently tracked.
 
-### §2.4 Hide rather than fake
+### Â§2.4 Hide rather than fake
 
-When a field is missing, the corresponding PDP section is **hidden entirely** — no "no information available" placeholders, no "—", no "TBD." Adaptive rendering (§6) decides what sections render based on field statuses.
+When a field is missing, the corresponding PDP section is **hidden entirely** â€” no "no information available" placeholders, no "â€”", no "TBD." Adaptive rendering (Â§6) decides what sections render based on field statuses.
 
-### §2.5 Internal data stays internal
+### Â§2.5 Internal data stays internal
 
-`wholesale_price_internal` is admin-only — never exposed publicly via API, page render, JSON-LD, sitemap, or any other surface. Enforced at three layers: column REVOKE in Postgres, repository query exclusion, and code review.
+`wholesale_price_internal` is admin-only â€” never exposed publicly via API, page render, JSON-LD, sitemap, or any other surface. Enforced at three layers: column REVOKE in Postgres, repository query exclusion, and code review.
 
-### §2.6 Source traceability is permanent
+### Â§2.6 Source traceability is permanent
 
 Every product retains its source lineage forever:
 - `source_file` (e.g., `product.md`)
-- `source_row[]` (array of original Excel rows that produced this product — may be multiple for merged duplicates)
+- `source_row[]` (array of original Excel rows that produced this product â€” may be multiple for merged duplicates)
 - `name_raw` (exact name as it appeared in Excel before normalization)
 - `brand_raw` (raw brand spelling before canonical mapping)
 - `source_category` (one of the 15 MD source categories)
@@ -68,7 +68,7 @@ These fields are read-only after import. They allow forensic recovery if normali
 
 ---
 
-## §3 Source catalog summary
+## Â§3 Source catalog summary
 
 | Field | Value |
 |---|---|
@@ -77,17 +77,19 @@ These fields are read-only after import. They allow forensic recovery if normali
 | Unique products after dedupe | **787** |
 | Duplicates merged | 30 |
 | MD source categories | **15** |
-| Raw brand spellings observed | ~52 |
-| Canonical brands after normalization | ~30 |
-| Products flagged `case_pack` (hidden from public) | ~140 |
-| Products with missing prices (`N/A` in source) | ~360 |
-| Products needing category review after MD → public mapping | ~36 (the "Uncategorized" + ambiguous rows) |
+| Raw brand spellings observed | **55** |
+| Seeded canonical brands after Step 8 recovery | **55** |
+| Canonical brands matched by current import | **44** |
+| Products with `brand_id IS NULL` after current import | **18** |
+| Products flagged `case_pack` (hidden from public) | **140** |
+| Products with missing prices (`N/A` or non-integer price in source) | **369** |
+| Products needing category review after MD â†’ public mapping | **36** (the "Uncategorized" + ambiguous rows) |
 
-The exact numbers may shift by ±5 after the M1 import runs the normalization pipeline; the M1 cross-check verifies the final counts and updates this section.
+Step 8 recovery note 2026-05-23: M1 import normalization produced the final counts above after the meta-model-blessed brand seed expansion. `missing_price=369` is inside the M1 DoD Â±10 CI envelope and outside the original Â±5 estimate because one non-integer source price and additional source N/A rows are treated as missing for integer-AED schema safety. The remaining 18 brand-null rows are source data-quality/admin-review residue, not import failures.
 
 ---
 
-## §4 Product lifecycle — 7 statuses
+## Â§4 Product lifecycle â€” 7 statuses
 
 A product transitions through these statuses. The transitions are mostly automatic (driven by completeness) with a few admin-only manual transitions.
 
@@ -107,11 +109,11 @@ A product transitions through these statuses. The transitions are mostly automat
 
 ---
 
-## §5 Field-level status model
+## Â§5 Field-level status model
 
-### §5.1 `fields_status` JSONB shape
+### Â§5.1 `fields_status` JSONB shape
 
-Every product has a `fields_status` JSONB column. The shape is a flat object keyed by field name, with the values being one of the statuses defined in §5.2.
+Every product has a `fields_status` JSONB column. The shape is a flat object keyed by field name, with the values being one of the statuses defined in Â§5.2.
 
 ```json
 {
@@ -137,20 +139,20 @@ Every product has a `fields_status` JSONB column. The shape is a flat object key
 
 The set of keys is **fixed** at the schema layer. Adding a new field requires a migration to update the `fields_status` shape across all rows.
 
-### §5.2 Field status values
+### Â§5.2 Field status values
 
 | Status | Icon | Color | Meaning | Public-visible content? |
 |---|---|---|---|---|
-| `complete` | ✓ | green | Field has a value, admin-approved | Yes |
-| `verified` | ✓✓ | green | Label-derived content cross-checked against the physical label | Yes |
-| `draft` | ✎ | amber | Drafted (AI-assisted or manual) but not yet approved | **No — never shown publicly** |
-| `missing` | ○ | gray | Field has no value | N/A (section hidden) |
-| `needs_review` | ⚠ | red | Field has a value but flagged for review (e.g., brand auto-mapped, admin should confirm) | **No — section hidden until reviewed** |
-| `not_applicable` | — | gray | Field doesn't apply to this product type (e.g., nutrition_panel on a non-ingestible) | N/A (section hidden) |
+| `complete` | âœ“ | green | Field has a value, admin-approved | Yes |
+| `verified` | âœ“âœ“ | green | Label-derived content cross-checked against the physical label | Yes |
+| `draft` | âœŽ | amber | Drafted (AI-assisted or manual) but not yet approved | **No â€” never shown publicly** |
+| `missing` | â—‹ | gray | Field has no value | N/A (section hidden) |
+| `needs_review` | âš  | red | Field has a value but flagged for review (e.g., brand auto-mapped, admin should confirm) | **No â€” section hidden until reviewed** |
+| `not_applicable` | â€” | gray | Field doesn't apply to this product type (e.g., nutrition_panel on a non-ingestible) | N/A (section hidden) |
 
-**Critical rule:** content with status `draft` or `needs_review` **is never rendered publicly**, even if the product is `published`. Adaptive rendering (§6) filters by per-field status, not just product status.
+**Critical rule:** content with status `draft` or `needs_review` **is never rendered publicly**, even if the product is `published`. Adaptive rendering (Â§6) filters by per-field status, not just product status.
 
-### §5.3 Status transitions per field
+### Â§5.3 Status transitions per field
 
 Field-level transitions are mostly automatic. Specifics:
 
@@ -161,14 +163,17 @@ Field-level transitions are mostly automatic. Specifics:
 - **On admin clicking "Mark not applicable":** status moves to `not_applicable`.
 - **On admin clearing a field:** status moves back to `missing`.
 
-### §5.4 `admin_review_flags` JSONB shape
+### Â§5.4 `admin_review_flags` JSONB shape
 
 A separate JSONB column tracks boolean flags for admin attention. Each flag is automatic-on-import and can be manually dismissed by an admin after review.
+
+**Shape extended 2026-05-23** (M1 spec-evolution chat, addendum migration 0012): added `missing_stock_quantity` as the 9th flag to support inventory tracking per `INVENTORY_SPEC.md`. The 0012 addendum backfills `missing_stock_quantity=true` on all existing 787 imported products (because the import script did not populate variant stock_quantity â€” that's an admin enrichment task in M2).
 
 ```json
 {
   "missing_price": true,
   "missing_image": true,
+  "missing_stock_quantity": true,
   "case_pack": false,
   "duplicate_suspected": false,
   "multiple_price_pairs": false,
@@ -178,52 +183,58 @@ A separate JSONB column tracks boolean flags for admin attention. Each flag is a
 }
 ```
 
-| Flag | Triggered on import when… | Effect |
+| Flag | Triggered on import whenâ€¦ | Effect |
 |---|---|---|
 | `missing_price` | Source `Retail Price` is `N/A` | Product can't pass MVP publish gate (price is required). Filter visible in admin list. |
 | `missing_image` | No image uploaded to Supabase Storage | Product can't pass MVP publish gate. |
-| `case_pack` | Source name contains `(N/CASE)` or `(N/C)` or `N/CASE` patterns | Product is **never publicly visible** at MVP — case-pack items are wholesale, not retail. Hidden from public regardless of publish status. |
+| `missing_stock_quantity` | Product has zero variants OR any variant has `stock_quantity IS NULL` | Product can't pass MVP publish gate (per `INVENTORY_SPEC.md Â§3.4` â€” published products must have at least one variant with non-NULL stock). Derived flag; recomputes on every variant create/update. Backfilled to `true` on all 787 imported products in addendum migration 0012. |
+| `case_pack` | Source name contains `(N/CASE)` or `(N/C)` or `N/CASE` patterns | Product is **never publicly visible** at MVP â€” case-pack items are wholesale, not retail. Hidden from public regardless of publish status. **Hard-blocks bulk publish per `ADMIN_PORTAL_SPEC.md Â§5.3` â€” not overridable.** |
 | `duplicate_suspected` | Import dedupe heuristic flagged this product as a probable duplicate of another | Admin should investigate and merge or archive. |
 | `multiple_price_pairs` | Source row had multiple `Wholesale Price` / `Retail Price` pairs that couldn't be cleanly merged | Admin must pick a canonical pair. |
 | `needs_category_review` | MD category mapped to "Uncategorized" or the mapping rule has `requires_split=true` | Admin must assign a public category before publish. |
 | `needs_brand_review` | Brand raw value didn't match any canonical alias | Admin must map to existing brand or create a new canonical brand. |
-| `needs_label_data` | Product has no `label_data` filled (no nutrition panel, no ingredients) | Soft flag — product can publish at MVP gate without label data, but Tier 3 quality requires it. |
+| `needs_label_data` | Product has no `label_data` filled (no nutrition panel, no ingredients) | Soft flag â€” product can publish at MVP gate without label data, but Tier 3 quality requires it. |
 
-Flags surface in the admin product list as filter chips (per `ADMIN_PORTAL_SPEC.md` §5.1).
+Flags surface in the admin product list as filter chips (per `ADMIN_PORTAL_SPEC.md` Â§5.1). The `missing_stock_quantity` flag also drives a dedicated work queue at `/admin/queues/missing-stock-quantity` per `ADMIN_PORTAL_SPEC.md Â§5.6`.
+
+**Derived flag computation rule (`missing_stock_quantity`):** unlike most flags which are set at import and dismissed by admin, `missing_stock_quantity` is *computed* by a service-layer rule that runs on:
+- product create / variant create / variant update / variant delete
+- It is `true` iff `(SELECT count(*) FROM product_variants WHERE product_id = p.id AND stock_quantity IS NOT NULL) = 0`.
+- Admin cannot dismiss it directly; the only way to clear it is to populate `stock_quantity` on at least one variant.
 
 ---
 
-## §6 Adaptive PDP rendering — Cases A–G
+## Â§6 Adaptive PDP rendering â€” Cases Aâ€“G
 
 The public PDP renders different sections based on which fields have publishable content. This produces seven "shapes" of PDP that all look professional, none of which look incomplete.
 
 **Always rendered (regardless of completeness):**
 - Header: brand line, name, breadcrumb
-- Price block (if `retail_price` is `complete` — otherwise product cannot publish, so this is guaranteed)
-- Primary image (if `image` is `complete` — same guarantee)
+- Price block (if `retail_price` is `complete` â€” otherwise product cannot publish, so this is guaranteed)
+- Primary image (if `image` is `complete` â€” same guarantee)
 - Stock state
 - Variant selector (if variants exist)
 - Add-to-Cart button (when `commerce_enabled` flag is on)
-- Trust block (Vitaminaty value props — authenticity, fast delivery, returns)
+- Trust block (Vitaminaty value props â€” authenticity, fast delivery, returns)
 - FAQ block (static content per category)
 - Reviews empty state
 
 **Conditionally rendered based on field status:**
 
-| Section | Renders when… | Source field(s) |
+| Section | Renders whenâ€¦ | Source field(s) |
 |---|---|---|
 | About this product | `description` is `complete` or `verified` | `content.description` |
-| Key benefits | `benefits` is `complete` and array has ≥1 item | `content.benefits[]` |
+| Key benefits | `benefits` is `complete` and array has â‰¥1 item | `content.benefits[]` |
 | Directions of use | `directions` is `complete` or `verified` | `label_data.directions_of_use` |
 | Storage instructions | `storage` is `complete` or `verified` | `label_data.storage_instructions` |
-| Nutrition panel | `nutrition_panel` is `complete` or `verified` | `label_data.nutrition_panel` (structured object per §9) |
+| Nutrition panel | `nutrition_panel` is `complete` or `verified` | `label_data.nutrition_panel` (structured object per Â§9) |
 | Ingredients | `ingredients` is `complete` or `verified` | `label_data.ingredients` |
 | Allergens | `allergens` is `complete` or `verified` | `label_data.allergens[]` |
 | Warnings | `warnings` is `complete` or `verified` | `label_data.warnings` |
 | Manufacturing facility warnings | `warnings` is `complete` AND `label_data.manufacturing_facility_warnings` non-empty | `label_data.manufacturing_facility_warnings` |
 | About the brand | Linked brand has `long_description` populated | `brands.long_description` |
-| Often Bought With | `often_bought_with` is `complete` and array has ≥1 item | `content.often_bought_with_ids[]` |
-| You May Also Like | Always renders if ≥1 same-category published products exist | computed from `products` + `categories` |
+| Often Bought With | `often_bought_with` is `complete` and array has â‰¥1 item | `content.often_bought_with_ids[]` |
+| You May Also Like | Always renders if â‰¥1 same-category published products exist | computed from `products` + `categories` |
 
 ### The seven cases
 
@@ -231,23 +242,23 @@ Cases describe the rendering "shape" of a PDP based on which content fields are 
 
 | Case | Description | When it applies |
 |---|---|---|
-| **A** | Bare minimum — only the always-rendered blocks. No description, no label data, no benefits. | Product just promoted to `published` with only Tier 2 fields complete. |
+| **A** | Bare minimum â€” only the always-rendered blocks. No description, no label data, no benefits. | Product just promoted to `published` with only Tier 2 fields complete. |
 | **B** | + About this product | `description` complete |
 | **C** | + Benefits | `description` + `benefits` complete |
 | **D** | + Directions and warnings | C + `directions` + `warnings` complete |
 | **E** | + Nutrition panel and ingredients | D + `nutrition_panel` + `ingredients` complete |
 | **F** | + Allergens and storage | E + `allergens` + `storage` complete |
-| **G** | Full quality — every Tier 3 field complete | E + F + brand long description + Often Bought With |
+| **G** | Full quality â€” every Tier 3 field complete | E + F + brand long description + Often Bought With |
 
-A product can move from Case A → G over time as the admin enriches it. **No rework on the PDP code is required between cases** — the same template adaptively shows/hides sections based on field statuses.
+A product can move from Case A â†’ G over time as the admin enriches it. **No rework on the PDP code is required between cases** â€” the same template adaptively shows/hides sections based on field statuses.
 
 ---
 
-## §7 Public publish gates
+## Â§7 Public publish gates
 
 Three tiers of "ready to publish." A product can be published at any tier; later enrichment moves it through subsequent tiers without re-publishing.
 
-### §7.1 MVP publish gate (required for `status` → `ready_to_publish`)
+### Â§7.1 MVP publish gate (required for `status` â†’ `ready_to_publish`)
 
 All of these must be `complete` or `verified`:
 
@@ -264,12 +275,12 @@ Additionally:
 
 If a product is `archived`, it cannot publish until restored.
 
-### §7.2 Quality publish gate (target for most products)
+### Â§7.2 Quality publish gate (target for most products)
 
-Everything in §7.1 plus:
+Everything in Â§7.1 plus:
 
 - `description` is `complete` or `verified`
-- `benefits` is `complete` with ≥3 items
+- `benefits` is `complete` with â‰¥3 items
 - `directions` is `complete` or `verified`
 - `warnings` is `complete` or `verified`
 - `seo_title` is `complete`
@@ -277,24 +288,24 @@ Everything in §7.1 plus:
 
 This is the recommended state for hero products on the homepage rails.
 
-### §7.3 Full-quality publish gate (Case G)
+### Â§7.3 Full-quality publish gate (Case G)
 
-Everything in §7.2 plus:
+Everything in Â§7.2 plus:
 
 - `nutrition_panel` is `verified` (label cross-checked)
 - `ingredients` is `verified`
 - `allergens` is `complete`
 - `storage` is `complete`
 - Linked brand has `long_description` populated
-- `often_bought_with` is `complete` with ≥3 items
+- `often_bought_with` is `complete` with â‰¥3 items
 
 This is what we aim for over time. Not required to ship.
 
 ---
 
-## §8 Field tiers — what gets filled when
+## Â§8 Field tiers â€” what gets filled when
 
-### §8.1 Tier 1 — Import (always complete after MD import)
+### Â§8.1 Tier 1 â€” Import (always complete after MD import)
 
 | Field | Source |
 |---|---|
@@ -307,22 +318,22 @@ This is what we aim for over time. Not required to ship.
 | `retail_price` | Excel Retail Price if numeric (else `missing` + `missing_price` flag) |
 | `wholesale_price_internal` | Excel Wholesale Price if numeric |
 
-### §8.2 Tier 2 — MVP publish (admin fills before first publish)
+### Â§8.2 Tier 2 â€” MVP publish (admin fills before first publish)
 
 | Field | How admin fills |
 |---|---|
-| `brand` (canonical) | Map `brand_raw` to canonical brand via normalization tool (§12) |
-| `category` (public) | Assign one of 16 Plan v2 categories via mapping suggestion (§13.3) |
+| `brand` (canonical) | Map `brand_raw` to canonical brand via normalization tool (Â§12) |
+| `category` (public) | Assign one of 16 Plan v2 categories via mapping suggestion (Â§13.3) |
 | `form` | Select from enum (Powder/Capsule/Tablet/Softgel/Gummies/Liquid/RTD/Food) |
-| `goal_tags` | Multi-select from 5 Plan v2 goals (§15) |
+| `goal_tags` | Multi-select from 5 Plan v2 goals (Â§15) |
 | `image` (primary) | Upload to Supabase Storage |
 | `slug` | Auto-generated from `name`; admin can edit |
 
-### §8.3 Tier 3 — Quality (filled over time)
+### Â§8.3 Tier 3 â€” Quality (filled over time)
 
 All of:
 - `description`, `benefits[]`, `directions_of_use`, `storage_instructions`, `warnings`
-- `nutrition_panel` (structured per §9), `ingredients`, `allergens[]`
+- `nutrition_panel` (structured per Â§9), `ingredients`, `allergens[]`
 - `seo_title`, `seo_description`
 - Additional `images[]` with `kind` and `alt_text`
 - `often_bought_with[]`
@@ -330,11 +341,11 @@ All of:
 
 ---
 
-## §9 Label data — nutrition panel structured object
+## Â§9 Label data â€” nutrition panel structured object
 
 The nutrition panel is a structured JSONB object inside `label_data.nutrition_panel`. It captures label-derived facts verbatim from the physical product label.
 
-### §9.1 Schema
+### Â§9.1 Schema
 
 ```json
 {
@@ -350,12 +361,12 @@ The nutrition panel is a structured JSONB object inside `label_data.nutrition_pa
     { "label": "Calcium", "amount": "150", "unit": "mg", "dv_percent": "12", "is_proprietary_blend": false },
     { "label": "Proprietary Blend", "amount": "5", "unit": "g", "dv_percent": null, "is_proprietary_blend": true }
   ],
-  "footnote": "* Percent Daily Values are based on a 2,000 calorie diet. † Daily Value not established.",
+  "footnote": "* Percent Daily Values are based on a 2,000 calorie diet. â€  Daily Value not established.",
   "label_image_id": "uuid-of-product_images-row-with-kind=label_nutrition"
 }
 ```
 
-### §9.2 Panel types
+### Â§9.2 Panel types
 
 | Type | Used for | Required fields |
 |---|---|---|
@@ -364,37 +375,37 @@ The nutrition panel is a structured JSONB object inside `label_data.nutrition_pa
 | `amino_profile` | Amino-acid-focused powders showing per-serving amino breakdown | `serving_size`, `rows[]` |
 | `none` | Products without a nutrition panel (e.g., topicals) | none |
 
-### §9.3 Rules
+### Â§9.3 Rules
 
 - Values are stored as **strings** (preserves "0.5", "<1", "trace" exactly as on the label).
 - `unit` is one of: `g`, `mg`, `mcg`, `IU`, `kcal`, `kJ`, `ml`, `oz`, `%`, `serving`.
 - `dv_percent` is a string for the same reason ("12", "12.5", "<1", "**").
-- `is_proprietary_blend: true` indicates the row is a proprietary blend total — sub-rows beneath it may have `amount: null` (label doesn't disclose).
+- `is_proprietary_blend: true` indicates the row is a proprietary blend total â€” sub-rows beneath it may have `amount: null` (label doesn't disclose).
 - Subrows (sugars under carbs, saturated fat under total fat) use `is_subrow: true` and reference `parent_label`.
 - Footnote text is captured verbatim from the label.
 
-### §9.4 Status
+### Â§9.4 Status
 
 `nutrition_panel` field status:
-- `missing` — nothing entered
-- `draft` — admin entered values but didn't cross-check against label image
-- `complete` — admin entered values, no cross-check yet
-- `verified` — admin clicked "Mark as verified" after cross-checking against the label image (which must be uploaded as a `label_nutrition` image)
+- `missing` â€” nothing entered
+- `draft` â€” admin entered values but didn't cross-check against label image
+- `complete` â€” admin entered values, no cross-check yet
+- `verified` â€” admin clicked "Mark as verified" after cross-checking against the label image (which must be uploaded as a `label_nutrition` image)
 
 **Only `verified` panels render publicly when adaptive rendering targets Case E or higher.** `complete` panels show in admin preview but not in production publish unless admin explicitly downgrades the gate.
 
 ---
 
-## §10 Product images
+## Â§10 Product images
 
-### §10.1 Image schema (per `product_images` table)
+### Â§10.1 Image schema (per `product_images` table)
 
 ```
 id, product_id, variant_id (nullable), storage_path, public_url,
 alt_text, kind, sort_order, is_primary, created_at
 ```
 
-### §10.2 Image kinds
+### Â§10.2 Image kinds
 
 | Kind | Description | Required for what |
 |---|---|---|
@@ -405,40 +416,42 @@ alt_text, kind, sort_order, is_primary, created_at
 | `open` | Product opened (e.g., showing scoop, capsule shape) | Optional |
 | `lifestyle` | Product in use, branded photoshoot | Optional |
 
-### §10.3 Rules
+### Â§10.3 Rules
 
 - Exactly one `is_primary=true` image per product (enforced by partial unique index).
 - The `front` kind is typically the primary, but admin can set any kind as primary.
 - `sort_order` controls gallery order on PDP.
-- `alt_text` is required for accessibility — auto-generated as "[Product name] - [kind]" if admin doesn't override.
+- `alt_text` is required for accessibility â€” auto-generated as "[Product name] - [kind]" if admin doesn't override.
 - Storage path convention: `products/{brand_slug}/{product_slug}/{auto-filename-with-hash}`.
-- Thumbnails (400×400, 200×200) auto-generated server-side on upload.
+- Thumbnails (400Ã—400, 200Ã—200) auto-generated server-side on upload.
 
 ---
 
-## §11 Brand directory — tiers
+## Â§11 Brand directory â€” tiers
 
 Brands are tiered for how prominently they appear on the public site. The tier is **computed**, not admin-set, but admin can override.
 
-| Tier | Computed when… | Where it shows |
+| Tier | Computed whenâ€¦ | Where it shows |
 |---|---|---|
-| **Heavy** | Brand has ≥15 published products AND has both `logo_url` and `hero_image_url` AND has `long_description` ≥200 chars | Full brand landing page with hero, brand story, featured products rail. Eligible for "Featured Brand Strip" on homepage. |
+| **Heavy** | Brand has â‰¥15 published products AND has both `logo_url` and `hero_image_url` AND has `long_description` â‰¥200 chars | Full brand landing page with hero, brand story, featured products rail. Eligible for "Featured Brand Strip" on homepage. |
 | **Medium** | Brand has 5-14 published products AND has `logo_url` | Brand landing page with simpler layout, no hero. |
 | **Light** | Brand has 1-4 published products OR is missing logo | Brand appears only in brand directory list. No dedicated landing page. |
 
-### §11.1 Featured Brand Strip (homepage)
+### Â§11.1 Featured Brand Strip (homepage)
 
 Maximum 2 active featured brands at any time. Admin selects from heavy-tier brands only. Enforced by partial unique index in admin.
 
 ---
 
-## §12 Brand normalization
+## Â§12 Brand normalization
 
-### §12.1 Why this exists
+### Â§12.1 Why this exists
 
-The MD source had ~52 raw brand spellings ("APPLED NUTRITION", "AN", "Applied Nutrition", etc.) for ~30 actual brands. The import script applies a normalization map; remaining unknowns get `needs_brand_review` flag and admin assigns canonically via the Brand Normalization Tool in the admin portal.
+The MD source had 55 raw brand spellings after the M1 Step 8 recovery pass. The seed now contains 55 canonical brands, of which 44 are matched by the current import; remaining unknown or pseudo-brand values get `needs_brand_review` and are assigned canonically via the Brand Normalization Tool in the admin portal.
 
-### §12.2 Canonical brand map (seed at M1)
+### Â§12.2 Canonical brand map (seed at M1; updated 2026-05-23 after Step 8 brand coverage recovery)
+
+Update note 2026-05-23: M1 Step 8 diagnostics found that the original 30-brand seed matched only 19 distinct `brand_id` values. The meta-model blessed 25 additional canonical brands from the source MD, bringing the seeded canonical map to 55 brands while leaving flavor/product-type pseudo-brands unmatched for M2 admin review.
 
 The seed map below is loaded at M1. Admin extends it during enrichment as new raw spellings are encountered.
 
@@ -474,20 +487,45 @@ The seed map below is loaded at M1. Admin extends it during enrichment as new ra
 | SuperHuman | `superhuman` | `SUPERHUMAN`, `SUPER HUMAN` |
 | Universal Nutrition | `universal-nutrition` | `UNIVERSAL`, `UNIVERSAL NUTRITION` |
 | USPlabs | `usplabs` | `USPLABS`, `USP LABS` |
+| JNX Sports | `jnx-sports` | `JNX`, `JNX SPORTS` |
+| Adonis | `adonis` | `ADONIS` |
+| Ghost | `ghost` | `GHOST`, `GHOST LIFESTYLE` |
+| Army 1 | `army-1` | `ARMY 1`, `ARMY1`, `ARMY ONE` |
+| Red Rex | `red-rex` | `RED REX`, `REDREX` |
+| Natural Factors | `natural-factors` | `NATURAL FACTORS` |
+| Evolite Nutrition | `evolite-nutrition` | `EVOLITE`, `EVOLITE NUTRITION` |
+| NXT Nutrition | `nxt-nutrition` | `NXT`, `NXT NUTRITION` |
+| Zoomad Labs | `zoomad-labs` | `ZOOMAD LABS`, `ZOOMAD` |
+| Bucked Up | `bucked-up` | `BUCKED UP`, `BUCKEDUP`, `DAS LABS` |
+| EFX Sports | `efx-sports` | `EFX`, `EFX SPORTS`, `ALL AMERICAN EFX` |
+| Nano Supps | `nano-supps` | `NANO`, `NANO SUPPS` |
+| Sports Research | `sports-research` | `SPORTS RESEARCH` |
+| Force Factor | `force-factor` | `FORCE FACTOR` |
+| Visly | `visly` | `VISLY` |
+| One Dose | `one-dose` | `ONE DOSE`, `ONEDOSE` |
+| Quamtrax Nutrition | `quamtrax-nutrition` | `QUAMTRAX`, `QUAMTRAX NUTRITION` |
+| Condemned Labz | `condemned-labz` | `CONDEMNED LABZ`, `CONDEMNED LABS` |
+| NOW Foods | `now-foods` | `NOW`, `NOW FOODS`, `NOW SPORTS` |
+| Labrada Nutrition | `labrada-nutrition` | `LABRADA`, `LABRADA NUTRITION` |
+| Olimp Sport Nutrition | `olimp-sport-nutrition` | `OLIMP`, `OLIMP LABS`, `OLIMP SPORT NUTRITION` |
+| AllMax Nutrition | `allmax-nutrition` | `ALL MAX`, `ALLMAX`, `ALLMAX NUTRITION` |
+| Nutricost | `nutricost` | `NUTRICOST` |
+| Scivation | `scivation` | `SCIVATION` |
+| Chikalab | `chikalab` | `CHIKALAB`, `CHIKAPROTEIN` |
 
 **Open list.** Final canonical brand count is determined by M1 import results. Admin adds new brands as discovered.
 
-### §12.3 Pseudo-brand handling
+### Â§12.3 Pseudo-brand handling
 
 Some MD source rows have non-brand values in the brand column (e.g., "SNACKS"). The import flags these with `needs_brand_review=true` and an admin must either:
 - Create a new canonical brand (e.g., the snack manufacturer if identifiable)
-- Mark as "ignore — not a brand" (sets `brand_id=null` and the product won't pass publish gate until brand is assigned)
+- Mark as "ignore â€” not a brand" (sets `brand_id=null` and the product won't pass publish gate until brand is assigned)
 
 ---
 
-## §13 Categories
+## Â§13 Categories
 
-### §13.1 Plan v2 public taxonomy (16 categories, locked for MVP)
+### Â§13.1 Plan v2 public taxonomy (16 categories, locked for MVP)
 
 Organized under three navigation groups:
 
@@ -513,18 +551,18 @@ Organized under three navigation groups:
 - Protein Bars
 - Functional Drinks
 
-### §13.2 Category page structure
+### Â§13.2 Category page structure
 
 Each category has:
 - `name`, `slug`, `parent_nav` (one of three nav groups)
-- `subcategories[]` — optional sub-taxonomy strings for filter chips
-- `supported_goals[]` — which of the 5 Plan v2 goals can be used as filters here
-- `listing_copy` — short intro for the category landing page (1-2 paragraphs)
+- `subcategories[]` â€” optional sub-taxonomy strings for filter chips
+- `supported_goals[]` â€” which of the 5 Plan v2 goals can be used as filters here
+- `listing_copy` â€” short intro for the category landing page (1-2 paragraphs)
 - `seo_title`, `seo_description`
 - `is_visible` toggle
 - `sort_order`
 
-### §13.3 MD → public mapping (seed at M1)
+### Â§13.3 MD â†’ public mapping (seed at M1)
 
 The 15 MD source categories map to public taxonomy via `md_category_mapping` table:
 
@@ -544,13 +582,13 @@ The 15 MD source categories map to public taxonomy via `md_category_mapping` tab
 | Specialized / Other Health | Specialized Health | No | |
 | Snacks | Healthy Snacks (default) / Protein Bars (when name contains "BAR") | **Yes** | |
 | Drinks / Beverages | Functional Drinks | No | |
-| Uncategorized / Misc | (no default — flagged for review) | **Yes** | ~36 products land here; admin assigns manually |
+| Uncategorized / Misc | (no default â€” flagged for review) | **Yes** | ~36 products land here; admin assigns manually |
 
 Auto-split rules embedded in the import script. Anything unmappable gets `needs_category_review=true`.
 
 ---
 
-## §14 Subcategories
+## Â§14 Subcategories
 
 Subcategories are **string tags within a category** for filter chips, not separate taxonomy rows. Stored on `categories.subcategories[]` array.
 
@@ -563,7 +601,7 @@ The import script does not assign subcategories. Admin assigns during enrichment
 
 ---
 
-## §15 Goals (Plan v2 — 5 goals)
+## Â§15 Goals (Plan v2 â€” 5 goals)
 
 | Tag | Display name | Description |
 |---|---|---|
@@ -579,18 +617,18 @@ Goal pages (`/goal/[tag]`) are first-class destinations on the homepage.
 
 ---
 
-## §16 Variants — flavor × size
+## Â§16 Variants â€” flavor Ã— size
 
 Variants represent purchasable SKUs. A product has 1..N variants.
 
-### §16.1 Variant fields (per `product_variants` table)
+### Â§16.1 Variant fields (per `product_variants` table)
 
 ```
 id, product_id, flavor, size, sku, barcode, price_aed,
 in_stock, stock_quantity, low_stock_threshold, weight_grams, sort_order
 ```
 
-### §16.2 Rules
+### Â§16.2 Rules
 
 - Every product has at least one variant (a "default" variant if the product has no real variations).
 - `(product_id, flavor, size)` is unique.
@@ -599,42 +637,42 @@ in_stock, stock_quantity, low_stock_threshold, weight_grams, sort_order
 - `low_stock_threshold` (default 5) is the threshold below which the admin gets a low-stock alert.
 - `sort_order` controls variant selector order on PDP.
 
-### §16.3 Variant display on PDP
+### Â§16.3 Variant display on PDP
 
 If a product has multiple flavors: flavor selector chips above size selector.
 If a product has multiple sizes: size selector chips with price per size.
-If a product has only one variant: no selector — variant inferred.
+If a product has only one variant: no selector â€” variant inferred.
 
 ---
 
-## §17 Pricing rules
+## Â§17 Pricing rules
 
-### §17.1 Three price fields
+### Â§17.1 Three price fields
 
 | Field | Purpose | Public visible? |
 |---|---|---|
 | `retail_price_aed` | Default public list price (whole AED integer). Stored on `products` for filtering; per-variant `price_aed` overrides on actual purchase. | Yes |
-| `wholesale_price_internal` | Internal cost basis. Used for margin tracking only. | **No — never** (column REVOKE, repository exclusion, code review) |
+| `wholesale_price_internal` | Internal cost basis. Used for margin tracking only. | **No â€” never** (column REVOKE, repository exclusion, code review) |
 | `compare_at_price_aed` | Optional. When set and > retail, shows as struck-through "was AED X" on PDP. | Yes |
 
-### §17.2 Rules
+### Â§17.2 Rules
 
 - All money is **whole AED integers**. No fractional money anywhere in the database.
-- VAT (5%) is **inclusive** — `retail_price_aed` already includes VAT. The breakdown (net + VAT) is computed at checkout per `src/lib/money/vat.ts`.
+- VAT (5%) is **inclusive** â€” `retail_price_aed` already includes VAT. The breakdown (net + VAT) is computed at checkout per `src/lib/money/vat.ts`.
 - `compare_at_price_aed` is admin-entered, never computed. No fake "was AED X" pricing.
 - If `retail_price_aed` is null/missing, product cannot publish.
 
-### §17.3 Free delivery threshold
+### Â§17.3 Free delivery threshold
 
-Per Plan v2 and `DELIVERY_SPEC.md` §10: free Standard delivery on orders with subtotal ≥ AED 200. This is shipping logic, not product pricing, but products show "Free delivery on orders AED 200+" trust line on PDP.
+Per Plan v2 and `DELIVERY_SPEC.md` Â§10: free Standard delivery on orders with subtotal â‰¥ AED 200. This is shipping logic, not product pricing, but products show "Free delivery on orders AED 200+" trust line on PDP.
 
 ---
 
-## §18 Case-pack products
+## Â§18 Case-pack products
 
-~140 products in the MD source are case-packs — bulk wholesale SKUs not intended for retail sale.
+~140 products in the MD source are case-packs â€” bulk wholesale SKUs not intended for retail sale.
 
-### §18.1 Detection
+### Â§18.1 Detection
 
 Import script flags `is_case_pack=true` (stored in `admin_review_flags.case_pack`) when source name matches any of:
 - `(N/CASE)` where N is 2-12
@@ -642,7 +680,7 @@ Import script flags `is_case_pack=true` (stored in `admin_review_flags.case_pack
 - `N/CASE` without parens
 - Names containing `CASE PACK`
 
-### §18.2 Rule
+### Â§18.2 Rule
 
 **Case-pack products are never publicly visible at MVP.** Even if admin manually flips `is_public_visible=true`, the public catalog filter excludes them (`admin_review_flags.case_pack=false` is a query predicate on public reads).
 
@@ -650,24 +688,24 @@ The case-pack flag can be dismissed by admin only after manually splitting the c
 
 ---
 
-## §19 Discontinued candidates
+## Â§19 Discontinued candidates
 
 Some products will be discontinued by the manufacturer. Admin marks these as `status='archived'`.
 
 Rules:
 - Archived products are not publicly visible.
 - Archived products retain all data for traceability.
-- Archived products do not appear in admin product list by default — admin must toggle "Show archived."
+- Archived products do not appear in admin product list by default â€” admin must toggle "Show archived."
 - Archived products with non-zero stock_quantity surface a warning to admin (don't archive sellable inventory).
 - Archived products with existing orders retain order linkage (orders reference the archived product_id).
 
 ---
 
-## §20 SEO fields
+## Â§20 SEO fields
 
 Per product:
-- `content.seo_title` — recommended 50-60 chars, auto-suggested as "{Name} — {Brand} | Vitaminaty"
-- `content.seo_description` — recommended 150-160 chars
+- `content.seo_title` â€” recommended 50-60 chars, auto-suggested as "{Name} â€” {Brand} | Vitaminaty"
+- `content.seo_description` â€” recommended 150-160 chars
 
 If `seo_title` or `seo_description` is `missing`, the public page falls back to a derived default. **Missing SEO never blocks publish** but is part of Tier 3 quality gate.
 
@@ -679,66 +717,69 @@ Per category:
 
 ---
 
-## §21 Cross-sell — "Often Bought With"
+## Â§21 Cross-sell â€” "Often Bought With"
 
-### §21.1 Field
+### Â§21.1 Field
 
-`content.often_bought_with_ids[]` — array of product UUIDs, max 3, ordered.
+`content.often_bought_with_ids[]` â€” array of product UUIDs, max 3, ordered.
 
-### §21.2 Rules
+### Â§21.2 Rules
 
 - Admin-curated only at MVP. No auto-suggestion algorithm.
 - Referenced products must be `is_public_visible=true`. If a referenced product is unpublished or archived, the PDP silently drops it from the rail.
-- Section renders when ≥1 valid product remains (per §6 adaptive rendering rules).
+- Section renders when â‰¥1 valid product remains (per Â§6 adaptive rendering rules).
 
-### §21.3 "You May Also Like" (separate, auto)
+### Â§21.3 "You May Also Like" (separate, auto)
 
 Auto-computed from same category. Shows up to 4 same-category published products excluding the current one. No admin curation.
 
 ---
 
-## §22 Completion score
+## Â§22 Completion score
 
 Per product, `completion_score` is an integer 0-100 stored in the `products.completion_score` column. Recomputed on every save.
 
-### §22.1 Formula
+### Â§22.1 Formula
 
 ```
-score =   (count of Tier 1 fields in 'complete' state × 5)   // max 30 from 6 Tier 1 fields
-        + (count of Tier 2 fields in 'complete' state × 6)   // max 36 from 6 Tier 2 fields
-        + (count of Tier 3 fields in 'complete' or 'verified' state × 3)  // max 39 from 13 Tier 3 fields
-        - (number of active admin_review_flags × 5)          // penalize unresolved flags
+score =   (count of Tier 1 fields in 'complete' state Ã— 5)   // max 30 from 6 Tier 1 fields
+        + (count of Tier 2 fields in 'complete' state Ã— 6)   // max 36 from 6 Tier 2 fields
+        + (count of Tier 3 fields in 'complete' or 'verified' state Ã— 3)  // max 39 from 13 Tier 3 fields
+        - (number of active admin_review_flags Ã— 5)          // penalize unresolved flags
 ```
 
 Clamped to `[0, 100]`. (The raw max sums to 105 but is clamped; penalty pushes problematic products down.)
 
-### §22.2 Usage
+**Updated 2026-05-23** (M1 spec-evolution, addendum migration 0012): the flag count in the penalty term now includes the new `missing_stock_quantity` flag (9 flags total, up from 8). Max possible penalty was 40 (8 flags Ã— 5); now 45 (9 flags Ã— 5). On import, a typical 787-product row has `missing_price` (often) + `missing_image` + `missing_stock_quantity` + `needs_label_data` = 4 active flags â†’ -20 penalty before any positive scoring kicks in. This pushes imported products' default completion_score lower than before the addendum, which is intentional: a product without stock data really *is* less complete than one without.
+
+### Â§22.2 Usage
 
 - Admin product list shows score as a progress bar per row.
 - Admin can sort by `completion_score ASC` to see what needs work.
-- Score is **not shown publicly** — internal only.
+- Score is **not shown publicly** â€” internal only.
 - Score informs `featured_score` (a separate field) which can be admin-overridden for homepage curation.
 
 ---
 
-## §23 Admin filters & bulk operations
+## Â§23 Admin filters & bulk operations
 
-Per `ADMIN_PORTAL_SPEC.md` §5.1, the admin product list supports these filters. Listed here for content-model consistency:
+Per `ADMIN_PORTAL_SPEC.md` Â§5.1, the admin product list supports these filters. Listed here for content-model consistency:
 
-### §23.1 Filters
+### Â§23.1 Filters
 
 - **Status** (single-select): All / Imported / Draft / Partial / Ready to publish / Published / Hidden / Archived
-- **Review flags** (multi-select chips): missing_price, missing_image, case_pack, duplicate_suspected, multiple_price_pairs, needs_category_review, needs_brand_review, needs_label_data
+- **Review flags** (multi-select chips): missing_price, missing_image, missing_stock_quantity, case_pack, duplicate_suspected, multiple_price_pairs, needs_category_review, needs_brand_review, needs_label_data
+- **Stock status** (single-select, per `INVENTORY_SPEC.md Â§3.2`): All / In stock / Low stock / Out of stock
 - **Brand** (dropdown of canonical brands)
 - **Category** (dropdown of 16 Plan v2 categories)
 - **Goal** (multi-select from 5 goals)
 - **Form** (multi-select from 8 forms)
 - **Completion score range** (slider 0-100)
 - **Has primary image?** (yes/no)
-- **Source category** (dropdown of 15 MD categories — useful for "what came from which Excel category")
+- **Source category** (dropdown of 15 MD categories â€” useful for "what came from which Excel category")
 - **Free-text search** on `name`, `name_raw`, `brand_raw`, `sku`
 
-### §23.2 Bulk operations
+### Â§23.2 Bulk operations
 
 - Assign category to selected
 - Assign brand to selected
@@ -753,9 +794,9 @@ All bulk operations are audit-logged with the selection size.
 
 ---
 
-## §24 Safety rules — non-negotiable
+## Â§24 Safety rules â€” non-negotiable
 
-Restating §2 with operational specifics. Violations are treated as bugs even if functionally "harmless."
+Restating Â§2 with operational specifics. Violations are treated as bugs even if functionally "harmless."
 
 1. **No fake supplement facts.** `nutrition_panel` content is only what admin entered after seeing the label. No defaults, no templates, no "common values for whey protein."
 2. **No fake reviews.** Reviews section shows an "empty state" at MVP. No seeded reviews, no AI-generated reviews, no imported reviews.
@@ -771,7 +812,7 @@ Restating §2 with operational specifics. Violations are treated as bugs even if
 
 ---
 
-## §25 Source traceability
+## Â§25 Source traceability
 
 Permanent forensic-quality lineage on every product. Never deleted, never overwritten by enrichment.
 
@@ -779,18 +820,18 @@ Permanent forensic-quality lineage on every product. Never deleted, never overwr
 |---|---|---|
 | `source_file` | Import | No |
 | `source_row[]` | Import (multiple rows for merged duplicates) | No |
-| `name_raw` | Import — exact Excel NAME column verbatim | No |
-| `brand_raw` | Import — exact Excel Brand column verbatim | No |
-| `source_category` | Import — one of 15 MD categories | No |
-| `source_notes` | Import — exact MD Notes column verbatim | No |
+| `name_raw` | Import â€” exact Excel NAME column verbatim | No |
+| `brand_raw` | Import â€” exact Excel Brand column verbatim | No |
+| `source_category` | Import â€” one of 15 MD categories | No |
+| `source_notes` | Import â€” exact MD Notes column verbatim | No |
 
 If a product is re-imported (e.g., second MD file with corrections), the import script merges by `name_raw` + `brand_raw` and adds new `source_row` entries rather than replacing. Manual admin enrichment is preserved.
 
 ---
 
-## §26 Slug rules
+## Â§26 Slug rules
 
-### §26.1 Generation
+### Â§26.1 Generation
 
 Slugs are auto-generated from `name` (the normalized display name) using:
 ```
@@ -803,40 +844,40 @@ slug = lowercase(name)
 
 Collisions resolved with `-2`, `-3`, etc. suffix.
 
-### §26.2 Editing
+### Â§26.2 Editing
 
 Admin can edit the slug post-import. Editing the slug:
 1. Writes the old slug to `slug_history` table (per `DB_SCHEMA.md`).
 2. Sets the new slug as canonical.
-3. Public routes serve 301 redirects from old slug → new slug.
+3. Public routes serve 301 redirects from old slug â†’ new slug.
 
 This preserves SEO when admin renames products.
 
-### §26.3 Reserved slugs
+### Â§26.3 Reserved slugs
 
 Cannot be used as product slugs (collide with other routes):
 - `cart`, `checkout`, `account`, `admin`, `brands`, `categories`, `search`, `legal`, `api`, `sign-in`, `sign-up`
 
 ---
 
-## §27 Image rules (additional)
+## Â§27 Image rules (additional)
 
-### §27.1 Alt text generation
+### Â§27.1 Alt text generation
 
 Auto-generated as: `"{normalized name} - {kind}"`
 Example: `"Applied Nutrition Critical Whey 2KG White Chocolate Bueno - front"`
 
 Admin can override.
 
-### §27.2 Image file constraints
+### Â§27.2 Image file constraints
 
 - Accepted formats: JPEG, PNG, WebP
 - Maximum source size: 10 MB
-- Recommended source dimensions: ≥1200×1200 (rendered down by Next/Image)
-- Auto-generated thumbnails: 400×400, 200×200, 80×80 (for cart drawer)
+- Recommended source dimensions: â‰¥1200Ã—1200 (rendered down by Next/Image)
+- Auto-generated thumbnails: 400Ã—400, 200Ã—200, 80Ã—80 (for cart drawer)
 - Storage path: `products/{brand_slug}/{product_slug}/{kind}-{hash}.{ext}`
 
-### §27.3 Variant-specific images
+### Â§27.3 Variant-specific images
 
 An image can be tied to a variant via `variant_id` (nullable). When set:
 - The image appears in the gallery only when that variant is selected.
@@ -844,22 +885,22 @@ An image can be tied to a variant via `variant_id` (nullable). When set:
 
 ---
 
-## §28 Update protocol
+## Â§28 Update protocol
 
 This document is a living spec. Changes follow this protocol:
 
 | Change type | Process |
 |---|---|
-| New field added to product | Schema migration + update §5 fields_status keys + update §8 tier assignment + update DB_SCHEMA.md |
-| New status added | Update §4 + update DB_SCHEMA.md ENUM + update ADMIN_PORTAL_SPEC.md |
-| New review flag added | Update §5.4 + update DB_SCHEMA.md JSONB shape + update §23 filter list |
-| New adaptive rendering case | Update §6 + update public PDP component |
-| New canonical brand | Update §12.2 + insert into `brands` table |
+| New field added to product | Schema migration + update Â§5 fields_status keys + update Â§8 tier assignment + update DB_SCHEMA.md |
+| New status added | Update Â§4 + update DB_SCHEMA.md ENUM + update ADMIN_PORTAL_SPEC.md |
+| New review flag added | Update Â§5.4 + update DB_SCHEMA.md JSONB shape + update Â§23 filter list |
+| New adaptive rendering case | Update Â§6 + update public PDP component |
+| New canonical brand | Update Â§12.2 + insert into `brands` table |
 | New category | Restricted to Phase 2 (16 categories locked for MVP) |
-| New MD source category | Update §13.3 + insert into `md_category_mapping` |
-| Publish gate change | Update §7 + update admin publish-gate validation logic + update `proj_spec.md` if it changes M2/M3 scope |
+| New MD source category | Update Â§13.3 + insert into `md_category_mapping` |
+| Publish gate change | Update Â§7 + update admin publish-gate validation logic + update `proj_spec.md` if it changes M2/M3 scope |
 
-All changes increment the document version (v1.1 → v1.2). Major content-model changes (new statuses, gate changes) jump major (v1.x → v2.0).
+All changes increment the document version (v1.1 â†’ v1.2). Major content-model changes (new statuses, gate changes) jump major (v1.x â†’ v2.0).
 
 ---
 

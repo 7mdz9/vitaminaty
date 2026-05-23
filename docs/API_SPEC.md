@@ -117,13 +117,19 @@ Output: {
 
 #### `revalidateCart(input)`
 
-Bulk version called before checkout. Returns the full repricing.
+Bulk version called before checkout. Returns the full repricing. The revalidation result also drives the cart-line stock messaging per `INVENTORY_SPEC.md §6.2` (in-cart stock state surfaces; out-of-stock lines are excluded from total recalculation with inline warning shown).
 
 ```typescript
 Input: { lines: Array<{ product_id, variant_id, quantity }> }
 Output: {
   ok: true,
   data: {
+    overall_status: 'ok' | 'price_changed' | 'stock_changed' | 'item_unavailable',
+    // 'ok' means cart is committable as-is.
+    // 'price_changed' means at least one line's unit_price_aed differs from client-displayed.
+    // 'stock_changed' means at least one line has insufficient stock or flipped out_of_stock.
+    // 'item_unavailable' means at least one variant was deleted or product unpublished.
+    // Client must surface the appropriate message and re-confirm before placeOrder.
     lines: Array<{
       product_id,
       variant_id,
@@ -190,7 +196,7 @@ Output: {
 }
 ```
 
-Server flow (re-stated from `ARCHITECTURE.md` §4 for reference):
+Server flow (re-stated from `ARCHITECTURE.md` §4 for reference; full transactional semantics in `INVENTORY_SPEC.md §6.1`):
 
 1. Validate input schema.
 2. Verify customer is authenticated and email-verified.
@@ -200,9 +206,12 @@ Server flow (re-stated from `ARCHITECTURE.md` §4 for reference):
 6. Validate availability + quantity.
 7. Compute authoritative totals server-side. Compare with client. If mismatch, return `price_changed`.
 8. Begin transaction:
+   - `SELECT ... FOR UPDATE` on each variant in ASC variant_id order (lock ordering avoids deadlock under concurrent last-unit checkouts). Per `INVENTORY_SPEC.md §6.3`.
+   - Re-validate availability under the lock; if any variant is now insufficient, `ROLLBACK` and return `stock_unavailable` with offending variant IDs.
    - INSERT into `orders`.
    - INSERT into `order_items`.
-   - Decrement variant stock.
+   - UPDATE `product_variants.stock_quantity` per line (the `compute_stock_status` trigger fires automatically, recomputing `stock_status`).
+   - INSERT into `inventory_movements` per affected variant with `reason='order_placed'` and `order_id` populated. Per `INVENTORY_SPEC.md §4.3` and `§6.1`.
    - Write `audit_log` entry.
    - Commit.
 9. Call `PaymentAdapter.createIntent()`.
@@ -332,6 +341,123 @@ Output: { ok: true, data: { image: ImageRecord } }
 ```
 
 Server uploads to Supabase Storage at `/products/{brand_slug}/{product_slug}/...`, generates thumbnail variants, writes `product_images` row.
+
+#### `setVariantStock(input)`
+
+Set a variant's absolute stock_quantity. Writes one `inventory_movements` row with `reason='manual_adjustment'`. Single-step, single transaction.
+
+```typescript
+Input: {
+  variant_id: uuid,
+  new_quantity: int,         // >= 0
+  change_reason_note?: string,  // optional admin note
+  expected_updated_at: timestamptz   // optimistic concurrency token from the loaded variant
+}
+Output: {
+  ok: true,
+  data: {
+    variant_id,
+    previous_quantity: int | null,
+    new_quantity: int,
+    stock_status: 'in_stock' | 'low_stock' | 'out_of_stock',  // trigger-computed
+    movement_id: uuid
+  }
+} | { ok: false, error: 'stale_data' | 'not_found' | 'feature_disabled', message }
+```
+
+The `stale_data` error fires if `expected_updated_at` does not match the current `product_variants.updated_at` — per `ADMIN_PORTAL_SPEC §5.11` optimistic concurrency rules.
+
+#### `adjustVariantStock(input)`
+
+Apply a delta to a variant's stock_quantity (positive = increment, negative = decrement). Use when admin is recording goods received/damaged/found and wants the delta semantics rather than absolute set. Same audit + movement record + optimistic concurrency as `setVariantStock`.
+
+```typescript
+Input: {
+  variant_id: uuid,
+  delta: int,                // signed
+  change_reason_note?: string,
+  expected_updated_at: timestamptz
+}
+Output: same shape as setVariantStock
+  error values include 'insufficient_stock' (delta would push quantity below 0)
+```
+
+#### `recountVariantStock(input)`
+
+Stock-recount workflow (`ADMIN_PORTAL_SPEC §10.3`). Sets absolute count with `reason='stock_recount'`. The change_amount on the movement row reflects the delta but the consistency CHECK is relaxed for recount per `DB_SCHEMA.md §8.4`.
+
+```typescript
+Input: {
+  variant_id: uuid,
+  recounted_quantity: int,
+  change_reason_note?: string,
+  expected_updated_at: timestamptz
+}
+Output: same shape as setVariantStock
+```
+
+#### `setVariantLowStockThreshold(input)`
+
+```typescript
+Input: { variant_id: uuid, low_stock_threshold: int, expected_updated_at: timestamptz }
+Output: { ok: true, data: { variant_id, stock_status } }
+```
+
+Trigger may recompute stock_status if the new threshold crosses the current quantity. No `inventory_movements` row — this is metadata, not stock movement.
+
+#### `bulkAdjustVariantStock(input)`
+
+Bulk stock adjustment across multiple variants. One transaction; either all variants update + write movement rows, or none do. Per `ADMIN_PORTAL_SPEC §5.3` and `§10`.
+
+```typescript
+Input: {
+  adjustments: Array<{ variant_id: uuid, delta: int }>,
+  reason: 'manual_adjustment' | 'stock_recount',
+  change_reason_note?: string  // applied to every movement row in the bulk
+}
+Output: {
+  ok: true,
+  data: {
+    affected_variant_ids: uuid[],
+    movement_ids: uuid[],
+    audit_log_id: uuid   // single audit row for the whole bulk
+  }
+} | { ok: false, error: 'insufficient_stock' | 'not_found' | 'feature_disabled',
+     message, failed_variant_id?: uuid }
+```
+
+If any single variant adjustment would push stock below 0, the entire bulk fails with `insufficient_stock` and `failed_variant_id` populated. No partial commits.
+
+#### `getInventoryHistory(input)`
+
+Admin read of `inventory_movements`. Per `ADMIN_PORTAL_SPEC §10.8`.
+
+```typescript
+Input: {
+  scope: { type: 'variant', variant_id: uuid }
+       | { type: 'product', product_id: uuid }
+       | { type: 'order', order_id: uuid }
+       | { type: 'reason', reason: inventory_movement_reason }
+       | { type: 'admin', actor_user_id: uuid }
+       | { type: 'date_range', from: timestamptz, to: timestamptz },
+  pagination?: { limit: int, offset: int }
+}
+Output: {
+  ok: true,
+  data: {
+    movements: Array<{
+      id, product_id, variant_id, variant_display,
+      previous_quantity, new_quantity, change_amount,
+      reason, change_reason_note,
+      changed_by_user_id, changed_by_email,    // email redacted for non-admin viewers
+      changed_at,
+      order_id, order_reference                 // present only when applicable
+    }>,
+    total: int,
+    has_more: boolean
+  }
+}
+```
 
 ### 3.2 Brand management
 
