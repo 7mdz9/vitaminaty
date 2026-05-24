@@ -661,6 +661,217 @@ CREATE INDEX audit_log_occurred_idx ON audit_log(occurred_at DESC);
 -- No UPDATE or DELETE policy — append-only.
 ```
 
+### 8.1.1 `audit_log.diff` JSONB shapes
+
+`audit_log.diff` is a versioned JSONB discriminated union. The discriminator is
+`diff.action`, and it MUST equal the row's `audit_log.action` value. All shapes
+use `version: 1`.
+
+PII handling: audit rows store raw before/after values for forensic and
+compliance use. Do NOT redact PII at write time. Redaction is a read/render
+concern owned by the admin diff renderer (`ADMIN_PORTAL_SPEC.md §12.1`) and its
+"Show raw" affordance. Secrets, credentials, API keys, tokens, and password
+material MUST NOT be written into `audit_log.diff`.
+
+#### Shape 1: single-product update
+
+Used for one product-level mutation. `changes[].field` is a stable field path
+such as `name`, `retail_price_aed`, `status`, `is_public_visible`,
+`admin_review_flags.missing_price`, or `content.description`.
+
+Allowed `action` values:
+`create`, `update`, `publish`, `unpublish`, `archive`, `restore`,
+`flag_toggle`, `image_upload`.
+
+```json
+{
+  "version": 1,
+  "action": "update",
+  "entity_type": "product",
+  "product_id": "uuid",
+  "changes": [
+    {
+      "field": "retail_price_aed",
+      "before": 89,
+      "after": 94
+    }
+  ]
+}
+```
+
+#### Shape 2: variant stock change
+
+Used for one product-variant mutation that affects inventory state or the
+admin-facing stock threshold.
+
+Allowed `action` values:
+`stock_adjustment`, `stock_recount`, `variant_create`, `variant_delete`,
+`low_stock_threshold_change`.
+
+```json
+{
+  "version": 1,
+  "action": "stock_adjustment",
+  "entity_type": "product_variant",
+  "product_id": "uuid",
+  "variant_id": "uuid",
+  "variant_label": "Chocolate 2kg",
+  "previous_quantity": 12,
+  "new_quantity": 8,
+  "change_amount": -4,
+  "reason": "manual_adjustment",
+  "change_reason_note": "Damaged units removed",
+  "changes": [
+    {
+      "field": "stock_quantity",
+      "before": 12,
+      "after": 8
+    }
+  ]
+}
+```
+
+#### Shape 3: bulk operation
+
+Used for a multi-product mutation other than bulk publish override. One audit
+row records the whole operation; do not write one audit row per product.
+
+Allowed `action` value: `bulk_operation`.
+
+```json
+{
+  "version": 1,
+  "action": "bulk_operation",
+  "entity_type": "bulk",
+  "operation": "assign_category",
+  "affected_product_ids": ["uuid"],
+  "affected_count": 1,
+  "changes": [
+    {
+      "field": "category_id",
+      "before_by_product_id": {
+        "uuid": null
+      },
+      "after": "uuid"
+    }
+  ]
+}
+```
+
+#### Shape 4: bulk publish with overrides
+
+Used only when bulk publish encounters unresolved review flags and the admin
+explicitly chooses the soft-warning override path. Case-pack hard blocks remain
+non-overridable and are listed separately.
+
+Allowed `action` value: `bulk_publish_override`.
+
+```json
+{
+  "version": 1,
+  "action": "bulk_publish_override",
+  "entity_type": "bulk_publish",
+  "published_product_ids": ["uuid"],
+  "published_count": 1,
+  "override_review_flags": true,
+  "products_with_review_flags_count": 1,
+  "review_flags_by_product_id": {
+    "uuid": ["missing_image"]
+  },
+  "hard_blocked_product_ids": ["uuid"]
+}
+```
+
+#### Shape 5: stale-data save override
+
+Used when an admin intentionally saves over data that changed after their edit
+surface loaded.
+
+Allowed `action` value: `stale_data_override`.
+
+```json
+{
+  "version": 1,
+  "action": "stale_data_override",
+  "entity_type": "product",
+  "product_id": "uuid",
+  "loaded_updated_at": "2026-05-23T10:00:00.000Z",
+  "database_updated_at": "2026-05-23T10:03:00.000Z",
+  "original_editor": {
+    "user_id": "uuid",
+    "email": "admin@example.com"
+  },
+  "overridden_by": {
+    "user_id": "uuid",
+    "email": "admin@example.com"
+  },
+  "changes": [
+    {
+      "field": "retail_price_aed",
+      "before": 89,
+      "after": 94
+    }
+  ]
+}
+```
+
+#### Shape 6: order status change
+
+Used for admin-driven order state transitions.
+
+Allowed `action` value: `order_status_change`.
+
+```json
+{
+  "version": 1,
+  "action": "order_status_change",
+  "entity_type": "order",
+  "order_id": "uuid",
+  "order_reference": "VIT-1001",
+  "status_before": "paid",
+  "status_after": "preparing",
+  "reason": "manual_admin_transition",
+  "tracking_number": null,
+  "customer_email": "customer@example.com",
+  "notify_customer": true
+}
+```
+
+#### Shape 7: refund
+
+Used for full and partial order refunds. Inventory restoration, when selected by
+the admin, is linked through `inventory_movement_ids`; payment-provider details
+are linked through `payment_event_ids`.
+
+Allowed `action` value: `order_refund`.
+
+```json
+{
+  "version": 1,
+  "action": "order_refund",
+  "entity_type": "order",
+  "order_id": "uuid",
+  "order_reference": "VIT-1001",
+  "refund_kind": "partial",
+  "amount_aed": 50,
+  "currency": "AED",
+  "reason": "customer_request",
+  "customer_email": "customer@example.com",
+  "payment_event_ids": ["uuid"],
+  "goods_returned_to_inventory": false,
+  "inventory_movement_ids": [],
+  "line_items": [
+    {
+      "order_item_id": "uuid",
+      "product_id": "uuid",
+      "variant_id": "uuid",
+      "quantity_refunded": 1,
+      "amount_aed": 50
+    }
+  ]
+}
+```
+
 ### 8.2 `feature_flags`
 
 Per `DECISION_CAPTURE.md` Decision 4.
