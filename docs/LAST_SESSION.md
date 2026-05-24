@@ -1,69 +1,66 @@
 # LAST_SESSION.md
 
-## M2 Step 7 - bulk operations, queues, and command bar landed
+## M2 Step 8a - inventory backend landed
 
 Date: 2026-05-24
 
-Objective completed: admin products now support bulk brand/category assignment, guarded bulk publish, missing-data queue routes, and a real Cmd-K command bar. Bulk publish excludes hard-blocked products server-side, requires a force override for unresolved soft review flags, and writes one audit row for the bulk action.
+Objective completed: the admin inventory backend now exposes six requireAdmin-gated contracts for variant stock set, stock adjustment, stock recount, low-stock threshold update, bulk stock adjustment, and inventory history. The service updates variants without writing `stock_status`, appends immutable `inventory_movements`, and writes shape-family-2 audit rows for stock and threshold mutations.
 
 ### Files created
 
-- `src/app/admin/queues/[queueKind]/page.tsx`
-- `src/features/admin-products/components/BulkActionBar.tsx`
-- `src/features/admin-products/components/BulkConfirmDialog.tsx`
-- `src/features/admin-products/components/ForceOverrideDialog.tsx`
-- `src/features/admin-shell/command-bar/CommandBar.tsx`
-- `src/features/admin-shell/command-bar/search-actions.ts`
-- `src/features/admin-shell/command-bar/use-search.ts`
-- `tests/integration/admin-products/bulk.test.ts`
+- `src/lib/validation/inventory.ts`
+- `tests/integration/admin-products/inventory-endpoints.test.ts`
 
 ### Files modified
 
 - `docs/PROJECT_STATE.md`
 - `docs/LAST_SESSION.md`
 - `src/features/admin-products/actions.ts`
-- `src/features/admin-products/components/ProductListTable.tsx`
-- `src/features/admin-products/queries.ts`
-- `src/features/admin-shell/keyboard-provider.tsx`
-- `src/lib/audit/diff-types.ts`
-- `src/lib/validation/product.ts`
+- `src/server/repositories/inventory-movement-repository.ts`
 - `src/server/repositories/product-admin-repository.ts`
+- `src/server/services/inventory-service.ts`
 
 ### Implementation notes
 
-- Bulk actions are requireAdmin-gated and use repository-layer bulk reads/updates.
-- Bulk assign brand/category writes shape-family-3 `bulk_operation` audit rows.
-- Bulk publish writes shape-family-4 `bulk_publish_override` when soft review flags are overridden. Hard-blocked products are excluded and recorded in `hard_blocked_product_ids`.
-- Force override requires a typed reason in the UI; the reason is stored in the audit diff as `override_reason`.
-- Work queues are backed by the existing product-list query/filter path under `/admin/queues/[queueKind]`.
-- Cmd-K uses client-side ranked search. Recon evidence: local reset state has 85 searchable items; canonical imported M2 state projects 872, which is below the 2,000-item threshold.
+- `inventory-service.ts` orchestrates stale-safe variant updates, movement appends, and audit writes.
+- `product-admin-repository.ts` now has variant read/update helpers that omit `stock_status` from the writable patch type.
+- `inventory-movement-repository.ts` gained read filters by reason, actor, and date range. It still has no update/delete exports.
+- Bulk stock adjustment preflights all selected variants before mutating. The stale-path test proves no partial writes occur when any selected variant is already stale.
+- `stock_recount` can carry a `change_amount` that differs from the computed delta, matching the relaxed database CHECK for recount workflows.
 
 ### Verification
 
 ```text
 pnpm typecheck: PASS
 pnpm lint: PASS (existing QR-code data URI <img> warning in /admin/mfa/enroll)
-pnpm build: PASS (/admin/queues/[queueKind] builds; /admin/products shared chunk includes bulk UI)
-pnpm test -- admin-products/bulk --reporter verbose: PASS (3 tests)
-pnpm test: PASS (24 files, 108 tests)
+pnpm build: PASS
+pnpm test -- inventory-endpoints --reporter verbose: PASS (8 tests)
+pnpm test -- admin-products --reporter verbose: PASS (26 tests)
+pnpm test -- repositories --reporter verbose: PASS on retry (20 tests; first attempt hit transient Supabase CLI status JSON parse failure)
+pnpm test: PASS (25 files, 116 tests)
 pnpm scan:bundle-secrets: PASS
 git diff --check: PASS
 authz coverage sweep for src/features/admin-*/actions.ts: PASS (empty output)
-Step 7 TODO/debugger/.only/.skip sweep: PASS
-curl /admin/queues/missing-price unauthenticated: PASS (307 to /admin/sign-in)
-Browser/axe/manual bulk flow: NOT RUN - in-app Browser backend unavailable in this session
+direct stock_status write sweep: PASS (only type/select/read usages; no application-layer writes)
+Step 8a TODO/debugger/.only/.skip sweep: PASS
+Supabase changelog check: reviewed; no relevant PostgREST/Supabase JS breaking change affects these local service-role repository calls
 ```
+
+### Manual checkpoint notes
+
+- Browser/axe/manual inventory API walkthrough was not run in this session because Step 8a is backend-only and no Step 8b UI exists yet.
+- Bulk adjust is protected by full preflight before mutation; it is not yet implemented as one physical SQL transaction/RPC. If the project wants strict mid-flight rollback guarantees before M4 checkout decrement, add a dedicated Postgres function in a later migration and call it from the service.
 
 ### HANDOFF
 
-files_created: [`src/app/admin/queues/[queueKind]/page.tsx`, `src/features/admin-products/components/BulkActionBar.tsx`, `src/features/admin-products/components/BulkConfirmDialog.tsx`, `src/features/admin-products/components/ForceOverrideDialog.tsx`, `src/features/admin-shell/command-bar/*`, `tests/integration/admin-products/bulk.test.ts`]
+files_created: [`src/lib/validation/inventory.ts`, `tests/integration/admin-products/inventory-endpoints.test.ts`]
 
-files_modified: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/features/admin-products/actions.ts`, `src/features/admin-products/components/ProductListTable.tsx`, `src/features/admin-products/queries.ts`, `src/features/admin-shell/keyboard-provider.tsx`, `src/lib/audit/diff-types.ts`, `src/lib/validation/product.ts`, `src/server/repositories/product-admin-repository.ts`]
+files_modified: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/features/admin-products/actions.ts`, `src/server/repositories/inventory-movement-repository.ts`, `src/server/repositories/product-admin-repository.ts`, `src/server/services/inventory-service.ts`]
 
-patterns_established: [`bulk product mutations write one audit row per action`, `bulk publish hard-block exclusions are enforced server-side`, `Cmd-K uses client-side search while searchable item count remains below 2,000`]
+patterns_established: [`inventory backend actions requireAdmin before service calls`, `application code never writes stock_status`, `stock/recount/threshold changes append inventory_movements and audit shape-family-2 diffs`]
 
-next_step_must_read: [`docs/INVENTORY_SPEC.md §3-§4`, `docs/ADMIN_PORTAL_SPEC.md §10`, `src/features/admin-products/actions.ts`, `src/server/repositories/inventory-movement-repository.ts`, `src/server/repositories/product-admin-repository.ts`]
+next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md §10`, `src/server/services/inventory-service.ts`, `src/features/admin-products/actions.ts`, `tests/integration/admin-products/inventory-endpoints.test.ts`]
 
-known_issues_introduced: [`Browser/axe/manual bulk operation walkthrough still needs to be run when the in-app browser backend is available.`, `Save-and-Next is represented by queue routes and editor shortcut plumbing from prior steps, but preloading the next product into the full editor remains shallow until Step 8/queue editor workflows mature.`]
+known_issues_introduced: [`Bulk stock adjustment uses all-row preflight to avoid partial writes on known stale/insufficient-stock failures, but it is not a single SQL transaction/RPC yet.`]
 
-invariants_observed: [SECURITY INVARIANTS - requireAdmin on admin product actions/queries and command search action; bundle scan clean. BULK ACTION INVARIANTS - one audit row per bulk action; soft override reason captured; hard-blocked products excluded server-side.]
+invariants_observed: [SECURITY INVARIANTS - requireAdmin on all six inventory actions; service-role writes remain repository-only; bundle scan clean. INVENTORY INVARIANTS - stock_status remains trigger-derived; inventory_movements append-only repository still has no update/delete exports.]

@@ -20,6 +20,7 @@ type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
 type ProductVariantRow = Database["public"]["Tables"]["product_variants"]["Row"];
 type ProductVariantInsert = Database["public"]["Tables"]["product_variants"]["Insert"];
+type ProductVariantUpdate = Omit<Database["public"]["Tables"]["product_variants"]["Update"], "stock_status">;
 type ProductImageRow = Database["public"]["Tables"]["product_images"]["Row"];
 type ProductImageInsert = Database["public"]["Tables"]["product_images"]["Insert"];
 type ProductGoalTagRow = Database["public"]["Tables"]["product_goal_tags"]["Row"];
@@ -414,6 +415,87 @@ export async function listProductVariantsForAdmin(
   }
 
   return ((data as unknown as ProductVariantRow[]) ?? []).map(mapVariant);
+}
+
+export async function findProductVariantByIdForAdmin(
+  variantId: string,
+): Promise<ProductVariantRecord | null> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .select(
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+    )
+    .eq("id", variantId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Admin product variant by id query failed: ${error.message}`);
+  }
+
+  return data ? mapVariant(data as unknown as ProductVariantRow) : null;
+}
+
+export async function findProductVariantsByIdsForAdmin(
+  variantIds: string[],
+): Promise<ProductVariantRecord[]> {
+  if (variantIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .select(
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+    )
+    .in("id", unique(variantIds));
+
+  if (error) {
+    throw new Error(`Admin product variants by ids query failed: ${error.message}`);
+  }
+
+  return ((data as unknown as ProductVariantRow[]) ?? []).map(mapVariant);
+}
+
+export async function updateProductVariantForAdmin(
+  variantId: string,
+  patch: ProductVariantUpdate,
+): Promise<ProductVariantRecord> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .update(patch)
+    .eq("id", variantId)
+    .select(
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+    )
+    .single();
+
+  if (error) {
+    throw new Error(`Admin product variant update failed: ${error.message}`);
+  }
+
+  return mapVariant(data as unknown as ProductVariantRow);
+}
+
+export async function updateProductVariantForAdminIfFresh(
+  variantId: string,
+  expectedUpdatedAt: string,
+  patch: ProductVariantUpdate,
+): Promise<ProductVariantRecord | null> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .update(patch)
+    .eq("id", variantId)
+    .eq("updated_at", expectedUpdatedAt)
+    .select(
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Admin product variant stale-safe update failed: ${error.message}`);
+  }
+
+  return data ? mapVariant(data as unknown as ProductVariantRow) : null;
 }
 
 export async function listProductImagesForAdmin(productId: string): Promise<ProductImageRecord[]> {

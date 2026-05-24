@@ -4,7 +4,8 @@
 //     caller=server-side only (admin inventory service, checkout transaction, restoration service);
 //     uses src/server/db/supabase-admin.ts service-role;
 //     append-only mutation surface -- no update/delete functions exist in this module.
-//   listMovementsForVariant / listMovementsForProduct / listMovementsForOrder:
+//   listMovementsForVariant / listMovementsForProduct / listMovementsForOrder
+//   / listMovementsByReason / listMovementsByActor / listMovementsByDateRange:
 //     caller=authenticated admin; reads immutable inventory history.
 import "server-only";
 
@@ -92,6 +93,59 @@ export async function listMovementsForOrder(
 
   if (error) {
     throw new Error(`Inventory movements order query failed: ${error.message}`);
+  }
+
+  return data as unknown as InventoryMovementRow[];
+}
+
+export async function listMovementsByReason(
+  reason: InventoryMovementRow["reason"],
+  client: AdminClient = supabaseAdmin,
+): Promise<InventoryMovementRow[]> {
+  const { data, error } = await client
+    .from("inventory_movements")
+    .select(INVENTORY_MOVEMENT_COLUMNS)
+    .eq("reason", reason)
+    .order("changed_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Inventory movements reason query failed: ${error.message}`);
+  }
+
+  return data as unknown as InventoryMovementRow[];
+}
+
+export async function listMovementsByActor(
+  actorUserId: string,
+  client: AdminClient = supabaseAdmin,
+): Promise<InventoryMovementRow[]> {
+  const { data, error } = await client
+    .from("inventory_movements")
+    .select(INVENTORY_MOVEMENT_COLUMNS)
+    .eq("changed_by", actorUserId)
+    .order("changed_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Inventory movements actor query failed: ${error.message}`);
+  }
+
+  return data as unknown as InventoryMovementRow[];
+}
+
+export async function listMovementsByDateRange(
+  start: string,
+  end: string,
+  client: AdminClient = supabaseAdmin,
+): Promise<InventoryMovementRow[]> {
+  const { data, error } = await client
+    .from("inventory_movements")
+    .select(INVENTORY_MOVEMENT_COLUMNS)
+    .gte("changed_at", start)
+    .lte("changed_at", end)
+    .order("changed_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Inventory movements date-range query failed: ${error.message}`);
   }
 
   return data as unknown as InventoryMovementRow[];

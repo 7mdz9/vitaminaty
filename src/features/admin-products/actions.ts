@@ -18,9 +18,31 @@ import {
   type AdminProductUpdateActionInput,
 } from "@/lib/validation/product";
 import {
+  AdjustVariantStockActionSchema,
+  BulkAdjustVariantStockActionSchema,
+  GetInventoryHistoryActionSchema,
+  RecountVariantStockActionSchema,
+  SetVariantLowStockThresholdActionSchema,
+  SetVariantStockActionSchema,
+  type AdjustVariantStockActionInput,
+  type BulkAdjustVariantStockActionInput,
+  type GetInventoryHistoryActionInput,
+  type RecountVariantStockActionInput,
+  type SetVariantLowStockThresholdActionInput,
+  type SetVariantStockActionInput,
+} from "@/lib/validation/inventory";
+import {
   updateProductWithRecalculation,
   uploadProductImageWithAudit,
 } from "@/server/services/product-service";
+import {
+  adjustVariantStock as adjustVariantStockService,
+  bulkAdjustVariantStock as bulkAdjustVariantStockService,
+  getInventoryHistory as getInventoryHistoryService,
+  recountVariantStock as recountVariantStockService,
+  setVariantLowStockThreshold as setVariantLowStockThresholdService,
+  setVariantStock as setVariantStockService,
+} from "@/server/services/inventory-service";
 import {
   bulkUpdateProductsForAdmin,
   findProductEditorDataForAdmin,
@@ -29,6 +51,8 @@ import {
 } from "@/server/repositories/product-admin-repository";
 import type { AuditBulkOperationChange, AuditDiff } from "@/lib/audit/diff-types";
 import type { ProductImageRecord, ProductRecord } from "@/types/product";
+import type { ProductVariantRecord } from "@/types/product";
+import type { Database } from "@/lib/supabase/types.generated";
 
 export type AdminProductActionResult =
   | {
@@ -95,6 +119,58 @@ export type AdminProductImageUploadResult =
   | {
       ok: false;
       code: "not_found" | "validation_error" | "authorization_error" | "unknown";
+      message: string;
+    };
+
+type InventoryMovementRecord = Database["public"]["Tables"]["inventory_movements"]["Row"];
+
+export type AdminInventoryActionResult =
+  | {
+      ok: true;
+      variant: ProductVariantRecord;
+      movement: InventoryMovementRecord;
+    }
+  | {
+      ok: false;
+      code:
+        | "not_found"
+        | "stale_data"
+        | "insufficient_stock"
+        | "validation_error"
+        | "authorization_error"
+        | "unknown";
+      message: string;
+      current?: ProductVariantRecord | null;
+    };
+type AdminInventoryActionErrorResult = Extract<AdminInventoryActionResult, { ok: false }>;
+
+export type AdminInventoryBulkActionResult =
+  | {
+      ok: true;
+      results: Array<Extract<AdminInventoryActionResult, { ok: true }>>;
+    }
+  | {
+      ok: false;
+      code:
+        | "not_found"
+        | "stale_data"
+        | "insufficient_stock"
+        | "validation_error"
+        | "authorization_error"
+        | "unknown";
+      message: string;
+      variantId?: string;
+      current?: ProductVariantRecord | null;
+    };
+
+export type AdminInventoryHistoryResult =
+  | {
+      ok: true;
+      movements: InventoryMovementRecord[];
+    }
+  | {
+      ok: false;
+      code: "validation_error" | "authorization_error" | "unknown";
       message: string;
     };
 
@@ -237,6 +313,132 @@ export async function uploadProductImage(formData: FormData): Promise<AdminProdu
     return result;
   } catch (error) {
     return mapImageActionError(error);
+  }
+}
+
+export async function setVariantStock(
+  input: SetVariantStockActionInput,
+): Promise<AdminInventoryActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = SetVariantStockActionSchema.parse(input);
+    const result = await setVariantStockService({
+      ...parsed,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    return revalidateInventoryResult(result);
+  } catch (error) {
+    return mapInventoryActionError(error);
+  }
+}
+
+export async function adjustVariantStock(
+  input: AdjustVariantStockActionInput,
+): Promise<AdminInventoryActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = AdjustVariantStockActionSchema.parse(input);
+    const result = await adjustVariantStockService({
+      ...parsed,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    return revalidateInventoryResult(result);
+  } catch (error) {
+    return mapInventoryActionError(error);
+  }
+}
+
+export async function recountVariantStock(
+  input: RecountVariantStockActionInput,
+): Promise<AdminInventoryActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = RecountVariantStockActionSchema.parse(input);
+    const result = await recountVariantStockService({
+      ...parsed,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    return revalidateInventoryResult(result);
+  } catch (error) {
+    return mapInventoryActionError(error);
+  }
+}
+
+export async function setVariantLowStockThreshold(
+  input: SetVariantLowStockThresholdActionInput,
+): Promise<AdminInventoryActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = SetVariantLowStockThresholdActionSchema.parse(input);
+    const result = await setVariantLowStockThresholdService({
+      ...parsed,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    return revalidateInventoryResult(result);
+  } catch (error) {
+    return mapInventoryActionError(error);
+  }
+}
+
+export async function bulkAdjustVariantStock(
+  input: BulkAdjustVariantStockActionInput,
+): Promise<AdminInventoryBulkActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = BulkAdjustVariantStockActionSchema.parse(input);
+    const result = await bulkAdjustVariantStockService({
+      ...parsed,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    for (const item of result.results) {
+      revalidateInventoryPaths(item.variant.product_id);
+    }
+
+    return result;
+  } catch (error) {
+    const mapped = mapInventoryActionError(error);
+
+    return {
+      ok: false,
+      code: mapped.code,
+      message: mapped.message,
+      current: mapped.current,
+    };
+  }
+}
+
+export async function getInventoryHistory(
+  input: GetInventoryHistoryActionInput,
+): Promise<AdminInventoryHistoryResult> {
+  try {
+    await requireAdmin();
+    const parsed = GetInventoryHistoryActionSchema.parse(input);
+    const movements = await getInventoryHistoryService(parsed);
+
+    return {
+      ok: true,
+      movements,
+    };
+  } catch (error) {
+    const mapped = mapActionError(error);
+
+    return {
+      ok: false,
+      code:
+        mapped.code === "authorization_error" || mapped.code === "validation_error"
+          ? mapped.code
+          : "unknown",
+      message: mapped.message,
+    };
   }
 }
 
@@ -467,6 +669,39 @@ function mapImageActionError(error: unknown): AdminProductImageUploadResult {
         : "unknown",
     message: mapped.message,
   };
+}
+
+function mapInventoryActionError(error: unknown): AdminInventoryActionErrorResult {
+  const mapped = mapActionError(error);
+
+  return {
+    ok: false,
+    code:
+      mapped.code === "authorization_error" || mapped.code === "validation_error"
+        ? mapped.code
+        : "unknown",
+    message: mapped.message,
+  };
+}
+
+function revalidateInventoryResult(result: Awaited<ReturnType<typeof setVariantStockService>>): AdminInventoryActionResult {
+  if (!result.ok) {
+    return result;
+  }
+
+  revalidateInventoryPaths(result.variant.product_id);
+
+  return {
+    ok: true,
+    variant: result.variant,
+    movement: result.movement,
+  };
+}
+
+function revalidateInventoryPaths(productId: string) {
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath(`/admin/products/${productId}/inventory`);
 }
 
 function mapBulkActionError(error: unknown): AdminProductBulkActionResult {
