@@ -61,7 +61,9 @@ type ErrorCode =
   | 'validation_failed'
   | 'not_found'
   | 'conflict'                  // e.g., slug already taken
+  | 'stale_data'                // optimistic concurrency conflict
   | 'stock_unavailable'
+  | 'insufficient_stock'        // requested stock mutation would make quantity negative
   | 'price_changed'
   | 'payment_provider_error'
   | 'shipping_provider_error'
@@ -302,6 +304,7 @@ Patches discrete fields. Each field tracked in `fields_status`. Triggers re-comp
 ```typescript
 Input: {
   id: uuid,
+  expected_updated_at: string,
   patch: {
     name?: string,
     brand_id?: uuid,
@@ -314,9 +317,10 @@ Input: {
   }
 }
 Output: { ok: true, data: { product, completion_score, status_changed?: ProductStatus } }
+      | { ok: false, error: 'stale_data' | 'not_found' | 'validation_failed' | 'feature_disabled', message }
 ```
 
-Each call writes an `audit_log` row with the diff.
+Each call writes an `audit_log` row with the diff. `expected_updated_at` is compared to the current product row timestamp; mismatch returns `stale_data` per `ADMIN_PORTAL_SPEC.md §5.11`.
 
 #### `publishProduct(id)` / `unpublishProduct(id)` / `archiveProduct(id)`
 

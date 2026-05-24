@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: ["class"],
   content: [
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,6 +10,35 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
+        },
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-foreground)",
+        },
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          foreground: "var(--secondary-foreground)",
+        },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+        },
+        destructive: "var(--destructive)",
+        input: "var(--input)",
+        ring: "var(--ring)",
         action: "var(--color-action)",
         "action-hover": "var(--color-action-hover)",
         "cod-gray": "var(--color-cod-gray)",
@@ -33,13 +63,29 @@ const config: Config = {
           dark: "var(--color-surface-dark)",
         },
         border: {
-          DEFAULT: "var(--color-border-default)",
+          DEFAULT: "var(--border)",
           subtle: "var(--color-border-subtle)",
+        },
+        admin: {
+          accent: "var(--admin-accent)",
+          "accent-hover": "var(--admin-accent-hover)",
+          danger: "var(--admin-danger)",
+          "danger-hover": "var(--admin-danger-hover)",
+          success: "var(--admin-success)",
+          warning: "var(--admin-warning)",
+          bg: "var(--admin-bg)",
+          surface: "var(--admin-surface)",
+          "surface-muted": "var(--admin-surface-muted)",
+          border: "var(--admin-border)",
+          text: "var(--admin-text)",
+          "text-muted": "var(--admin-text-muted)",
         },
       },
       fontFamily: {
         display: "var(--font-display)",
         body: "var(--font-body)",
+        admin: "var(--admin-font-body)",
+        "admin-display": "var(--admin-font-display)",
       },
       fontSize: {
         micro: "var(--fs-micro)",
@@ -47,6 +93,10 @@ const config: Config = {
         "body-sm": "var(--fs-body-sm)",
         body: "var(--fs-body)",
         "body-lg": "var(--fs-body-lg)",
+        "admin-caption": "var(--admin-fs-caption)",
+        "admin-body-sm": "var(--admin-fs-body-sm)",
+        "admin-body": "var(--admin-fs-body)",
+        "admin-title": "var(--admin-fs-title)",
         h4: "var(--fs-h4)",
         h3: "var(--fs-h3)",
         h2: "var(--fs-h2)",
@@ -79,14 +129,23 @@ const config: Config = {
         7: "var(--space-7)",
         8: "var(--space-8)",
         9: "var(--space-9)",
+        "admin-1": "var(--admin-space-1)",
+        "admin-2": "var(--admin-space-2)",
+        "admin-3": "var(--admin-space-3)",
+        "admin-4": "var(--admin-space-4)",
+        "admin-5": "var(--admin-space-5)",
       },
       borderRadius: {
+        DEFAULT: "var(--radius)",
         xs: "var(--radius-xs)",
         sm: "var(--radius-sm)",
         md: "var(--radius-md)",
         lg: "var(--radius-lg)",
         xl: "var(--radius-xl)",
         pill: "var(--radius-pill)",
+        "admin-sm": "var(--admin-radius-sm)",
+        "admin-md": "var(--admin-radius-md)",
+        "admin-lg": "var(--admin-radius-lg)",
       },
       boxShadow: {
         card: "var(--shadow-card)",
@@ -97,6 +156,8 @@ const config: Config = {
         fast: "var(--duration-fast)",
         base: "var(--duration-base)",
         slow: "var(--duration-slow)",
+        "admin-fast": "var(--admin-motion-fast)",
+        "admin-base": "var(--admin-motion-base)",
       },
       transitionTimingFunction: {
         standard: "var(--ease-standard)",
@@ -105,6 +166,9 @@ const config: Config = {
         header: "var(--z-header)",
         drawer: "var(--z-drawer)",
         chat: "var(--z-chat)",
+        "admin-header": "var(--admin-z-header)",
+        "admin-command": "var(--admin-z-command)",
+        "admin-toast": "var(--admin-z-toast)",
       },
       maxWidth: {
         container: "var(--container-max)",

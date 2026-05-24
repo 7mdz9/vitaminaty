@@ -1,43 +1,22 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { AdminHeader } from "@/components/layout/AdminHeader";
+import { AdminSidebar } from "@/components/layout/AdminSidebar";
+import { AdminShellProviders } from "@/features/admin-shell";
 
 export default function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-950">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <Link className="text-sm font-semibold" href="/admin">
-            Vitaminaty Admin
-          </Link>
-          <span className="text-xs text-gray-500">M2 shell</span>
+    <AdminShellProviders>
+      <div className="min-h-screen bg-admin-bg font-admin text-admin-text">
+        <div className="grid min-h-screen grid-cols-1 md:grid-cols-[236px_minmax(0,1fr)]">
+          <AdminSidebar />
+          <div className="min-w-0">
+            <AdminHeader />
+            <main className="mx-auto min-h-[calc(100vh-56px)] w-full max-w-[1440px] px-4 py-4 md:px-6">
+              {children}
+            </main>
+          </div>
         </div>
-      </header>
-      <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="border-b border-gray-200 bg-white md:min-h-[calc(100vh-49px)] md:border-b-0 md:border-r">
-          <nav className="flex gap-2 overflow-x-auto px-4 py-3 text-sm md:flex-col md:overflow-visible">
-            {adminNavItems.map((item) => (
-              <Link
-                className="whitespace-nowrap rounded px-2 py-1 text-gray-700 hover:bg-gray-100"
-                href={item.href}
-                key={item.href}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </aside>
-        <div className="min-w-0 px-4 py-6">{children}</div>
       </div>
-    </div>
+    </AdminShellProviders>
   );
 }
-
-const adminNavItems = [
-  { href: "/admin/products", label: "Products" },
-  { href: "/admin/brands", label: "Brands" },
-  { href: "/admin/categories", label: "Categories" },
-  { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/homepage", label: "Homepage" },
-  { href: "/admin/audit-log", label: "Audit log" },
-  { href: "/admin/settings/feature-flags", label: "Settings" },
-];

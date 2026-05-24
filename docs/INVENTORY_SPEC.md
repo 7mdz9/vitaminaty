@@ -155,7 +155,7 @@ CREATE INDEX variants_stock_status_idx
 
 The second index supports storefront listing queries that filter by stock_status (M3) and admin queue queries (`/admin/queues/low-stock`, `/admin/queues/out-of-stock`).
 
-No existing application code references `in_stock` yet (per M1 ship state — confirmed in the M1 spec-evolution chat). The drop is safe.
+M1 ship state did include three `in_stock` application references (`src/types/product.ts`, `src/server/repositories/product-repository.ts`, `src/server/repositories/product-admin-repository.ts`). The M1 addendum 0012 implementation migrated those callsites to `stock_status`; application code must treat the trigger-derived enum as the inventory state source of truth.
 
 ---
 

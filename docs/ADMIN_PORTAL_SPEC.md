@@ -836,4 +836,76 @@ Documented for reference:
 
 ---
 
+
+## 16. Admin portal visual standards
+
+This section is the durable M2 admin design-system contract. Later M2 steps may use these tokens and primitives, but must not rename or alter the token list without explicit human approval.
+
+### 16.1 Quality constraints
+
+1. **Operational density first.** Admin pages are work surfaces, not marketing pages. Default tables target 36-40px rows, 13-14px body text, 12px metadata text, and visible primary actions without decorative card stacks.
+2. **Predictable command surfaces.** Use familiar primitives for controls: icons for tools, toggles for booleans, selects/menus for option sets, tables for scan-heavy data, dialogs/sheets for interruption or side work.
+3. **Fast perceived interaction.** Drawers, dialogs, command bar, and inline edits should appear within 100ms perceived latency. Optimistic states are explicit and reversible on failure.
+4. **Keyboard complete.** Every admin action must be reachable by keyboard. Focus order follows visual order; focus rings are never removed.
+5. **WCAG AA contrast.** Text, focus rings, destructive states, and selected states must meet WCAG AA. The admin accent is also the default focus-ring hue.
+6. **No hidden data ambiguity.** Tables must expose sorted/filtered state, stale-data warnings, and destructive confirmations in visible UI. Numeric and money columns use tabular numerals.
+7. **PII-aware rendering.** PII-adjacent columns use restrained typography, tabular numerals where relevant, and never rely on color alone for state.
+8. **Theme parity.** Light, dark, and system themes must use the same layout geometry and token names. Dark mode is a token override, not a separate stylesheet.
+9. **No one-off primitives.** New admin UI must compose the approved shadcn primitives before hand-rolling a custom control.
+
+### 16.2 Token map
+
+Admin tokens use the `--admin-*` prefix.
+
+```css
+--admin-accent: #A94143;
+--admin-accent-hover: #8E3537;
+--admin-danger: #FF0000;
+--admin-danger-hover: #d40000;
+--admin-success: #2A7D2E;
+--admin-warning: #B7791F;
+--admin-bg: #FAF7F6;
+--admin-surface: #FFFFFF;
+--admin-surface-muted: #F5ECE9;
+--admin-border: rgba(12, 12, 12, 0.12);
+--admin-text: #0C0C0C;
+--admin-text-muted: #595959;
+--admin-dark-bg: #111111;
+--admin-dark-surface: #1B1B1B;
+--admin-dark-surface-muted: #262020;
+--admin-dark-border: rgba(255, 255, 255, 0.14);
+--admin-dark-text: #FAFAFA;
+--admin-dark-text-muted: #C7C1BE;
+--admin-font-body: "League Spartan", system-ui, sans-serif;
+--admin-font-display: "MuseoModerno", system-ui, sans-serif;
+--admin-fs-caption: 0.75rem;
+--admin-fs-body-sm: 0.875rem;
+--admin-fs-body: 1rem;
+--admin-fs-title: 1.125rem;
+--admin-space-1: 4px;
+--admin-space-2: 8px;
+--admin-space-3: 12px;
+--admin-space-4: 16px;
+--admin-space-5: 24px;
+--admin-radius-sm: 4px;
+--admin-radius-md: 8px;
+--admin-radius-lg: 12px;
+--admin-motion-fast: 120ms;
+--admin-motion-base: 180ms;
+--admin-z-header: 100;
+--admin-z-command: 300;
+--admin-z-toast: 400;
+```
+
+### 16.3 Approved primitives
+
+The admin portal uses these shadcn primitives in `src/components/ui/`: `button`, `input`, `select`, `dropdown-menu`, `dialog`, `toast`, `sheet`, `command`, `tooltip`, `badge`, `checkbox`, `table`, `skeleton`, `separator`.
+
+The current shadcn registry provides the toast surface through `sonner`; `src/components/ui/toast.tsx` is the local compatibility wrapper for the approved primitive name.
+
+### 16.4 Tailwind namespace
+
+Tailwind exposes admin tokens as `admin-*` utilities where useful (`admin-accent`, `admin-bg`, `admin-surface`, `admin-border`, `admin-text`, and matching dark-mode variables). Feature code must prefer these tokens over literal colors.
+
+---
 _End of `ADMIN_PORTAL_SPEC.md` v1.1 — extended 2026-05-23 with §4 dashboard expansion, §5.3 bulk-operation safeguards, §5.4–5.13 UX enhancements, §10 inventory editing surfaces, §12.1 audit-log diff view._

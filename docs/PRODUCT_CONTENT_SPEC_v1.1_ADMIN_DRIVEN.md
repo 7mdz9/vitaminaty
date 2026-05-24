@@ -752,6 +752,10 @@ Clamped to `[0, 100]`. (The raw max sums to 105 but is clamped; penalty pushes p
 
 **Updated 2026-05-23** (M1 spec-evolution, addendum migration 0012): the flag count in the penalty term now includes the new `missing_stock_quantity` flag (9 flags total, up from 8). Max possible penalty was 40 (8 flags Ã— 5); now 45 (9 flags Ã— 5). On import, a typical 787-product row has `missing_price` (often) + `missing_image` + `missing_stock_quantity` + `needs_label_data` = 4 active flags â†’ -20 penalty before any positive scoring kicks in. This pushes imported products' default completion_score lower than before the addendum, which is intentional: a product without stock data really *is* less complete than one without.
 
+### Â§22.1.1 Scored fields
+
+Placeholder for the I1-sacred scored-field list authored in M2 Step 5. The implementation must not hard-code scored-field arrays until this subsection is approved. See Â§22.1 for the formula and `ADMIN_PORTAL_SPEC.md Â§6.6` for status-transition behavior.
+
 ### Â§22.2 Usage
 
 - Admin product list shows score as a progress bar per row.
