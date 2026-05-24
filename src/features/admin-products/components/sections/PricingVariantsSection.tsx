@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SectionCard } from "./SectionCard";
 import { nullableNumber } from "./section-utils";
 import type { ProductEditorSectionProps } from "./types";
 
 export function PricingVariantsSection({
   product,
-  variants,
   onSave,
   saving,
 }: ProductEditorSectionProps) {
@@ -42,30 +40,6 @@ export function PricingVariantsSection({
       >
         Save pricing
       </Button>
-      <div className="mt-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead scope="col">Variant</TableHead>
-              <TableHead scope="col">SKU</TableHead>
-              <TableHead scope="col">Stock status</TableHead>
-              <TableHead scope="col" className="text-right">Quantity</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {variants.length === 0 ? (
-              <TableRow><TableCell colSpan={4}>No variants yet. Variant CRUD lands in Step 8b.</TableCell></TableRow>
-            ) : variants.map((variant) => (
-              <TableRow key={variant.id}>
-                <TableCell>{[variant.flavor, variant.size].filter(Boolean).join(" / ")}</TableCell>
-                <TableCell>{variant.sku ?? "-"}</TableCell>
-                <TableCell>{variant.stock_status.replace(/_/g, " ")}</TableCell>
-                <TableCell className="text-right tabular-nums">{variant.stock_quantity ?? "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
     </SectionCard>
   );
 }

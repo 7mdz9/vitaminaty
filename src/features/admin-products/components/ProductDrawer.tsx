@@ -26,6 +26,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { CompletionScoreBadge } from "@/components/admin/CompletionScoreBadge";
 import { useShortcuts } from "@/features/admin-shell/use-shortcuts";
 import { ImageUploadField } from "./ImageUploadField";
+import { StockEditCell } from "./StockEditCell";
 import {
   updateProductPartial,
   type AdminProductDrawerDataResult,
@@ -270,8 +271,22 @@ export function ProductDrawer({
                     {localData.variants.map((variant) => (
                       <div className="flex items-center justify-between gap-3 text-admin-sm" key={variant.id}>
                         <span className="min-w-0 truncate">{variant.flavor ?? variant.size}</span>
-                        <div className="flex items-center gap-2 tabular-nums">
-                          <span>{variant.stock_quantity ?? "—"}</span>
+                        <div className="flex flex-wrap items-center justify-end gap-2 tabular-nums">
+                          <StockEditCell
+                            variant={variant}
+                            onSaved={(saved) =>
+                              setLocalData((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      variants: current.variants.map((candidate) =>
+                                        candidate.id === saved.id ? saved : candidate,
+                                      ),
+                                    }
+                                  : current,
+                              )
+                            }
+                          />
                           <Badge variant="outline">{variant.stock_status.replace(/_/g, " ")}</Badge>
                         </div>
                       </div>

@@ -21,6 +21,7 @@ import type { AdminProductInlinePatch } from "@/lib/validation/product";
 import { IdentitySection } from "./sections/IdentitySection";
 import { BrandCategorySection } from "./sections/BrandCategorySection";
 import { PricingVariantsSection } from "./sections/PricingVariantsSection";
+import { VariantsSection } from "./VariantsSection";
 import { GoalsTagsSection } from "./sections/GoalsTagsSection";
 import { MediaSection } from "./sections/MediaSection";
 import { ContentSection } from "./sections/ContentSection";
@@ -44,6 +45,7 @@ export function ProductEditor({
   categories: AdminProductReferenceOption[];
 }>) {
   const [product, setProduct] = useState(initialProduct);
+  const [editorVariants, setEditorVariants] = useState(variants);
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const projectedScore = calculateCompletionScore({
@@ -73,7 +75,7 @@ export function ProductEditor({
 
   const sectionProps = {
     product,
-    variants,
+    variants: editorVariants,
     images,
     goalTags,
     brands,
@@ -133,6 +135,21 @@ export function ProductEditor({
           <IdentitySection {...sectionProps} />
           <BrandCategorySection {...sectionProps} />
           <PricingVariantsSection {...sectionProps} />
+          <VariantsSection
+            product={product}
+            variants={editorVariants}
+            onVariantSaved={(variant) =>
+              setEditorVariants((current) => {
+                const index = current.findIndex((candidate) => candidate.id === variant.id);
+
+                if (index === -1) {
+                  return [...current, variant].sort((a, b) => a.sort_order - b.sort_order);
+                }
+
+                return current.map((candidate) => (candidate.id === variant.id ? variant : candidate));
+              })
+            }
+          />
           <GoalsTagsSection {...sectionProps} />
           <MediaSection {...sectionProps} />
           <ContentSection {...sectionProps} />

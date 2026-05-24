@@ -91,6 +91,24 @@ export const GetInventoryHistoryActionSchema = z
     message: "Both start and end are required for date-range inventory history.",
   });
 
+export const CreateProductVariantActionSchema = z.object({
+  productId: z.string().uuid(),
+  flavor: z.string().trim().max(120).nullable().optional(),
+  size: z.string().trim().min(1).max(120),
+  sku: z.string().trim().max(120).nullable().optional(),
+  barcode: z.string().trim().max(120).nullable().optional(),
+  priceAed: z.number().int().positive(),
+  stockQuantity: z.number().int().min(0),
+  lowStockThreshold: z.number().int().min(0).max(100000).default(5),
+  weightGrams: z.number().int().positive().nullable().optional(),
+});
+
+export const ArchiveProductVariantActionSchema = z.object({
+  variantId: z.string().uuid(),
+  expectedUpdatedAt: z.string().datetime(),
+  changeReasonNote: NoteSchema,
+});
+
 export type SetVariantStockActionInput = z.input<typeof SetVariantStockActionSchema>;
 export type AdjustVariantStockActionInput = z.input<typeof AdjustVariantStockActionSchema>;
 export type RecountVariantStockActionInput = z.input<typeof RecountVariantStockActionSchema>;
@@ -99,3 +117,5 @@ export type SetVariantLowStockThresholdActionInput = z.input<
 >;
 export type BulkAdjustVariantStockActionInput = z.input<typeof BulkAdjustVariantStockActionSchema>;
 export type GetInventoryHistoryActionInput = z.input<typeof GetInventoryHistoryActionSchema>;
+export type CreateProductVariantActionInput = z.input<typeof CreateProductVariantActionSchema>;
+export type ArchiveProductVariantActionInput = z.input<typeof ArchiveProductVariantActionSchema>;

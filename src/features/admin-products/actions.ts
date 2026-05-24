@@ -19,13 +19,17 @@ import {
 } from "@/lib/validation/product";
 import {
   AdjustVariantStockActionSchema,
+  ArchiveProductVariantActionSchema,
   BulkAdjustVariantStockActionSchema,
+  CreateProductVariantActionSchema,
   GetInventoryHistoryActionSchema,
   RecountVariantStockActionSchema,
   SetVariantLowStockThresholdActionSchema,
   SetVariantStockActionSchema,
   type AdjustVariantStockActionInput,
+  type ArchiveProductVariantActionInput,
   type BulkAdjustVariantStockActionInput,
+  type CreateProductVariantActionInput,
   type GetInventoryHistoryActionInput,
   type RecountVariantStockActionInput,
   type SetVariantLowStockThresholdActionInput,
@@ -37,7 +41,9 @@ import {
 } from "@/server/services/product-service";
 import {
   adjustVariantStock as adjustVariantStockService,
+  archiveProductVariant as archiveProductVariantService,
   bulkAdjustVariantStock as bulkAdjustVariantStockService,
+  createProductVariant as createProductVariantService,
   getInventoryHistory as getInventoryHistoryService,
   recountVariantStock as recountVariantStockService,
   setVariantLowStockThreshold as setVariantLowStockThresholdService,
@@ -439,6 +445,40 @@ export async function getInventoryHistory(
           : "unknown",
       message: mapped.message,
     };
+  }
+}
+
+export async function createProductVariant(
+  input: CreateProductVariantActionInput,
+): Promise<AdminInventoryActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = CreateProductVariantActionSchema.parse(input);
+    const result = await createProductVariantService({
+      ...parsed,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    return revalidateInventoryResult(result);
+  } catch (error) {
+    return mapInventoryActionError(error);
+  }
+}
+
+export async function archiveProductVariant(
+  input: ArchiveProductVariantActionInput,
+): Promise<AdminInventoryActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = ArchiveProductVariantActionSchema.parse(input);
+    const result = await archiveProductVariantService({
+      ...parsed,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    return revalidateInventoryResult(result);
+  } catch (error) {
+    return mapInventoryActionError(error);
   }
 }
 

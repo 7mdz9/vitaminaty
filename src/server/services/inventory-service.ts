@@ -13,6 +13,7 @@ import {
 import {
   findProductVariantByIdForAdmin,
   findProductVariantsByIdsForAdmin,
+  insertProductVariantForAdmin,
   updateProductVariantForAdmin,
   updateProductVariantForAdminIfFresh,
 } from "@/server/repositories/product-admin-repository";
@@ -98,6 +99,26 @@ export type InventoryHistoryInput = Readonly<{
   start?: string;
   end?: string;
 }>;
+
+export type CreateProductVariantInput = InventoryActorInput &
+  Readonly<{
+    productId: string;
+    flavor?: string | null;
+    size: string;
+    sku?: string | null;
+    barcode?: string | null;
+    priceAed: number;
+    stockQuantity: number;
+    lowStockThreshold: number;
+    weightGrams?: number | null;
+  }>;
+
+export type ArchiveProductVariantInput = InventoryActorInput &
+  Readonly<{
+    variantId: string;
+    expectedUpdatedAt: string;
+    changeReasonNote?: string | null;
+  }>;
 
 export type BulkAdjustVariantStockResult =
   | Readonly<{
@@ -330,6 +351,82 @@ export async function bulkAdjustVariantStock(
     ok: true,
     results,
   };
+}
+
+export async function createProductVariant(
+  input: CreateProductVariantInput,
+): Promise<InventoryOperationResult> {
+  const variant = await insertProductVariantForAdmin({
+    product_id: input.productId,
+    flavor: input.flavor ?? null,
+    size: input.size,
+    sku: input.sku ?? null,
+    barcode: input.barcode ?? null,
+    price_aed: input.priceAed,
+    stock_quantity: input.stockQuantity,
+    low_stock_threshold: input.lowStockThreshold,
+    weight_grams: input.weightGrams ?? null,
+  });
+  const movement = await appendMovement({
+    product_id: variant.product_id,
+    variant_id: variant.id,
+    previous_quantity: null,
+    new_quantity: input.stockQuantity,
+    change_amount: input.stockQuantity,
+    reason: "manual_adjustment",
+    change_reason_note: "variant_create",
+    changed_by: input.actor.userId,
+  });
+
+  await writeVariantAudit({
+    action: "variant_create",
+    before: variant,
+    updated: variant,
+    previousQuantity: null,
+    newQuantity: input.stockQuantity,
+    changeAmount: input.stockQuantity,
+    reason: "manual_adjustment",
+    changeReasonNote: "variant_create",
+    actor: input.actor,
+    changes: [
+      { field: "variant", before: null, after: variantLabel(variant) },
+      { field: "stock_quantity", before: null, after: input.stockQuantity },
+      { field: "low_stock_threshold", before: null, after: input.lowStockThreshold },
+    ],
+  });
+
+  return {
+    ok: true,
+    before: variant,
+    variant,
+    movement,
+  };
+}
+
+export async function archiveProductVariant(
+  input: ArchiveProductVariantInput,
+): Promise<InventoryOperationResult> {
+  const before = await findProductVariantByIdForAdmin(input.variantId);
+
+  if (!before) {
+    return notFound();
+  }
+
+  return updateQuantityAndAppendMovement({
+    action: "variant_delete",
+    before,
+    expectedUpdatedAt: input.expectedUpdatedAt,
+    newQuantity: 0,
+    changeAmount: 0 - (before.stock_quantity ?? 0),
+    reason: "manual_adjustment",
+    changeReasonNote: input.changeReasonNote ?? "variant_archive",
+    actor: input.actor,
+    force: false,
+    changes: [
+      { field: "stock_quantity", before: before.stock_quantity, after: 0 },
+      { field: "variant_archived", before: false, after: true },
+    ],
+  });
 }
 
 export async function getInventoryHistory(

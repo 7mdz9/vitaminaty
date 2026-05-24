@@ -567,6 +567,24 @@ export async function bulkUpsertProductVariants(
   return (data as unknown as ProductVariantRow[]).map(mapVariant);
 }
 
+export async function insertProductVariantForAdmin(
+  row: ProductVariantInsert,
+): Promise<ProductVariantRecord> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .insert(row)
+    .select(
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+    )
+    .single();
+
+  if (error) {
+    throw new Error(`Product variant insert failed: ${error.message}`);
+  }
+
+  return mapVariant(data as unknown as ProductVariantRow);
+}
+
 export async function bulkInsertProductImages(
   rows: ProductImageInsert[],
 ): Promise<ProductImageRecord[]> {
