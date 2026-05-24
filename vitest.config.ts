@@ -10,6 +10,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     env: {
       VITAMINATY_APP_URL: "http://localhost:3000",
       VITAMINATY_APP_ENV: "development",

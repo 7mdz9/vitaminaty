@@ -307,6 +307,8 @@ This is what we aim for over time. Not required to ship.
 
 ### Â§8.1 Tier 1 â€” Import (always complete after MD import)
 
+Completion-score note: only the subset listed in Â§22.1.1 contributes to `completion_score`.
+
 | Field | Source |
 |---|---|
 | `name_raw` | Excel NAME column verbatim |
@@ -330,6 +332,8 @@ This is what we aim for over time. Not required to ship.
 | `slug` | Auto-generated from `name`; admin can edit |
 
 ### Â§8.3 Tier 3 â€” Quality (filled over time)
+
+Completion-score note: only the subset listed in Â§22.1.1 contributes to `completion_score`.
 
 All of:
 - `description`, `benefits[]`, `directions_of_use`, `storage_instructions`, `warnings`
@@ -754,7 +758,45 @@ Clamped to `[0, 100]`. (The raw max sums to 105 but is clamped; penalty pushes p
 
 ### Â§22.1.1 Scored fields
 
-Placeholder for the I1-sacred scored-field list authored in M2 Step 5. The implementation must not hard-code scored-field arrays until this subsection is approved. See Â§22.1 for the formula and `ADMIN_PORTAL_SPEC.md Â§6.6` for status-transition behavior.
+This subsection is I1-sacred. The field names below are the exact scored-field constants used by the admin implementation.
+
+Tier 1 scored fields (6 fields, 5 points each):
+
+1. `name_raw`
+2. `name`
+3. `brand_raw`
+4. `source_category`
+5. `source_row`
+6. `source_file`
+
+Tier 2 scored fields (6 fields, 6 points each):
+
+1. `brand`
+2. `category`
+3. `form`
+4. `retail_price`
+5. `goal_tags`
+6. `image`
+
+Tier 3 scored fields (13 fields, 3 points each):
+
+1. `description`
+2. `benefits`
+3. `directions`
+4. `warnings`
+5. `storage`
+6. `nutrition_panel`
+7. `ingredients`
+8. `allergens`
+9. `seo_title`
+10. `seo_description`
+11. `additional_images`
+12. `often_bought_with`
+13. `manufacturer_country`
+
+Cross-reference: `Â§8.1` and `Â§8.3` describe the broader content model; this subsection is the authoritative subset that contributes to `completion_score`.
+
+MVP-only cap: when all Tier 1 and Tier 2 scored fields are complete but zero Tier 3 scored fields are complete, the stored/displayed `completion_score` is capped at 60 even though the raw formula value is 66. The implementation must keep `rawPreClampValue` available in tests so the formula arithmetic remains auditable.
 
 ### Â§22.2 Usage
 

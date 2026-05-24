@@ -86,6 +86,13 @@ export type AdminProductReferenceOption = Readonly<{
   slug: string;
 }>;
 
+export type AdminProductEditorData = Readonly<{
+  product: ProductRecord;
+  variants: ProductVariantRecord[];
+  images: ProductImageRecord[];
+  goalTags: ProductGoalTagRecord[];
+}>;
+
 export type ImportedProductInsert = ProductInsert;
 
 const ADMIN_PRODUCT_COLUMNS = [
@@ -294,6 +301,29 @@ export async function updateProductForAdminIfFresh(
   return data ? mapProduct(data as unknown as ProductRow) : null;
 }
 
+export async function findProductEditorDataForAdmin(
+  id: string,
+): Promise<AdminProductEditorData | null> {
+  const product = await findProductByIdForAdmin(id);
+
+  if (!product) {
+    return null;
+  }
+
+  const [variants, images, goalTags] = await Promise.all([
+    listProductVariantsForAdmin(id),
+    listProductImagesForAdmin(id),
+    listProductGoalTagsForAdmin(id),
+  ]);
+
+  return {
+    product,
+    variants,
+    images,
+    goalTags,
+  };
+}
+
 export async function listBrandOptionsForAdmin(): Promise<AdminProductReferenceOption[]> {
   const { data, error } = await supabaseAdmin
     .from("brands")
@@ -327,6 +357,55 @@ export async function listCategoryOptionsForAdmin(): Promise<AdminProductReferen
     label: row.name,
     slug: row.slug,
   }));
+}
+
+export async function listProductVariantsForAdmin(
+  productId: string,
+): Promise<ProductVariantRecord[]> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .select(
+      "id, product_id, flavor, size, sku, barcode, price_aed, stock_status, stock_quantity, low_stock_threshold, weight_grams, sort_order, created_at, updated_at",
+    )
+    .eq("product_id", productId)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    throw new Error(`Admin product variants query failed: ${error.message}`);
+  }
+
+  return ((data as unknown as ProductVariantRow[]) ?? []).map(mapVariant);
+}
+
+export async function listProductImagesForAdmin(productId: string): Promise<ProductImageRecord[]> {
+  const { data, error } = await supabaseAdmin
+    .from("product_images")
+    .select(
+      "id, product_id, variant_id, storage_path, public_url, alt_text, kind, sort_order, is_primary, created_at",
+    )
+    .eq("product_id", productId)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    throw new Error(`Admin product images query failed: ${error.message}`);
+  }
+
+  return ((data as unknown as ProductImageRow[]) ?? []).map(mapImage);
+}
+
+export async function listProductGoalTagsForAdmin(
+  productId: string,
+): Promise<ProductGoalTagRecord[]> {
+  const { data, error } = await supabaseAdmin
+    .from("product_goal_tags")
+    .select("product_id, goal, is_primary")
+    .eq("product_id", productId);
+
+  if (error) {
+    throw new Error(`Admin product goal tags query failed: ${error.message}`);
+  }
+
+  return ((data as unknown as ProductGoalTagRow[]) ?? []).map(mapGoalTag);
 }
 
 export async function bulkInsertImported(rows: ImportedProductInsert[]): Promise<ProductRecord[]> {

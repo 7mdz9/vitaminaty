@@ -7,20 +7,10 @@ import {
   AdminProductBatchUpdateActionSchema,
   AdminProductUpdateActionSchema,
   type AdminProductBatchUpdateActionInput,
-  type AdminProductInlinePatch,
   type AdminProductUpdateActionInput,
 } from "@/lib/validation/product";
-import { record } from "@/features/audit-log/record";
-import type { AuditDiff, AuditFieldChange } from "@/lib/audit/diff-types";
-import type { Database, Json } from "@/lib/supabase/types.generated";
-import {
-  findProductByIdForAdmin,
-  updateProductForAdmin,
-  updateProductForAdminIfFresh,
-} from "@/server/repositories/product-admin-repository";
+import { updateProductWithRecalculation } from "@/server/services/product-service";
 import type { ProductRecord } from "@/types/product";
-
-type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
 
 export type AdminProductActionResult =
   | {
@@ -57,31 +47,22 @@ export async function updateProduct(
   try {
     const admin = await requireAdmin();
     const parsed = AdminProductUpdateActionSchema.parse(input);
-    const before = await findProductByIdForAdmin(parsed.productId);
+    const result = await updateProductWithRecalculation({
+      productId: parsed.productId,
+      expectedUpdatedAt: parsed.expectedUpdatedAt,
+      patch: parsed.patch,
+      force: parsed.force,
+      actor: { userId: admin.userId, email: admin.email },
+    });
 
-    if (!before) {
+    if (!result.ok) {
       return {
         ok: false,
-        code: "not_found",
-        message: "Product not found.",
-      };
-    }
-
-    const patch = toProductUpdate(parsed.patch);
-    const updated = parsed.force
-      ? await updateProductForAdmin(parsed.productId, patch)
-      : await updateProductForAdminIfFresh(parsed.productId, parsed.expectedUpdatedAt, patch);
-
-    if (!updated) {
-      const current = await findProductByIdForAdmin(parsed.productId);
-
-      return {
-        ok: false,
-        code: "stale_data",
-        message: "This product changed after the list loaded.",
-        current: current
+        code: result.code,
+        message: result.message,
+        current: result.current
           ? {
-              updated_at: current.updated_at,
+              updated_at: result.current.updated_at,
               original_editor: {
                 user_id: null,
                 email: null,
@@ -91,44 +72,12 @@ export async function updateProduct(
       };
     }
 
-    const changes = buildProductChanges(before, updated, parsed.patch);
-    const diff: AuditDiff = parsed.force
-      ? {
-          version: 1,
-          action: "stale_data_override",
-          entity_type: "product",
-          product_id: updated.id,
-          loaded_updated_at: parsed.expectedUpdatedAt,
-          database_updated_at: before.updated_at,
-          original_editor: {
-            user_id: "00000000-0000-4000-8000-000000000000",
-            email: "unknown-admin@example.test",
-          },
-          overridden_by: {
-            user_id: admin.userId,
-            email: admin.email,
-          },
-          changes,
-        }
-      : {
-          version: 1,
-          action: "update",
-          entity_type: "product",
-          product_id: updated.id,
-          changes,
-        };
-
-    await record({
-      actor: { userId: admin.userId, email: admin.email },
-      diff,
-      entityId: updated.id,
-    });
-
     revalidatePath("/admin/products");
+    revalidatePath(`/admin/products/${parsed.productId}`);
 
     return {
       ok: true,
-      product: updated,
+      product: result.product,
     };
   } catch (error) {
     return mapActionError(error);
@@ -188,33 +137,6 @@ export async function archiveProduct(
       is_public_visible: false,
     },
   });
-}
-
-function toProductUpdate(patch: AdminProductInlinePatch): ProductUpdate {
-  return {
-    retail_price_aed: patch.retail_price_aed,
-    brand_id: patch.brand_id,
-    category_id: patch.category_id,
-    status: patch.status,
-    is_public_visible: patch.is_public_visible,
-    admin_review_flags: patch.admin_review_flags as Json | undefined,
-  };
-}
-
-function buildProductChanges(
-  before: ProductRecord,
-  after: ProductRecord,
-  patch: AdminProductInlinePatch,
-): AuditFieldChange[] {
-  return Object.keys(patch).map((field) => ({
-    field,
-    before: readAuditValue(before, field),
-    after: readAuditValue(after, field),
-  }));
-}
-
-function readAuditValue(product: ProductRecord, field: string): Json {
-  return product[field as keyof ProductRecord] as Json;
 }
 
 function mapActionError(error: unknown): AdminProductActionResult {

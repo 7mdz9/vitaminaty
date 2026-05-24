@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   findManyForAdmin: vi.fn(),
   listBrandOptionsForAdmin: vi.fn(),
   listCategoryOptionsForAdmin: vi.fn(),
+  listProductImagesForAdmin: vi.fn(),
+  listProductGoalTagsForAdmin: vi.fn(),
   updateProductForAdmin: vi.fn(),
   updateProductForAdminIfFresh: vi.fn(),
   record: vi.fn(),
@@ -22,6 +24,8 @@ vi.mock("@/server/repositories/product-admin-repository", () => ({
   findManyForAdmin: mocks.findManyForAdmin,
   listBrandOptionsForAdmin: mocks.listBrandOptionsForAdmin,
   listCategoryOptionsForAdmin: mocks.listCategoryOptionsForAdmin,
+  listProductImagesForAdmin: mocks.listProductImagesForAdmin,
+  listProductGoalTagsForAdmin: mocks.listProductGoalTagsForAdmin,
   updateProductForAdmin: mocks.updateProductForAdmin,
   updateProductForAdminIfFresh: mocks.updateProductForAdminIfFresh,
 }));
@@ -42,6 +46,8 @@ describe("admin product list", () => {
       email: "admin@example.test",
       role: "admin",
     });
+    mocks.listProductImagesForAdmin.mockResolvedValue([]);
+    mocks.listProductGoalTagsForAdmin.mockResolvedValue([]);
   });
 
   it("parses URL-backed filters, sort, and pagination", async () => {
@@ -93,14 +99,15 @@ describe("admin product list", () => {
 
     expect(result.ok).toBe(true);
     expect(mocks.requireAdmin).toHaveBeenCalledTimes(1);
-    expect(mocks.updateProductForAdminIfFresh).toHaveBeenCalledWith(before.id, before.updated_at, {
-      retail_price_aed: 94,
-      brand_id: undefined,
-      category_id: undefined,
-      status: undefined,
-      is_public_visible: undefined,
-      admin_review_flags: undefined,
-    });
+    expect(mocks.updateProductForAdminIfFresh).toHaveBeenCalledWith(
+      before.id,
+      before.updated_at,
+      expect.objectContaining({
+        retail_price_aed: 94,
+        completion_score: 10,
+        status: "draft",
+      }),
+    );
     expect(mocks.record).toHaveBeenCalledWith(
       expect.objectContaining({
         actor: { userId: "00000000-0000-4000-8000-000000000100", email: "admin@example.test" },
@@ -108,7 +115,7 @@ describe("admin product list", () => {
           action: "update",
           entity_type: "product",
           product_id: before.id,
-          changes: [{ field: "retail_price_aed", before: 89, after: 94 }],
+          changes: expect.arrayContaining([{ field: "retail_price_aed", before: 89, after: 94 }]),
         }),
       }),
     );

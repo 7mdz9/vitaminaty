@@ -19,6 +19,17 @@ export const FieldStatusSchema = z.enum([
   "not_applicable",
 ]);
 
+export const ProductFormSchema = z.enum([
+  "powder",
+  "capsule",
+  "tablet",
+  "softgel",
+  "gummies",
+  "liquid",
+  "rtd",
+  "food",
+]);
+
 export const ProductFieldStatusKeySchema = z.enum([
   "name",
   "brand",
@@ -49,10 +60,7 @@ export const ProductCreateInputSchema = z.object({
   brand_raw: z.string().trim().min(1).nullable().optional(),
   category_id: z.string().uuid().nullable().optional(),
   source_category: z.string().trim().min(1).nullable().optional(),
-  form: z
-    .enum(["powder", "capsules", "tablets", "softgels", "bars", "gummies", "liquid", "rtd", "food"])
-    .nullable()
-    .optional(),
+  form: ProductFormSchema.nullable().optional(),
   source_file: z.string().trim().min(1).default("product.md"),
   source_row: z.array(z.number().int().positive()).default([]),
   source_notes: z.string().nullable().optional(),
@@ -104,14 +112,45 @@ export const AdminProductListInputSchema = z.object({
 });
 
 const NullableUuidSchema = z.string().uuid().nullable();
+const ProductContentPatchSchema = z
+  .object({
+    description: z.string().optional(),
+    benefits: z.array(z.string()).optional(),
+    directions_of_use: z.string().optional(),
+    storage_instructions: z.string().optional(),
+    warnings: z.string().optional(),
+    seo_title: z.string().optional(),
+    seo_description: z.string().optional(),
+    often_bought_with_ids: z.array(z.string().uuid()).optional(),
+    manufacturer_country: z.string().optional(),
+    authorized_distributor_note: z.string().optional(),
+  })
+  .passthrough();
+const ProductLabelDataPatchSchema = z
+  .object({
+    nutrition_panel: z.record(z.string(), z.unknown()).optional(),
+    ingredients: z.string().optional(),
+    allergens: z.array(z.string()).optional(),
+    manufacturing_facility_warnings: z.array(z.string()).optional(),
+    serving_size: z.string().optional(),
+    servings_per_container: z.string().optional(),
+  })
+  .passthrough();
 
 export const AdminProductInlinePatchSchema = z
   .object({
+    name: z.string().trim().min(1).max(220).optional(),
     retail_price_aed: z.number().int().positive().nullable().optional(),
+    wholesale_price_internal: z.number().int().positive().nullable().optional(),
+    compare_at_price_aed: z.number().int().positive().nullable().optional(),
     brand_id: NullableUuidSchema.optional(),
     category_id: NullableUuidSchema.optional(),
+    form: ProductFormSchema.nullable().optional(),
     status: ProductStatusSchema.optional(),
     is_public_visible: z.boolean().optional(),
+    content: ProductContentPatchSchema.optional(),
+    label_data: ProductLabelDataPatchSchema.optional(),
+    fields_status: z.record(z.string(), FieldStatusSchema).optional(),
     admin_review_flags: z.record(AdminProductReviewFlagSchema, z.boolean()).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {

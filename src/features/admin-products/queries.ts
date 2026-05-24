@@ -6,9 +6,11 @@ import {
   type AdminProductListInput,
 } from "@/lib/validation/product";
 import {
+  findProductEditorDataForAdmin,
   findManyForAdmin,
   listBrandOptionsForAdmin,
   listCategoryOptionsForAdmin,
+  type AdminProductEditorData,
   type AdminProductListResult,
   type AdminProductReferenceOption,
 } from "@/server/repositories/product-admin-repository";
@@ -37,6 +39,21 @@ export async function getProductFilterOptions(): Promise<{
   ]);
 
   return { brands, categories };
+}
+
+export async function getProductEditor(productId: string): Promise<{
+  editor: AdminProductEditorData | null;
+  brands: AdminProductReferenceOption[];
+  categories: AdminProductReferenceOption[];
+}> {
+  await requireAdmin();
+  const [editor, brands, categories] = await Promise.all([
+    findProductEditorDataForAdmin(productId),
+    listBrandOptionsForAdmin(),
+    listCategoryOptionsForAdmin(),
+  ]);
+
+  return { editor, brands, categories };
 }
 
 export function parseProductListSearchParams(
