@@ -211,6 +211,7 @@ export type Database = {
           is_visible: boolean
           listing_copy: string | null
           name: string
+          parent_id: string | null
           parent_nav: string
           seo_description: string | null
           seo_title: string | null
@@ -226,6 +227,7 @@ export type Database = {
           is_visible?: boolean
           listing_copy?: string | null
           name: string
+          parent_id?: string | null
           parent_nav: string
           seo_description?: string | null
           seo_title?: string | null
@@ -241,6 +243,7 @@ export type Database = {
           is_visible?: boolean
           listing_copy?: string | null
           name?: string
+          parent_id?: string | null
           parent_nav?: string
           seo_description?: string | null
           seo_title?: string | null
@@ -250,7 +253,15 @@ export type Database = {
           supported_goals?: Database["public"]["Enums"]["goal_tag"][] | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
@@ -1050,6 +1061,7 @@ export type Database = {
         Args: { p_alias: string; p_brand_id: string }
         Returns: Json
       }
+      admin_reorder_categories: { Args: { p_items: Json }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

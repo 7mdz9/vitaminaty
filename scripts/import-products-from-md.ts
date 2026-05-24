@@ -247,7 +247,7 @@ async function loadCategories(
 ): Promise<CategoryRow[]> {
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, slug, parent_nav, subcategories, supported_goals, listing_copy, seo_title, seo_description, is_visible, sort_order, created_at, updated_at")
+    .select("id, name, slug, parent_nav, parent_id, subcategories, supported_goals, listing_copy, seo_title, seo_description, is_visible, sort_order, created_at, updated_at")
     .order("sort_order", { ascending: true });
 
   if (error) {

@@ -197,6 +197,7 @@ CREATE TABLE categories (
   name text NOT NULL UNIQUE,
   slug text NOT NULL UNIQUE,
   parent_nav text NOT NULL,                       -- 'Sport Nutrition' | 'Health & Wellness' | 'Snacks & Drinks'
+  parent_id uuid REFERENCES categories(id) ON DELETE SET NULL,
   subcategories text[] DEFAULT '{}',
   supported_goals goal_tag[] DEFAULT '{}',
   listing_copy text,
@@ -210,6 +211,7 @@ CREATE TABLE categories (
 
 CREATE INDEX categories_slug_idx ON categories(slug);
 CREATE INDEX categories_parent_nav_idx ON categories(parent_nav);
+CREATE INDEX categories_parent_id_sort_idx ON categories(parent_id, sort_order);
 ```
 
 ### 4.3 `md_category_mapping`
@@ -1252,6 +1254,13 @@ Migrations are applied in numeric order. M1 ships these:
 
 Full inventory spec: `INVENTORY_SPEC.md`.
 
+**M2 admin reference-data addenda (shipped locally 2026-05-24):**
+
+13. `0013_audit_action_extension.sql` - extends `audit_action` for the M2 admin mutation surface.
+14. `0014_admin_mfa_recovery.sql` - stores hashed admin MFA recovery codes behind service-role-only access.
+15. `0015_brand_alias_normalization.sql` - adds `admin_add_brand_alias_and_recompute()` for atomic brand alias normalization and affected product recompute.
+16. `0016_category_parent_tree.sql` - adds `categories.parent_id`, `categories_parent_id_sort_idx`, and service-role-only `admin_reorder_categories(jsonb)` for atomic sibling reorder and re-parenting.
+
 The `scripts/import-products-from-md.ts` runs after migrations to populate `products` from `docs/reference/product.md`.
 
 ---
@@ -1268,6 +1277,7 @@ Critical indexes (re-stated for review):
 | `products_name_trgm` | Fuzzy search on product names (Phase 2 typo tolerance ready) |
 | `variants_low_stock_idx` (rewritten in 0012) | Admin low-stock queue + dashboard widget; filters on `stock_status='low_stock'` |
 | `variants_stock_status_idx` (added in 0012) | Storefront filtering by stock status (M3) + admin queue queries |
+| `categories_parent_id_sort_idx` (added in 0016) | Admin category tree sibling ordering and parent/child navigation |
 | `inventory_movements_variant_idx` (added in 0012) | Per-variant inventory history viewer (ADMIN_PORTAL §10.8) |
 | `inventory_movements_product_idx` (added in 0012) | Per-product inventory history |
 | `inventory_movements_order_idx` (added in 0012) | Find stock movements for a given order (M7 restoration audit trail) |

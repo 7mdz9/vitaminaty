@@ -12,6 +12,7 @@ export interface CategoryRecord {
   name: string;
   slug: string;
   parent_nav: ParentNav;
+  parent_id: string | null;
   subcategories: string[];
   supported_goals: GoalTag[];
   listing_copy: string | null;
