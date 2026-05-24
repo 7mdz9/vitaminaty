@@ -4,18 +4,29 @@ import { record } from "@/features/audit-log/record";
 import { calculateCompletionScore } from "@/features/admin-products/completion-score";
 import { mergeFieldStatus } from "@/features/admin-products/field-status";
 import { deriveProductStatus } from "@/features/admin-products/status-transitions";
+import { prepareProductImageUpload } from "@/lib/images/upload";
 import type { AuditActor } from "@/server/services/audit-service";
 import type { AuditDiff, AuditFieldChange } from "@/lib/audit/diff-types";
 import type { Database, Json } from "@/lib/supabase/types.generated";
 import {
+  clearPrimaryProductImagesForAdmin,
   findProductByIdForAdmin,
+  insertProductImageForAdmin,
   listProductGoalTagsForAdmin,
   listProductImagesForAdmin,
   updateProductForAdmin,
   updateProductForAdminIfFresh,
+  uploadProductImageAssetForAdmin,
 } from "@/server/repositories/product-admin-repository";
 import type { AdminProductInlinePatch } from "@/lib/validation/product";
-import type { ProductContent, ProductFieldsStatus, ProductLabelData, ProductRecord } from "@/types/product";
+import type {
+  ProductContent,
+  ProductFieldsStatus,
+  ProductImageKind,
+  ProductImageRecord,
+  ProductLabelData,
+  ProductRecord,
+} from "@/types/product";
 
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
 
@@ -40,6 +51,28 @@ export type ProductUpdateServiceResult =
       code: "not_found" | "stale_data";
       message: string;
       current?: ProductRecord | null;
+    }>;
+
+export type ProductImageUploadServiceInput = Readonly<{
+  productId: string;
+  variantId?: string | null;
+  file: File;
+  kind: ProductImageKind;
+  altText?: string;
+  isPrimary: boolean;
+  actor: AuditActor;
+}>;
+
+export type ProductImageUploadServiceResult =
+  | Readonly<{
+      ok: true;
+      product: ProductRecord;
+      image: ProductImageRecord;
+    }>
+  | Readonly<{
+      ok: false;
+      code: "not_found" | "validation_error";
+      message: string;
     }>;
 
 export async function updateProductWithRecalculation(
@@ -92,6 +125,133 @@ export async function updateProductWithRecalculation(
     product: updated,
     changes,
     statusChanged: before.status !== updated.status,
+  };
+}
+
+export async function uploadProductImageWithAudit(
+  input: ProductImageUploadServiceInput,
+): Promise<ProductImageUploadServiceResult> {
+  const before = await findProductByIdForAdmin(input.productId);
+
+  if (!before) {
+    return {
+      ok: false,
+      code: "not_found",
+      message: "Product not found.",
+    };
+  }
+
+  const existingImages = await listProductImagesForAdmin(input.productId);
+  const shouldBePrimary = input.isPrimary || existingImages.length === 0;
+  let asset: Awaited<ReturnType<typeof prepareProductImageUpload>>;
+  try {
+    asset = await prepareProductImageUpload({
+      file: input.file,
+      brandSlug: before.brand_raw,
+      productSlug: before.slug,
+      kind: input.kind,
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      code: "validation_error",
+      message: error instanceof Error ? error.message : "Invalid product image.",
+    };
+  }
+  const uploaded = await uploadProductImageAssetForAdmin(asset);
+
+  if (shouldBePrimary) {
+    await clearPrimaryProductImagesForAdmin(before.id);
+  }
+
+  const image = await insertProductImageForAdmin({
+    product_id: before.id,
+    variant_id: input.variantId ?? null,
+    storage_path: asset.storagePath,
+    public_url: uploaded.publicUrl,
+    alt_text: input.altText?.trim() || `${before.name} - ${input.kind.replace(/_/g, " ")}`,
+    kind: input.kind,
+    sort_order: existingImages.length,
+    is_primary: shouldBePrimary,
+  });
+
+  const nextImages = [
+    ...existingImages.map((existing) => ({
+      ...existing,
+      is_primary: shouldBePrimary ? false : existing.is_primary,
+    })),
+    image,
+  ];
+  const fieldsStatus = mergeFieldStatus(before.fields_status, { image: "complete" });
+  const adminReviewFlags = {
+    ...before.admin_review_flags,
+    missing_image: false,
+  };
+  const projected = {
+    ...before,
+    fields_status: fieldsStatus,
+    admin_review_flags: adminReviewFlags,
+  };
+  const score = calculateCompletionScore({
+    ...projected,
+    image_count: nextImages.length,
+    additional_image_count: nextImages.filter((candidate) => !candidate.is_primary).length,
+    goal_tag_count: (await listProductGoalTagsForAdmin(before.id)).length,
+  }).score;
+  const status = deriveProductStatus(projected, before.status, 1);
+  const product = await updateProductForAdmin(before.id, {
+    fields_status: fieldsStatus,
+    admin_review_flags: adminReviewFlags,
+    completion_score: score,
+    status,
+  });
+
+  await record({
+    actor: input.actor,
+    entityId: before.id,
+    diff: {
+      version: 1,
+      action: "image_upload",
+      entity_type: "product",
+      product_id: before.id,
+      changes: [
+        {
+          field: "product_images",
+          before: null,
+          after: {
+            id: image.id,
+            storage_path: image.storage_path,
+            public_url: image.public_url,
+            kind: image.kind,
+            is_primary: image.is_primary,
+            size: asset.size,
+            content_type: asset.contentType,
+            original_name: asset.originalName,
+          },
+        },
+        {
+          field: "fields_status.image",
+          before: before.fields_status.image,
+          after: fieldsStatus.image,
+        },
+        {
+          field: "admin_review_flags.missing_image",
+          before: before.admin_review_flags.missing_image ?? null,
+          after: false,
+        },
+        {
+          field: "completion_score",
+          before: before.completion_score,
+          after: product.completion_score,
+        },
+      ],
+    },
+  });
+
+  return {
+    ok: true,
+    product,
+    image,
   };
 }
 

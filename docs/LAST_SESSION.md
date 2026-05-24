@@ -1,78 +1,66 @@
 # LAST_SESSION.md
 
-## M2 Step 5 - product editor and completion score landed
+## M2 Step 6 - product drawer and image upload landed
 
 Date: 2026-05-24
 
-Objective completed: `/admin/products/[productId]` now has the Step 5 full product editor foundation. `PRODUCT_CONTENT_SPEC §22.1.1` defines the exact scored fields, and product saves now flow through a service that recomputes `completion_score`, derives the next status, handles stale-data conflicts, and writes audit rows.
+Objective completed: `/admin/products` rows now open a Step 6 side drawer with fast-fix fields, image upload, variant stock summary, missing-field chips, and Save / Save & close actions. Product image uploads validate MIME type and size server-side, upload to Supabase Storage, insert a `product_images` row, refresh product image status/score, and write an `image_upload` audit row.
 
 ### Files created
 
-- `src/features/admin-products/components/ProductEditor.tsx`
-- `src/features/admin-products/components/sections/SectionCard.tsx`
-- `src/features/admin-products/components/sections/IdentitySection.tsx`
-- `src/features/admin-products/components/sections/BrandCategorySection.tsx`
-- `src/features/admin-products/components/sections/PricingVariantsSection.tsx`
-- `src/features/admin-products/components/sections/GoalsTagsSection.tsx`
-- `src/features/admin-products/components/sections/MediaSection.tsx`
-- `src/features/admin-products/components/sections/ContentSection.tsx`
-- `src/features/admin-products/components/sections/ComplianceSection.tsx`
-- `src/features/admin-products/components/sections/SeoSection.tsx`
-- `src/features/admin-products/components/sections/InternalSection.tsx`
-- `src/features/admin-products/components/sections/section-utils.ts`
-- `src/features/admin-products/components/sections/types.ts`
-- `tests/integration/admin-products/editor.test.ts`
-- `tests/unit/admin-products/completion-score.test.ts`
+- `src/features/admin-products/components/ProductDrawer.tsx`
+- `src/features/admin-products/components/ImageUploadField.tsx`
+- `tests/integration/admin-products/drawer.test.ts`
 
 ### Files modified
 
-- `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md`
 - `docs/PROJECT_STATE.md`
 - `docs/LAST_SESSION.md`
-- `src/app/admin/products/[productId]/page.tsx`
+- `src/components/admin/ImageUploader.tsx`
 - `src/features/admin-products/actions.ts`
-- `src/features/admin-products/completion-score.ts`
-- `src/features/admin-products/field-status.ts`
-- `src/features/admin-products/queries.ts`
-- `src/features/admin-products/status-transitions.ts`
+- `src/features/admin-products/components/ProductListTable.tsx`
+- `src/lib/images/upload.ts`
 - `src/lib/validation/product.ts`
 - `src/server/repositories/product-admin-repository.ts`
 - `src/server/services/product-service.ts`
 - `tests/integration/admin-products/list.test.ts`
-- `vitest.config.ts`
 
 ### Implementation notes
 
-- Step 5 Phase 1 was approved under the user's blanket approval for all phases. The authored §22.1.1 lists the exact 6 Tier 1, 6 Tier 2, and 13 Tier 3 scored fields.
-- The Step 5 DoD required `allMVPComplete -> 60`; the raw formula for all Tier 1 + Tier 2 fields is 66. The spec and code now document an MVP-only cap: stored/displayed score is capped at 60 when no Tier 3 fields are complete, while `rawPreClampValue` remains available for test/audit evidence.
-- `calculateCompletionScore()` is pure and does no DB access.
-- `product-service` owns save orchestration: stale-data detection, force-save override, completion-score recompute, status transition, repository update, and audit write.
-- The full-suite Vitest timeouts were raised to 30 seconds after Step 5 coverage made local Supabase integration tests exceed default timeouts under parallel load. Affected tests passed individually before this harness stabilization.
+- The `E` shortcut now opens the drawer for the focused product row. Row hover prefetches drawer data through a requireAdmin-gated action.
+- Drawer saves call `updateProductPartial()`, which reuses the Step 5 `updateProduct()` path and product-service audit/status/score behavior.
+- Image uploads accept JPEG, PNG, and WebP only, with a 10 MB max source file size. The server prepares `products/{brand_slug}/{product_slug}/{kind}-{hash}.{ext}` paths.
+- The storage upload path uses service-role Supabase only inside the repository layer. `src/lib/images/upload.ts` performs validation/path preparation only.
+- The first product image is made primary automatically. Explicit primary uploads clear previous primary image rows before insert.
+- Variant stock rows are displayed read-only in Step 6. Step 8a owns inventory mutation endpoints.
 
 ### Verification
 
 ```text
 pnpm typecheck: PASS
 pnpm lint: PASS (existing QR-code data URI <img> warning in /admin/mfa/enroll)
-pnpm build: PASS (/admin/products/[productId] builds at 7.5 kB page size)
-pnpm test: PASS (22 files, 102 tests)
-pnpm test -- admin-products/list completion-score --reporter verbose: PASS
+pnpm build: PASS (/admin/products builds at 11.3 kB page size; drawer included)
+pnpm test -- admin-products/drawer admin-products/list --reporter verbose: PASS (7 tests)
+pnpm test: PASS (23 files, 105 tests)
 pnpm scan:bundle-secrets: PASS
+git diff --check: PASS
 grep requireAdmin in admin-products action/query files: PASS
-Step 5 TODO/debugger/.only/.skip sweep: PASS
+Step 6 TODO/debugger/.only/.skip sweep: PASS
+curl /admin/products unauthenticated: PASS (307 to /admin/sign-in)
+curl /admin/products/[id] unauthenticated: PASS (307 to /admin/sign-in)
 Browser/axe manual checkpoint: NOT RUN - in-app Browser backend unavailable in this session
 ```
 
 ### HANDOFF
 
-files_created: [`src/features/admin-products/components/ProductEditor.tsx`, `src/features/admin-products/components/sections/*`, `tests/integration/admin-products/editor.test.ts`, `tests/unit/admin-products/completion-score.test.ts`]
+files_created: [`src/features/admin-products/components/ProductDrawer.tsx`, `src/features/admin-products/components/ImageUploadField.tsx`, `tests/integration/admin-products/drawer.test.ts`]
 
-files_modified: [`docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/app/admin/products/[productId]/page.tsx`, `src/features/admin-products/actions.ts`, `src/features/admin-products/completion-score.ts`, `src/features/admin-products/field-status.ts`, `src/features/admin-products/queries.ts`, `src/features/admin-products/status-transitions.ts`, `src/lib/validation/product.ts`, `src/server/repositories/product-admin-repository.ts`, `src/server/services/product-service.ts`, `tests/integration/admin-products/list.test.ts`, `vitest.config.ts`]
+files_modified: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/components/admin/ImageUploader.tsx`, `src/features/admin-products/actions.ts`, `src/features/admin-products/components/ProductListTable.tsx`, `src/lib/images/upload.ts`, `src/lib/validation/product.ts`, `src/server/repositories/product-admin-repository.ts`, `src/server/services/product-service.ts`, `tests/integration/admin-products/list.test.ts`]
 
-patterns_established: [`PRODUCT_CONTENT_SPEC §22.1.1 is the completion-score source of truth`, `completion-score is a pure function with service-layer orchestration`, `product editor saves recompute score/status before audit logging`]
+patterns_established: [`drawer data is fetched through a requireAdmin-gated action`, `product image upload stores binary data via repository-layer Supabase Storage access`, `image_upload audit rows cover image metadata and derived product flag/score changes`]
 
-next_step_must_read: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md §22 and §22.1.1`, `docs/ADMIN_PORTAL_SPEC.md §6`, `src/features/admin-products/completion-score.ts`, `src/server/services/product-service.ts`]
+next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md §5.3, §5.6, §5.7, §5.8, §5.9`, `src/features/admin-products/actions.ts`, `src/features/admin-products/components/ProductListTable.tsx`, `src/features/admin-products/components/ProductDrawer.tsx`]
 
-known_issues_introduced: [`Browser/axe manual checkpoint still needs to be run when the in-app browser backend is available. The Step 5 editor is build/test verified but not visually smoke-tested in the browser in this session.`]
+known_issues_introduced: [`Browser/axe manual checkpoint still needs to be run when the in-app browser backend is available. Drawer latency and focus trap are build/test verified but not manually timed in a browser in this session.`, `Variant stock is displayed read-only until Step 8a/8b inventory contracts and UI land.`]
 
-invariants_observed: [SECURITY INVARIANTS - requireAdmin on admin product actions/queries; audit-service used for product saves; bundle scan clean. AI FEATURE INVARIANTS - completion-score constants match the authored §22.1.1 scored-field names; score math covered by contract tests.]
+invariants_observed: [SECURITY INVARIANTS - requireAdmin on drawer data, drawer save, and image upload actions; service-role storage/DB access remains repository-layer; bundle scan clean. IMAGE UPLOAD INVARIANTS - server-side MIME and size validation; no execution of uploaded content.]

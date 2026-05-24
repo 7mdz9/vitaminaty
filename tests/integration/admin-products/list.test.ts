@@ -11,6 +11,9 @@ const mocks = vi.hoisted(() => ({
   listProductGoalTagsForAdmin: vi.fn(),
   updateProductForAdmin: vi.fn(),
   updateProductForAdminIfFresh: vi.fn(),
+  uploadProductImageAssetForAdmin: vi.fn(),
+  insertProductImageForAdmin: vi.fn(),
+  clearPrimaryProductImagesForAdmin: vi.fn(),
   record: vi.fn(),
   revalidatePath: vi.fn(),
 }));
@@ -28,6 +31,9 @@ vi.mock("@/server/repositories/product-admin-repository", () => ({
   listProductGoalTagsForAdmin: mocks.listProductGoalTagsForAdmin,
   updateProductForAdmin: mocks.updateProductForAdmin,
   updateProductForAdminIfFresh: mocks.updateProductForAdminIfFresh,
+  uploadProductImageAssetForAdmin: mocks.uploadProductImageAssetForAdmin,
+  insertProductImageForAdmin: mocks.insertProductImageForAdmin,
+  clearPrimaryProductImagesForAdmin: mocks.clearPrimaryProductImagesForAdmin,
 }));
 
 vi.mock("@/features/audit-log/record", () => ({

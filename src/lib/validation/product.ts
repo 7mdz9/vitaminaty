@@ -168,6 +168,23 @@ export const AdminProductBatchUpdateActionSchema = z.object({
   updates: z.array(AdminProductUpdateActionSchema).min(1).max(100),
 });
 
+export const ProductImageKindSchema = z.enum([
+  "front",
+  "label_nutrition",
+  "label_ingredients",
+  "angle",
+  "open",
+  "lifestyle",
+]);
+
+export const AdminProductImageUploadMetadataSchema = z.object({
+  productId: z.string().uuid(),
+  variantId: z.string().uuid().nullable().optional(),
+  kind: ProductImageKindSchema.default("front"),
+  altText: z.string().trim().max(180).optional(),
+  isPrimary: z.boolean().default(false),
+});
+
 export const ProductFieldStatusUpdateSchema = z.object({
   product_id: z.string().uuid(),
   field: ProductFieldStatusKeySchema,
@@ -182,4 +199,7 @@ export type AdminProductInlinePatch = z.infer<typeof AdminProductInlinePatchSche
 export type AdminProductUpdateActionInput = z.infer<typeof AdminProductUpdateActionSchema>;
 export type AdminProductBatchUpdateActionInput = z.infer<
   typeof AdminProductBatchUpdateActionSchema
+>;
+export type AdminProductImageUploadMetadata = z.infer<
+  typeof AdminProductImageUploadMetadataSchema
 >;

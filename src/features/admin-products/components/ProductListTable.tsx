@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Archive, EyeOff, MoreHorizontal, Pencil, Send, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,17 @@ import { CompletionScoreBadge } from "@/components/admin/CompletionScoreBadge";
 import { useShortcuts } from "@/features/admin-shell/use-shortcuts";
 import {
   archiveProduct,
+  getProductDrawerData,
   publishProduct,
   unpublishProduct,
   updateProduct,
   type AdminProductActionResult,
+  type AdminProductDrawerDataResult,
 } from "@/features/admin-products/actions";
 import { InlineEditCell } from "./InlineEditCell";
+import { ProductDrawer } from "./ProductDrawer";
 import type {
+  AdminProductEditorData,
   AdminProductListItem,
   AdminProductReferenceOption,
 } from "@/server/repositories/product-admin-repository";
@@ -63,6 +67,9 @@ export function ProductListTable({
   const [rows, setRows] = useState(products);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [drawerProductId, setDrawerProductId] = useState<string | null>(null);
+  const [drawerCache, setDrawerCache] = useState<Record<string, AdminProductEditorData>>({});
+  const [drawerLoadingId, setDrawerLoadingId] = useState<string | null>(null);
   const brandOptions = useMemo(
     () => brands.map((brand) => ({ value: brand.id, label: brand.label })),
     [brands],
@@ -71,6 +78,30 @@ export function ProductListTable({
     () => categories.map((category) => ({ value: category.id, label: category.label })),
     [categories],
   );
+
+  const prefetchDrawer = useCallback(async (productId: string): Promise<AdminProductDrawerDataResult> => {
+    if (drawerCache[productId]) {
+      return {
+        ok: true,
+        data: drawerCache[productId],
+      };
+    }
+
+    setDrawerLoadingId(productId);
+    const result = await getProductDrawerData(productId);
+    setDrawerLoadingId((current) => (current === productId ? null : current));
+
+    if (result.ok) {
+      setDrawerCache((current) => ({ ...current, [productId]: result.data }));
+    }
+
+    return result;
+  }, [drawerCache]);
+
+  const openDrawer = useCallback((productId: string) => {
+    setDrawerProductId(productId);
+    void prefetchDrawer(productId);
+  }, [prefetchDrawer]);
 
   useShortcuts(
     useMemo(
@@ -91,12 +122,12 @@ export function ProductListTable({
           action: () => {
             const focused = rows[focusedIndex];
             if (focused) {
-              window.alert(`Drawer lands in Step 6. Focused product: ${focused.name}`);
+              openDrawer(focused.id);
             }
           },
         },
       ],
-      [focusedIndex, rows],
+      [focusedIndex, openDrawer, rows],
     ),
   );
 
@@ -205,13 +236,15 @@ export function ProductListTable({
         <TableBody>
           {rows.map((product, index) => (
             <TableRow
-              className="h-10 outline-none data-[focused=true]:bg-admin-surface-muted data-[focused=true]:shadow-[inset_3px_0_0_var(--admin-accent)]"
+              className="h-10 cursor-pointer outline-none data-[focused=true]:bg-admin-surface-muted data-[focused=true]:shadow-[inset_3px_0_0_var(--admin-accent)]"
               data-focused={index === focusedIndex}
               key={product.id}
+              onClick={() => openDrawer(product.id)}
               onFocus={() => setFocusedIndex(index)}
+              onMouseEnter={() => void prefetchDrawer(product.id)}
               tabIndex={0}
             >
-              <TableCell>
+              <TableCell onClick={(event) => event.stopPropagation()}>
                 <Checkbox
                   checked={selectedIds.has(product.id)}
                   onCheckedChange={() => toggleSelected(product.id)}
@@ -236,6 +269,7 @@ export function ProductListTable({
                 <Link
                   className="block max-w-72 truncate font-medium text-admin-text underline-offset-2 hover:underline"
                   href={`/admin/products/${product.id}`}
+                  onClick={(event) => event.stopPropagation()}
                 >
                   {product.name}
                 </Link>
@@ -294,7 +328,7 @@ export function ProductListTable({
                 <FlagChips product={product} />
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end gap-1">
+                <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
                   <Button
                     render={
                       <Link aria-label={`Edit ${product.name}`} href={`/admin/products/${product.id}`} />
@@ -341,6 +375,35 @@ export function ProductListTable({
           ))}
         </TableBody>
       </Table>
+      <ProductDrawer
+        open={drawerProductId !== null}
+        productId={drawerProductId}
+        data={drawerProductId ? drawerCache[drawerProductId] ?? null : null}
+        brands={brands}
+        categories={categories}
+        loading={drawerProductId !== null && drawerLoadingId === drawerProductId}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setDrawerProductId(null);
+          }
+        }}
+        onRequestData={prefetchDrawer}
+        onProductSaved={(product) => {
+          applyActionResult(product.id, { ok: true, product });
+          setDrawerCache((current) => {
+            const existing = current[product.id];
+            return existing
+              ? {
+                  ...current,
+                  [product.id]: {
+                    ...existing,
+                    product,
+                  },
+                }
+              : current;
+          });
+        }}
+      />
     </div>
   );
 }

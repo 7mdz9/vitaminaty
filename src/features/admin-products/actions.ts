@@ -4,13 +4,21 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
 import { isAppError } from "@/lib/errors";
 import {
+  AdminProductImageUploadMetadataSchema,
   AdminProductBatchUpdateActionSchema,
   AdminProductUpdateActionSchema,
   type AdminProductBatchUpdateActionInput,
   type AdminProductUpdateActionInput,
 } from "@/lib/validation/product";
-import { updateProductWithRecalculation } from "@/server/services/product-service";
-import type { ProductRecord } from "@/types/product";
+import {
+  updateProductWithRecalculation,
+  uploadProductImageWithAudit,
+} from "@/server/services/product-service";
+import {
+  findProductEditorDataForAdmin,
+  type AdminProductEditorData,
+} from "@/server/repositories/product-admin-repository";
+import type { ProductImageRecord, ProductRecord } from "@/types/product";
 
 export type AdminProductActionResult =
   | {
@@ -29,11 +37,35 @@ export type AdminProductActionResult =
         };
       };
     };
+type AdminProductActionErrorResult = Extract<AdminProductActionResult, { ok: false }>;
 
 export type AdminProductBatchActionResult = {
   ok: boolean;
   results: AdminProductActionResult[];
 };
+
+export type AdminProductDrawerDataResult =
+  | {
+      ok: true;
+      data: AdminProductEditorData;
+    }
+  | {
+      ok: false;
+      code: "not_found" | "authorization_error" | "unknown";
+      message: string;
+    };
+
+export type AdminProductImageUploadResult =
+  | {
+      ok: true;
+      product: ProductRecord;
+      image: ProductImageRecord;
+    }
+  | {
+      ok: false;
+      code: "not_found" | "validation_error" | "authorization_error" | "unknown";
+      message: string;
+    };
 
 type ProductTransitionInput = Readonly<{
   productId: string;
@@ -100,6 +132,83 @@ export async function batchUpdateProducts(
   };
 }
 
+export async function getProductDrawerData(productId: string): Promise<AdminProductDrawerDataResult> {
+  try {
+    await requireAdmin();
+    const data = await findProductEditorDataForAdmin(productId);
+
+    if (!data) {
+      return {
+        ok: false,
+        code: "not_found",
+        message: "Product not found.",
+      };
+    }
+
+    return {
+      ok: true,
+      data,
+    };
+  } catch (error) {
+    const mapped = mapActionError(error);
+
+    return {
+      ok: false,
+      code: mapped.code === "authorization_error" ? "authorization_error" : "unknown",
+      message: mapped.message,
+    };
+  }
+}
+
+export async function updateProductPartial(
+  input: AdminProductUpdateActionInput,
+): Promise<AdminProductActionResult> {
+  return updateProduct(input);
+}
+
+export async function uploadProductImage(formData: FormData): Promise<AdminProductImageUploadResult> {
+  try {
+    const admin = await requireAdmin();
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return {
+        ok: false,
+        code: "validation_error",
+        message: "Image file is required.",
+      };
+    }
+
+    const parsed = AdminProductImageUploadMetadataSchema.parse({
+      productId: String(formData.get("productId") ?? ""),
+      variantId: nullableString(formData.get("variantId")),
+      kind: String(formData.get("kind") ?? "front"),
+      altText: optionalString(formData.get("altText")),
+      isPrimary: String(formData.get("isPrimary") ?? "false") === "true",
+    });
+    const result = await uploadProductImageWithAudit({
+      productId: parsed.productId,
+      variantId: parsed.variantId ?? null,
+      file,
+      kind: parsed.kind,
+      altText: parsed.altText,
+      isPrimary: parsed.isPrimary,
+      actor: { userId: admin.userId, email: admin.email },
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    revalidatePath("/admin/products");
+    revalidatePath(`/admin/products/${parsed.productId}`);
+
+    return result;
+  } catch (error) {
+    return mapImageActionError(error);
+  }
+}
+
 export async function publishProduct(
   input: ProductTransitionInput,
 ): Promise<AdminProductActionResult> {
@@ -139,7 +248,7 @@ export async function archiveProduct(
   });
 }
 
-function mapActionError(error: unknown): AdminProductActionResult {
+function mapActionError(error: unknown): AdminProductActionErrorResult {
   if (isAppError(error)) {
     return {
       ok: false,
@@ -153,4 +262,31 @@ function mapActionError(error: unknown): AdminProductActionResult {
     code: "unknown",
     message: error instanceof Error ? error.message : "Unknown product action error.",
   };
+}
+
+function mapImageActionError(error: unknown): AdminProductImageUploadResult {
+  const mapped = mapActionError(error);
+
+  return {
+    ok: false,
+    code:
+      mapped.code === "authorization_error" || mapped.code === "validation_error"
+        ? mapped.code
+        : "unknown",
+    message: mapped.message,
+  };
+}
+
+function optionalString(value: FormDataEntryValue | null): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function nullableString(value: FormDataEntryValue | null): string | null {
+  const optional = optionalString(value);
+  return optional ?? null;
 }

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/server/db/supabase-admin";
+import { PRODUCT_IMAGE_BUCKET, type PreparedProductImageUpload } from "@/lib/images/upload";
 import type { Database, Json } from "@/lib/supabase/types.generated";
 import type {
   ProductAdminReviewFlags,
@@ -465,6 +466,77 @@ export async function bulkInsertProductImages(
   }
 
   return (data as unknown as ProductImageRow[]).map(mapImage);
+}
+
+export async function insertProductImageForAdmin(
+  row: ProductImageInsert,
+): Promise<ProductImageRecord> {
+  const { data, error } = await supabaseAdmin
+    .from("product_images")
+    .insert(row)
+    .select(
+      "id, product_id, variant_id, storage_path, public_url, alt_text, kind, sort_order, is_primary, created_at",
+    )
+    .single();
+
+  if (error) {
+    throw new Error(`Product image insert failed: ${error.message}`);
+  }
+
+  return mapImage(data as unknown as ProductImageRow);
+}
+
+export async function clearPrimaryProductImagesForAdmin(productId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("product_images")
+    .update({ is_primary: false })
+    .eq("product_id", productId)
+    .eq("is_primary", true);
+
+  if (error) {
+    throw new Error(`Product primary image clear failed: ${error.message}`);
+  }
+}
+
+export async function uploadProductImageAssetForAdmin(
+  asset: PreparedProductImageUpload,
+): Promise<{ publicUrl: string }> {
+  await ensureProductImagesBucket();
+
+  const { error } = await supabaseAdmin.storage
+    .from(PRODUCT_IMAGE_BUCKET)
+    .upload(asset.storagePath, asset.bytes, {
+      contentType: asset.contentType,
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(`Product image storage upload failed: ${error.message}`);
+  }
+
+  const { data } = supabaseAdmin.storage
+    .from(PRODUCT_IMAGE_BUCKET)
+    .getPublicUrl(asset.storagePath);
+
+  return { publicUrl: data.publicUrl };
+}
+
+async function ensureProductImagesBucket(): Promise<void> {
+  const { data, error } = await supabaseAdmin.storage.getBucket(PRODUCT_IMAGE_BUCKET);
+
+  if (data && !error) {
+    return;
+  }
+
+  const { error: createError } = await supabaseAdmin.storage.createBucket(PRODUCT_IMAGE_BUCKET, {
+    public: true,
+    fileSizeLimit: "10MB",
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+  });
+
+  if (createError && !/already exists/i.test(createError.message)) {
+    throw new Error(`Product image bucket setup failed: ${createError.message}`);
+  }
 }
 
 export async function bulkUpsertProductGoalTags(
