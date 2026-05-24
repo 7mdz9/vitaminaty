@@ -70,6 +70,8 @@ function inferEntityId(diff: AuditDiff): string | null {
       return diff.homepage_config_id ?? null;
     case "integration":
       return diff.integration_id ?? null;
+    case "feature_flag":
+      return null;
     case "product_variant":
       return diff.variant_id;
     case "order":

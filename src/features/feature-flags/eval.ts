@@ -21,9 +21,11 @@ export async function isEnabled(key: FeatureFlagKey): Promise<boolean> {
   return FEATURE_FLAGS[key].default;
 }
 
-export function clearFeatureFlagCacheForTests(): void {
+export function clearFeatureFlagCache(): void {
   dbCache.clear();
 }
+
+export const clearFeatureFlagCacheForTests = clearFeatureFlagCache;
 
 function readEnvOverride(key: FeatureFlagKey): boolean | null {
   const overrideKey = `FF_${key.toUpperCase()}`;

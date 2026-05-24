@@ -71,6 +71,26 @@ export async function updateFeatureFlagForAdmin(
   return mapFeatureFlag(data as unknown as FeatureFlagRow);
 }
 
+export async function updateFeatureFlagForAdminIfFresh(
+  key: FeatureFlagKey,
+  expectedUpdatedAt: string,
+  patch: FeatureFlagUpdate,
+): Promise<FeatureFlagRecord | null> {
+  const { data, error } = await supabaseAdmin
+    .from("feature_flags")
+    .update(patch)
+    .eq("key", key)
+    .eq("updated_at", expectedUpdatedAt)
+    .select(FEATURE_FLAG_COLUMNS)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Feature flag stale-safe update failed: ${error.message}`);
+  }
+
+  return data ? mapFeatureFlag(data as unknown as FeatureFlagRow) : null;
+}
+
 async function resolvePublicClient(client?: PublicClient): Promise<PublicClient> {
   return client ?? createSupabaseServerClient();
 }

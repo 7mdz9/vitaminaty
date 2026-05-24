@@ -24,13 +24,21 @@ export type AuditSingleEntityUpdateAction =
 export type AuditSingleEntityUpdateDiff = Readonly<{
   version: 1;
   action: AuditSingleEntityUpdateAction;
-  entity_type: "product" | "brand" | "category" | "homepage_config" | "admin_user" | "integration";
+  entity_type:
+    | "product"
+    | "brand"
+    | "category"
+    | "homepage_config"
+    | "admin_user"
+    | "integration"
+    | "feature_flag";
   product_id?: string;
   brand_id?: string;
   category_id?: string;
   homepage_config_id?: string;
   user_id?: string;
   integration_id?: string;
+  feature_flag_key?: string;
   changes: AuditFieldChange[];
 }>;
 
