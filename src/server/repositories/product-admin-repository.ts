@@ -250,6 +250,23 @@ export async function findProductByIdForAdmin(id: string): Promise<ProductRecord
   return data ? mapProduct(data as unknown as ProductRow) : null;
 }
 
+export async function findProductsByIdsForAdmin(ids: string[]): Promise<ProductRecord[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("products")
+    .select(ADMIN_PRODUCT_COLUMNS)
+    .in("id", unique(ids));
+
+  if (error) {
+    throw new Error(`Admin products by ids query failed: ${error.message}`);
+  }
+
+  return ((data as unknown as ProductRow[]) ?? []).map(mapProduct);
+}
+
 export async function findProductBySlugForAdmin(slug: string): Promise<ProductRecord | null> {
   const { data, error } = await supabaseAdmin
     .from("products")
@@ -300,6 +317,27 @@ export async function updateProductForAdminIfFresh(
   }
 
   return data ? mapProduct(data as unknown as ProductRow) : null;
+}
+
+export async function bulkUpdateProductsForAdmin(
+  ids: string[],
+  patch: ProductUpdate,
+): Promise<ProductRecord[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("products")
+    .update(patch)
+    .in("id", unique(ids))
+    .select(ADMIN_PRODUCT_COLUMNS);
+
+  if (error) {
+    throw new Error(`Admin products bulk update failed: ${error.message}`);
+  }
+
+  return ((data as unknown as ProductRow[]) ?? []).map(mapProduct);
 }
 
 export async function findProductEditorDataForAdmin(

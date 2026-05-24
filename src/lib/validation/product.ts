@@ -168,6 +168,24 @@ export const AdminProductBatchUpdateActionSchema = z.object({
   updates: z.array(AdminProductUpdateActionSchema).min(1).max(100),
 });
 
+const BulkProductIdsSchema = z.array(z.string().uuid()).min(1).max(200);
+
+export const AdminProductBulkAssignBrandActionSchema = z.object({
+  productIds: BulkProductIdsSchema,
+  brandId: z.string().uuid(),
+});
+
+export const AdminProductBulkAssignCategoryActionSchema = z.object({
+  productIds: BulkProductIdsSchema,
+  categoryId: z.string().uuid(),
+});
+
+export const AdminProductBulkPublishActionSchema = z.object({
+  productIds: BulkProductIdsSchema,
+  forceOverride: z.boolean().default(false),
+  overrideReason: z.string().trim().max(500).optional(),
+});
+
 export const ProductImageKindSchema = z.enum([
   "front",
   "label_nutrition",
@@ -199,6 +217,15 @@ export type AdminProductInlinePatch = z.infer<typeof AdminProductInlinePatchSche
 export type AdminProductUpdateActionInput = z.infer<typeof AdminProductUpdateActionSchema>;
 export type AdminProductBatchUpdateActionInput = z.infer<
   typeof AdminProductBatchUpdateActionSchema
+>;
+export type AdminProductBulkAssignBrandActionInput = z.infer<
+  typeof AdminProductBulkAssignBrandActionSchema
+>;
+export type AdminProductBulkAssignCategoryActionInput = z.infer<
+  typeof AdminProductBulkAssignCategoryActionSchema
+>;
+export type AdminProductBulkPublishActionInput = z.infer<
+  typeof AdminProductBulkPublishActionSchema
 >;
 export type AdminProductImageUploadMetadata = z.infer<
   typeof AdminProductImageUploadMetadataSchema

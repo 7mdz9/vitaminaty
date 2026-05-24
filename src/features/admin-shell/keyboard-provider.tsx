@@ -9,20 +9,13 @@ import {
   useState,
 } from "react";
 import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Kbd } from "@/components/ui/kbd";
+import { CommandBar } from "./command-bar/CommandBar";
 import type { ShortcutBinding } from "./use-shortcuts";
 
 type ShortcutRegistry = Readonly<{
@@ -103,15 +96,7 @@ export function KeyboardProvider({ children }: Readonly<{ children: ReactNode }>
   return (
     <ShortcutContext.Provider value={value}>
       {children}
-      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
-        <Command>
-          <CommandInput placeholder="Search admin..." />
-          <CommandList>
-            <CommandEmpty>No commands yet.</CommandEmpty>
-            <CommandItem onSelect={() => setCommandOpen(false)}>Dashboard</CommandItem>
-          </CommandList>
-        </Command>
-      </CommandDialog>
+      <CommandBar open={commandOpen} onOpenChange={setCommandOpen} />
       <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

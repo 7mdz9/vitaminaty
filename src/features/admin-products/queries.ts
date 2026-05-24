@@ -18,6 +18,28 @@ import {
 export type ProductListSearchParams = Record<string, string | string[] | undefined>;
 
 export type ProductListFilters = AdminProductListInput["filters"];
+export type ProductQueueKind =
+  | "missing-price"
+  | "missing-image"
+  | "missing-stock-quantity"
+  | "needs-brand-review"
+  | "needs-category-review"
+  | "needs-label-data"
+  | "ready-to-publish"
+  | "out-of-stock"
+  | "low-stock";
+
+export const PRODUCT_QUEUE_LABELS: Record<ProductQueueKind, string> = {
+  "missing-price": "Missing price",
+  "missing-image": "Missing image",
+  "missing-stock-quantity": "Missing stock quantity",
+  "needs-brand-review": "Needs brand review",
+  "needs-category-review": "Needs category review",
+  "needs-label-data": "Needs label data",
+  "ready-to-publish": "Ready to publish",
+  "out-of-stock": "Out of stock",
+  "low-stock": "Low stock",
+};
 
 export async function getProductList(
   input: AdminProductListInput,
@@ -54,6 +76,20 @@ export async function getProductEditor(productId: string): Promise<{
   ]);
 
   return { editor, brands, categories };
+}
+
+export async function getQueue(
+  queueKind: ProductQueueKind,
+  input: AdminProductListInput,
+): Promise<AdminProductListResult> {
+  const parsed = AdminProductListInputSchema.parse(input);
+  return getProductList({
+    ...parsed,
+    filters: {
+      ...parsed.filters,
+      ...filtersForQueue(queueKind),
+    },
+  });
 }
 
 export function parseProductListSearchParams(
@@ -102,4 +138,27 @@ function parseOptionalNumber(value: string | undefined): number | undefined {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function filtersForQueue(queueKind: ProductQueueKind): Partial<ProductListFilters> {
+  switch (queueKind) {
+    case "missing-price":
+      return { reviewFlags: ["missing_price"] };
+    case "missing-image":
+      return { reviewFlags: ["missing_image"] };
+    case "missing-stock-quantity":
+      return { reviewFlags: ["missing_stock_quantity"] };
+    case "needs-brand-review":
+      return { reviewFlags: ["needs_brand_review"] };
+    case "needs-category-review":
+      return { reviewFlags: ["needs_category_review"] };
+    case "needs-label-data":
+      return { reviewFlags: ["needs_label_data"] };
+    case "ready-to-publish":
+      return { status: "ready_to_publish" };
+    case "out-of-stock":
+      return { stockStatus: "out_of_stock" };
+    case "low-stock":
+      return { stockStatus: "low_stock" };
+  }
 }

@@ -27,11 +27,13 @@ import {
 } from "@/features/admin-products/actions";
 import { InlineEditCell } from "./InlineEditCell";
 import { ProductDrawer } from "./ProductDrawer";
+import { BulkActionBar } from "./BulkActionBar";
 import type {
   AdminProductEditorData,
   AdminProductListItem,
   AdminProductReferenceOption,
 } from "@/server/repositories/product-admin-repository";
+import type { AdminProductBulkActionResult } from "@/features/admin-products/actions";
 
 const statusOptions = [
   { value: "imported", label: "Imported" },
@@ -77,6 +79,10 @@ export function ProductListTable({
   const categoryOptions = useMemo(
     () => categories.map((category) => ({ value: category.id, label: category.label })),
     [categories],
+  );
+  const selectedProducts = useMemo(
+    () => rows.filter((product) => selectedIds.has(product.id)),
+    [rows, selectedIds],
   );
 
   const prefetchDrawer = useCallback(async (productId: string): Promise<AdminProductDrawerDataResult> => {
@@ -204,15 +210,60 @@ export function ProductListTable({
     });
   }
 
+  function applyBulkResult(
+    result: AdminProductBulkActionResult,
+    context: { action: "assign_brand" | "assign_category" | "publish"; brandId?: string; categoryId?: string },
+  ) {
+    if (!result.ok) {
+      return;
+    }
+
+    const updatedIds = new Set(result.updatedProductIds);
+    setRows((current) =>
+      current.map((row) => {
+        if (!updatedIds.has(row.id)) {
+          return row;
+        }
+
+        if (context.action === "assign_brand") {
+          return {
+            ...row,
+            brand_id: context.brandId ?? row.brand_id,
+            brand_name: findLabel(brands, context.brandId ?? null),
+          };
+        }
+
+        if (context.action === "assign_category") {
+          return {
+            ...row,
+            category_id: context.categoryId ?? row.category_id,
+            category_name: findLabel(categories, context.categoryId ?? null),
+          };
+        }
+
+        return {
+          ...row,
+          status: "published",
+          is_public_visible: true,
+        };
+      }),
+    );
+    setSelectedIds(new Set());
+  }
+
   return (
     <div className="bg-admin-surface">
+      <BulkActionBar
+        selectedProducts={selectedProducts}
+        brands={brands}
+        categories={categories}
+        onApplied={applyBulkResult}
+      />
       <div className="flex h-10 items-center justify-between border-b border-admin-border px-3">
         <p className="text-admin-sm text-admin-text-muted">
           {selectedIds.size > 0 ? `${selectedIds.size} selected` : `${rows.length} visible rows`}
         </p>
-        <Button size="sm" variant="outline" type="button" disabled={selectedIds.size === 0}>
-          Bulk actions land in Step 7
-        </Button>
+        <span className="text-admin-caption text-admin-text-muted">J/K rows · E drawer · Cmd-K command</span>
       </div>
       <Table>
         <TableHeader>

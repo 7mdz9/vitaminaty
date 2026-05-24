@@ -77,6 +77,7 @@ export type AuditBulkPublishOverrideDiff = Readonly<{
   products_with_review_flags_count: number;
   review_flags_by_product_id: Record<string, string[]>;
   hard_blocked_product_ids: string[];
+  override_reason?: string;
 }>;
 
 export type AuditActorSnapshot = Readonly<{

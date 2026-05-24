@@ -3,10 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
 import { isAppError } from "@/lib/errors";
+import { record } from "@/features/audit-log/record";
 import {
+  AdminProductBulkAssignBrandActionSchema,
+  AdminProductBulkAssignCategoryActionSchema,
+  AdminProductBulkPublishActionSchema,
   AdminProductImageUploadMetadataSchema,
   AdminProductBatchUpdateActionSchema,
   AdminProductUpdateActionSchema,
+  type AdminProductBulkAssignBrandActionInput,
+  type AdminProductBulkAssignCategoryActionInput,
+  type AdminProductBulkPublishActionInput,
   type AdminProductBatchUpdateActionInput,
   type AdminProductUpdateActionInput,
 } from "@/lib/validation/product";
@@ -15,9 +22,12 @@ import {
   uploadProductImageWithAudit,
 } from "@/server/services/product-service";
 import {
+  bulkUpdateProductsForAdmin,
   findProductEditorDataForAdmin,
+  findProductsByIdsForAdmin,
   type AdminProductEditorData,
 } from "@/server/repositories/product-admin-repository";
+import type { AuditBulkOperationChange, AuditDiff } from "@/lib/audit/diff-types";
 import type { ProductImageRecord, ProductRecord } from "@/types/product";
 
 export type AdminProductActionResult =
@@ -43,6 +53,27 @@ export type AdminProductBatchActionResult = {
   ok: boolean;
   results: AdminProductActionResult[];
 };
+
+export type AdminProductBulkActionResult =
+  | {
+      ok: true;
+      updatedProductIds: string[];
+      hardBlockedProductIds?: string[];
+      reviewFlagsByProductId?: Record<string, string[]>;
+    }
+  | {
+      ok: false;
+      code:
+        | "force_override_required"
+        | "all_products_blocked"
+        | "not_found"
+        | "validation_error"
+        | "authorization_error"
+        | "unknown";
+      message: string;
+      hardBlockedProductIds?: string[];
+      reviewFlagsByProductId?: Record<string, string[]>;
+    };
 
 export type AdminProductDrawerDataResult =
   | {
@@ -209,6 +240,167 @@ export async function uploadProductImage(formData: FormData): Promise<AdminProdu
   }
 }
 
+export async function bulkAssignBrand(
+  input: AdminProductBulkAssignBrandActionInput,
+): Promise<AdminProductBulkActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = AdminProductBulkAssignBrandActionSchema.parse(input);
+    const before = await findProductsByIdsForAdmin(parsed.productIds);
+    const updated = await bulkUpdateProductsForAdmin(parsed.productIds, { brand_id: parsed.brandId });
+    const updatedIds = updated.map((product) => product.id);
+
+    await record({
+      actor: { userId: admin.userId, email: admin.email },
+      diff: buildBulkOperationDiff("assign_brand", before, updatedIds, [
+        {
+          field: "brand_id",
+          before_by_product_id: Object.fromEntries(before.map((product) => [product.id, product.brand_id])),
+          after: parsed.brandId,
+        },
+      ]),
+    });
+
+    revalidatePath("/admin/products");
+
+    return {
+      ok: true,
+      updatedProductIds: updatedIds,
+    };
+  } catch (error) {
+    return mapBulkActionError(error);
+  }
+}
+
+export async function bulkAssignCategory(
+  input: AdminProductBulkAssignCategoryActionInput,
+): Promise<AdminProductBulkActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = AdminProductBulkAssignCategoryActionSchema.parse(input);
+    const before = await findProductsByIdsForAdmin(parsed.productIds);
+    const updated = await bulkUpdateProductsForAdmin(parsed.productIds, { category_id: parsed.categoryId });
+    const updatedIds = updated.map((product) => product.id);
+
+    await record({
+      actor: { userId: admin.userId, email: admin.email },
+      diff: buildBulkOperationDiff("assign_category", before, updatedIds, [
+        {
+          field: "category_id",
+          before_by_product_id: Object.fromEntries(before.map((product) => [product.id, product.category_id])),
+          after: parsed.categoryId,
+        },
+      ]),
+    });
+
+    revalidatePath("/admin/products");
+
+    return {
+      ok: true,
+      updatedProductIds: updatedIds,
+    };
+  } catch (error) {
+    return mapBulkActionError(error);
+  }
+}
+
+export async function bulkPublish(
+  input: AdminProductBulkPublishActionInput,
+): Promise<AdminProductBulkActionResult> {
+  try {
+    const admin = await requireAdmin();
+    const parsed = AdminProductBulkPublishActionSchema.parse(input);
+    const before = await findProductsByIdsForAdmin(parsed.productIds);
+
+    if (before.length === 0) {
+      return {
+        ok: false,
+        code: "not_found",
+        message: "No matching products were found.",
+      };
+    }
+
+    const hardBlocked = before.filter(isHardBlockedForBulkPublish);
+    const publishable = before.filter((product) => !hardBlocked.some((blocked) => blocked.id === product.id));
+    const reviewFlagsByProductId = Object.fromEntries(
+      publishable
+        .map((product) => [product.id, activeReviewFlags(product)] as const)
+        .filter(([, flags]) => flags.length > 0),
+    );
+
+    if (publishable.length === 0) {
+      return {
+        ok: false,
+        code: "all_products_blocked",
+        message: "Every selected product is hard-blocked from bulk publish.",
+        hardBlockedProductIds: hardBlocked.map((product) => product.id),
+        reviewFlagsByProductId,
+      };
+    }
+
+    if (Object.keys(reviewFlagsByProductId).length > 0 && !parsed.forceOverride) {
+      return {
+        ok: false,
+        code: "force_override_required",
+        message: "Some selected products have unresolved review flags.",
+        hardBlockedProductIds: hardBlocked.map((product) => product.id),
+        reviewFlagsByProductId,
+      };
+    }
+
+    const publishableIds = publishable.map((product) => product.id);
+    const updated = await bulkUpdateProductsForAdmin(publishableIds, {
+      status: "published",
+      is_public_visible: true,
+    });
+    const updatedIds = updated.map((product) => product.id);
+    const diff: AuditDiff =
+      parsed.forceOverride || Object.keys(reviewFlagsByProductId).length > 0
+        ? {
+            version: 1,
+            action: "bulk_publish_override",
+            entity_type: "bulk_publish",
+            published_product_ids: updatedIds,
+            published_count: updatedIds.length,
+            override_review_flags: true,
+            products_with_review_flags_count: Object.keys(reviewFlagsByProductId).length,
+            review_flags_by_product_id: reviewFlagsByProductId,
+            hard_blocked_product_ids: hardBlocked.map((product) => product.id),
+            override_reason: parsed.overrideReason,
+          }
+        : buildBulkOperationDiff("bulk_publish", before, updatedIds, [
+            {
+              field: "status",
+              before_by_product_id: Object.fromEntries(before.map((product) => [product.id, product.status])),
+              after: "published",
+            },
+            {
+              field: "is_public_visible",
+              before_by_product_id: Object.fromEntries(
+                before.map((product) => [product.id, product.is_public_visible]),
+              ),
+              after: true,
+            },
+          ]);
+
+    await record({
+      actor: { userId: admin.userId, email: admin.email },
+      diff,
+    });
+
+    revalidatePath("/admin/products");
+
+    return {
+      ok: true,
+      updatedProductIds: updatedIds,
+      hardBlockedProductIds: hardBlocked.map((product) => product.id),
+      reviewFlagsByProductId,
+    };
+  } catch (error) {
+    return mapBulkActionError(error);
+  }
+}
+
 export async function publishProduct(
   input: ProductTransitionInput,
 ): Promise<AdminProductActionResult> {
@@ -275,6 +467,46 @@ function mapImageActionError(error: unknown): AdminProductImageUploadResult {
         : "unknown",
     message: mapped.message,
   };
+}
+
+function mapBulkActionError(error: unknown): AdminProductBulkActionResult {
+  const mapped = mapActionError(error);
+
+  return {
+    ok: false,
+    code:
+      mapped.code === "authorization_error" || mapped.code === "validation_error"
+        ? mapped.code
+        : "unknown",
+    message: mapped.message,
+  };
+}
+
+function buildBulkOperationDiff(
+  operation: string,
+  before: ProductRecord[],
+  affectedProductIds: string[],
+  changes: AuditBulkOperationChange[],
+): AuditDiff {
+  return {
+    version: 1,
+    action: "bulk_operation",
+    entity_type: "bulk",
+    operation,
+    affected_product_ids: affectedProductIds,
+    affected_count: affectedProductIds.length,
+    changes,
+  };
+}
+
+function isHardBlockedForBulkPublish(product: ProductRecord): boolean {
+  return Boolean(product.admin_review_flags.case_pack || !product.retail_price_aed || !product.brand_id);
+}
+
+function activeReviewFlags(product: ProductRecord): string[] {
+  return Object.entries(product.admin_review_flags)
+    .filter(([, active]) => active)
+    .map(([flag]) => flag);
 }
 
 function optionalString(value: FormDataEntryValue | null): string | undefined {
