@@ -25,6 +25,66 @@ type ProductGoalTagRow = Database["public"]["Tables"]["product_goal_tags"]["Row"
 type ProductGoalTagInsert = Database["public"]["Tables"]["product_goal_tags"]["Insert"];
 type SlugHistoryRow = Database["public"]["Tables"]["slug_history"]["Row"];
 type SlugHistoryInsert = Database["public"]["Tables"]["slug_history"]["Insert"];
+type BrandRow = Database["public"]["Tables"]["brands"]["Row"];
+type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+
+export type AdminProductSort =
+  | "newest_imported"
+  | "lowest_completion"
+  | "recently_updated"
+  | "alphabetical";
+
+export type AdminProductListFilters = Readonly<{
+  status?: ProductRow["status"] | "all";
+  reviewFlags?: string[];
+  stockStatus?: ProductVariantRow["stock_status"] | "all";
+  brandId?: string;
+  categoryId?: string;
+  search?: string;
+  completionMin?: number;
+  completionMax?: number;
+}>;
+
+export type AdminProductListInput = Readonly<{
+  filters?: AdminProductListFilters;
+  sort?: AdminProductSort;
+  page?: number;
+  pageSize?: number;
+}>;
+
+export type AdminProductListItem = Readonly<{
+  id: string;
+  slug: string;
+  name: string;
+  brand_id: string | null;
+  brand_name: string | null;
+  category_id: string | null;
+  category_name: string | null;
+  retail_price_aed: number | null;
+  status: ProductRow["status"];
+  is_public_visible: boolean;
+  completion_score: number;
+  admin_review_flags: ProductAdminReviewFlags;
+  updated_at: string;
+  primary_image_url: string | null;
+  stock_total: number | null;
+  stock_badge: "in_stock" | "low_stock" | "out_of_stock" | "mixed" | "missing";
+  variant_count: number;
+}>;
+
+export type AdminProductListResult = Readonly<{
+  items: AdminProductListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}>;
+
+export type AdminProductReferenceOption = Readonly<{
+  id: string;
+  label: string;
+  slug: string;
+}>;
 
 export type ImportedProductInsert = ProductInsert;
 
@@ -72,6 +132,102 @@ export async function listAllProductsForAdmin(): Promise<ProductRecord[]> {
   return (data as unknown as ProductRow[]).map(mapProduct);
 }
 
+export async function findManyForAdmin(
+  input: AdminProductListInput = {},
+): Promise<AdminProductListResult> {
+  const page = clampPage(input.page);
+  const pageSize = clampPageSize(input.pageSize);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const filters = input.filters ?? {};
+
+  let query = supabaseAdmin
+    .from("products")
+    .select(ADMIN_PRODUCT_COLUMNS, { count: "exact" });
+
+  if (filters.stockStatus && filters.stockStatus !== "all") {
+    const productIds = await findProductIdsByStockStatus(filters.stockStatus);
+
+    if (productIds.length === 0) {
+      return {
+        items: [],
+        total: 0,
+        page,
+        pageSize,
+        pageCount: 1,
+      };
+    }
+
+    query = query.in("id", productIds);
+  }
+
+  if (filters.status && filters.status !== "all") {
+    query = query.eq("status", filters.status);
+  }
+
+  if (filters.brandId) {
+    query = query.eq("brand_id", filters.brandId);
+  }
+
+  if (filters.categoryId) {
+    query = query.eq("category_id", filters.categoryId);
+  }
+
+  if (typeof filters.completionMin === "number") {
+    query = query.gte("completion_score", filters.completionMin);
+  }
+
+  if (typeof filters.completionMax === "number") {
+    query = query.lte("completion_score", filters.completionMax);
+  }
+
+  for (const flag of filters.reviewFlags ?? []) {
+    query = query.contains("admin_review_flags", { [flag]: true });
+  }
+
+  const search = filters.search?.trim();
+  if (search) {
+    const escaped = search.replace(/[%_]/g, (match) => `\\${match}`);
+    query = query.or(`name.ilike.%${escaped}%,name_raw.ilike.%${escaped}%,brand_raw.ilike.%${escaped}%`);
+  }
+
+  switch (input.sort ?? "recently_updated") {
+    case "newest_imported":
+      query = query.order("created_at", { ascending: false });
+      break;
+    case "lowest_completion":
+      query = query
+        .order("completion_score", { ascending: true })
+        .order("updated_at", { ascending: false });
+      break;
+    case "alphabetical":
+      query = query.order("name", { ascending: true });
+      break;
+    case "recently_updated":
+    default:
+      query = query.order("updated_at", { ascending: false });
+      break;
+  }
+
+  const { data, error, count } = await query.range(from, to);
+
+  if (error) {
+    throw new Error(`Admin product list query failed: ${error.message}`);
+  }
+
+  const rows = (data as unknown as ProductRow[]) ?? [];
+  const items = await hydrateAdminProductListItems(rows);
+  const total = count ?? 0;
+
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
 export async function findProductByIdForAdmin(id: string): Promise<ProductRecord | null> {
   const { data, error } = await supabaseAdmin
     .from("products")
@@ -116,6 +272,61 @@ export async function updateProductForAdmin(
   }
 
   return mapProduct(data as unknown as ProductRow);
+}
+
+export async function updateProductForAdminIfFresh(
+  id: string,
+  expectedUpdatedAt: string,
+  patch: ProductUpdate,
+): Promise<ProductRecord | null> {
+  const { data, error } = await supabaseAdmin
+    .from("products")
+    .update(patch)
+    .eq("id", id)
+    .eq("updated_at", expectedUpdatedAt)
+    .select(ADMIN_PRODUCT_COLUMNS)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Admin product stale-safe update failed: ${error.message}`);
+  }
+
+  return data ? mapProduct(data as unknown as ProductRow) : null;
+}
+
+export async function listBrandOptionsForAdmin(): Promise<AdminProductReferenceOption[]> {
+  const { data, error } = await supabaseAdmin
+    .from("brands")
+    .select("id, display_name, slug")
+    .order("display_name", { ascending: true });
+
+  if (error) {
+    throw new Error(`Admin brand options query failed: ${error.message}`);
+  }
+
+  return ((data as Pick<BrandRow, "id" | "display_name" | "slug">[]) ?? []).map((row) => ({
+    id: row.id,
+    label: row.display_name,
+    slug: row.slug,
+  }));
+}
+
+export async function listCategoryOptionsForAdmin(): Promise<AdminProductReferenceOption[]> {
+  const { data, error } = await supabaseAdmin
+    .from("categories")
+    .select("id, name, slug")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error(`Admin category options query failed: ${error.message}`);
+  }
+
+  return ((data as Pick<CategoryRow, "id" | "name" | "slug">[]) ?? []).map((row) => ({
+    id: row.id,
+    label: row.name,
+    slug: row.slug,
+  }));
 }
 
 export async function bulkInsertImported(rows: ImportedProductInsert[]): Promise<ProductRecord[]> {
@@ -243,4 +454,213 @@ function mapSlugHistory(row: SlugHistoryRow): SlugHistoryRecord {
 
 function mapJsonObject<T>(value: Json): T {
   return (value && typeof value === "object" && !Array.isArray(value) ? value : {}) as T;
+}
+
+async function hydrateAdminProductListItems(rows: ProductRow[]): Promise<AdminProductListItem[]> {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const productIds = rows.map((row) => row.id);
+  const brandIds = rows.flatMap((row) => (row.brand_id ? [row.brand_id] : []));
+  const categoryIds = rows.flatMap((row) => (row.category_id ? [row.category_id] : []));
+
+  const [brandMap, categoryMap, imageMap, variantMap] = await Promise.all([
+    fetchBrandMap(brandIds),
+    fetchCategoryMap(categoryIds),
+    fetchPrimaryImageMap(productIds),
+    fetchVariantSummaryMap(productIds),
+  ]);
+
+  return rows.map((row) => {
+    const variantSummary = variantMap.get(row.id) ?? {
+      total: null,
+      badge: "missing" as const,
+      count: 0,
+    };
+    const flags = mapJsonObject<ProductAdminReviewFlags>(row.admin_review_flags);
+    const badge = flags.missing_stock_quantity ? "missing" : variantSummary.badge;
+
+    return {
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      brand_id: row.brand_id,
+      brand_name: row.brand_id ? (brandMap.get(row.brand_id) ?? null) : null,
+      category_id: row.category_id,
+      category_name: row.category_id ? (categoryMap.get(row.category_id) ?? null) : null,
+      retail_price_aed: row.retail_price_aed,
+      status: row.status,
+      is_public_visible: row.is_public_visible,
+      completion_score: row.completion_score,
+      admin_review_flags: flags,
+      updated_at: row.updated_at,
+      primary_image_url: imageMap.get(row.id) ?? null,
+      stock_total: badge === "missing" ? null : variantSummary.total,
+      stock_badge: badge,
+      variant_count: variantSummary.count,
+    };
+  });
+}
+
+async function fetchBrandMap(ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("brands")
+    .select("id, display_name")
+    .in("id", unique(ids));
+
+  if (error) {
+    throw new Error(`Admin brand hydration failed: ${error.message}`);
+  }
+
+  return new Map(((data as Pick<BrandRow, "id" | "display_name">[]) ?? []).map((row) => [row.id, row.display_name]));
+}
+
+async function fetchCategoryMap(ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("categories")
+    .select("id, name")
+    .in("id", unique(ids));
+
+  if (error) {
+    throw new Error(`Admin category hydration failed: ${error.message}`);
+  }
+
+  return new Map(((data as Pick<CategoryRow, "id" | "name">[]) ?? []).map((row) => [row.id, row.name]));
+}
+
+async function fetchPrimaryImageMap(productIds: string[]): Promise<Map<string, string>> {
+  const { data, error } = await supabaseAdmin
+    .from("product_images")
+    .select("product_id, public_url")
+    .in("product_id", productIds)
+    .eq("is_primary", true);
+
+  if (error) {
+    throw new Error(`Admin image hydration failed: ${error.message}`);
+  }
+
+  return new Map(
+    ((data as Pick<ProductImageRow, "product_id" | "public_url">[]) ?? []).map((row) => [
+      row.product_id,
+      row.public_url,
+    ]),
+  );
+}
+
+async function fetchVariantSummaryMap(productIds: string[]): Promise<
+  Map<
+    string,
+    {
+      total: number | null;
+      badge: AdminProductListItem["stock_badge"];
+      count: number;
+    }
+  >
+> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .select("product_id, stock_status, stock_quantity")
+    .in("product_id", productIds);
+
+  if (error) {
+    throw new Error(`Admin variant hydration failed: ${error.message}`);
+  }
+
+  const grouped = new Map<
+    string,
+    { statuses: ProductVariantRow["stock_status"][]; quantities: Array<number | null> }
+  >();
+
+  for (const row of (data as Pick<ProductVariantRow, "product_id" | "stock_status" | "stock_quantity">[]) ?? []) {
+    const current = grouped.get(row.product_id) ?? { statuses: [], quantities: [] };
+    current.statuses.push(row.stock_status);
+    current.quantities.push(row.stock_quantity);
+    grouped.set(row.product_id, current);
+  }
+
+  const result = new Map<
+    string,
+    {
+      total: number | null;
+      badge: AdminProductListItem["stock_badge"];
+      count: number;
+    }
+  >();
+
+  for (const [productId, summary] of grouped) {
+    const hasMissingQuantity = summary.quantities.some((quantity) => quantity === null);
+    const total = hasMissingQuantity
+      ? null
+      : summary.quantities.reduce<number>((sum, quantity) => sum + (quantity ?? 0), 0);
+    const allOut = summary.statuses.every((status) => status === "out_of_stock");
+    const anyLow = summary.statuses.some((status) => status === "low_stock");
+    const anyOut = summary.statuses.some((status) => status === "out_of_stock");
+    const anyIn = summary.statuses.some((status) => status === "in_stock" || status === "low_stock");
+    const badge = hasMissingQuantity
+      ? "missing"
+      : allOut
+        ? "out_of_stock"
+        : anyLow
+          ? "low_stock"
+          : anyOut && anyIn
+            ? "mixed"
+            : "in_stock";
+
+    result.set(productId, {
+      total,
+      badge,
+      count: summary.statuses.length,
+    });
+  }
+
+  return result;
+}
+
+async function findProductIdsByStockStatus(
+  stockStatus: ProductVariantRow["stock_status"],
+): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from("product_variants")
+    .select("product_id, stock_status");
+
+  if (error) {
+    throw new Error(`Admin stock-status filter failed: ${error.message}`);
+  }
+
+  const grouped = new Map<string, ProductVariantRow["stock_status"][]>();
+
+  for (const row of (data as Pick<ProductVariantRow, "product_id" | "stock_status">[]) ?? []) {
+    const statuses = grouped.get(row.product_id) ?? [];
+    statuses.push(row.stock_status);
+    grouped.set(row.product_id, statuses);
+  }
+
+  return Array.from(grouped.entries())
+    .filter(([, statuses]) =>
+      stockStatus === "out_of_stock"
+        ? statuses.length > 0 && statuses.every((status) => status === "out_of_stock")
+        : statuses.some((status) => status === stockStatus),
+    )
+    .map(([productId]) => productId);
+}
+
+function clampPage(value: number | undefined): number {
+  return Math.max(1, Math.floor(value ?? 1));
+}
+
+function clampPageSize(value: number | undefined): number {
+  return Math.max(10, Math.min(100, Math.floor(value ?? 50)));
+}
+
+function unique(values: string[]): string[] {
+  return Array.from(new Set(values));
 }

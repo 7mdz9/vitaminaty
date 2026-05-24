@@ -66,6 +66,69 @@ export const ProductUpdateInputSchema = ProductCreateInputSchema.partial().exten
   id: z.string().uuid(),
 });
 
+export const AdminProductReviewFlagSchema = z.enum([
+  "missing_price",
+  "missing_image",
+  "missing_stock_quantity",
+  "case_pack",
+  "duplicate_suspected",
+  "multiple_price_pairs",
+  "needs_category_review",
+  "needs_brand_review",
+  "needs_label_data",
+]);
+
+export const AdminProductSortSchema = z.enum([
+  "newest_imported",
+  "lowest_completion",
+  "recently_updated",
+  "alphabetical",
+]);
+
+export const AdminProductListFiltersSchema = z.object({
+  status: ProductStatusSchema.or(z.literal("all")).optional(),
+  reviewFlags: z.array(AdminProductReviewFlagSchema).default([]),
+  stockStatus: z.enum(["all", "in_stock", "low_stock", "out_of_stock"]).default("all"),
+  brandId: z.string().uuid().optional(),
+  categoryId: z.string().uuid().optional(),
+  search: z.string().trim().max(120).optional(),
+  completionMin: z.number().int().min(0).max(100).optional(),
+  completionMax: z.number().int().min(0).max(100).optional(),
+});
+
+export const AdminProductListInputSchema = z.object({
+  filters: AdminProductListFiltersSchema.default({}),
+  sort: AdminProductSortSchema.default("recently_updated"),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(10).max(100).default(50),
+});
+
+const NullableUuidSchema = z.string().uuid().nullable();
+
+export const AdminProductInlinePatchSchema = z
+  .object({
+    retail_price_aed: z.number().int().positive().nullable().optional(),
+    brand_id: NullableUuidSchema.optional(),
+    category_id: NullableUuidSchema.optional(),
+    status: ProductStatusSchema.optional(),
+    is_public_visible: z.boolean().optional(),
+    admin_review_flags: z.record(AdminProductReviewFlagSchema, z.boolean()).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one product field must be updated.",
+  });
+
+export const AdminProductUpdateActionSchema = z.object({
+  productId: z.string().uuid(),
+  expectedUpdatedAt: z.string().datetime(),
+  patch: AdminProductInlinePatchSchema,
+  force: z.boolean().default(false),
+});
+
+export const AdminProductBatchUpdateActionSchema = z.object({
+  updates: z.array(AdminProductUpdateActionSchema).min(1).max(100),
+});
+
 export const ProductFieldStatusUpdateSchema = z.object({
   product_id: z.string().uuid(),
   field: ProductFieldStatusKeySchema,
@@ -75,3 +138,9 @@ export const ProductFieldStatusUpdateSchema = z.object({
 export type ProductCreateInput = z.infer<typeof ProductCreateInputSchema>;
 export type ProductUpdateInput = z.infer<typeof ProductUpdateInputSchema>;
 export type ProductFieldStatusUpdate = z.infer<typeof ProductFieldStatusUpdateSchema>;
+export type AdminProductListInput = z.infer<typeof AdminProductListInputSchema>;
+export type AdminProductInlinePatch = z.infer<typeof AdminProductInlinePatchSchema>;
+export type AdminProductUpdateActionInput = z.infer<typeof AdminProductUpdateActionSchema>;
+export type AdminProductBatchUpdateActionInput = z.infer<
+  typeof AdminProductBatchUpdateActionSchema
+>;

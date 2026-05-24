@@ -25,7 +25,7 @@ M1 schema, RLS, reference seed data, repository-facing DB client surface, non-PI
 
 ## 2. Current milestone
 
-**M2 - Admin portal: Step 3 design system foundation COMPLETE locally (2026-05-24). Next: Step 4 - product list page.**
+**M2 - Admin portal: Step 4 product list page COMPLETE locally (2026-05-24). Next: Step 5 - full product editor + completion_score.**
 
 M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. M1 Step 6 non-PII repositories are implemented. M1 Step 7 PII and operational repositories are implemented, append-only event repositories are split into dedicated files, and the canonical `rls-cross-checks.test.ts` suite passes. M1 Step 8 import script is lint-clean and recovered after meta-model-blessed brand seed expansion: 787 products import with 44 distinct matched brands. M1 Step 9 admin seed script is implemented and verified locally. M1 Final Audit recovery added `0011_wholesale_revoke_writes.sql` and a column-privilege regression assertion. M1 Final Audit rerun passed; M1 is shipped. The HIGH_RIGOR M1 addendum migration `0012_inventory.sql` is implemented and verified; M2 now reads inventory tracking as a shipped precondition.
 
@@ -261,6 +261,13 @@ M0 Step 1 confirmation: these patterns remain accurate. This step added only the
 | `src/features/admin-shell/` | M2 Step 3 admin theme + keyboard provider foundation. |
 | `src/components/layout/AdminHeader.tsx` | M2 Step 3 admin header chrome with MFA status and theme toggle. |
 | `src/components/layout/AdminSidebar.tsx` | M2 Step 3 admin navigation chrome with active route styling. |
+| `src/app/admin/products/page.tsx` | M2 Step 4 product list route with URL-backed filters, pagination, and admin-authenticated data loading. |
+| `src/features/admin-products/queries.ts` | M2 Step 4 product list search-param parsing and requireAdmin-gated query facade. |
+| `src/features/admin-products/actions.ts` | M2 Step 4 requireAdmin-gated product update/publish/unpublish/archive actions with stale-data handling and audit writes. |
+| `src/features/admin-products/components/ProductListTable.tsx` | M2 Step 4 dense product list table with inline edit cells and J/K/E shortcuts. |
+| `src/features/admin-products/components/FilterBar.tsx` | M2 Step 4 filter bar for status, stock, brand, category, search, sort, and review flags. |
+| `src/features/admin-products/components/InlineEditCell.tsx` | M2 Step 4 optimistic inline edit primitive for list cells. |
+| `tests/integration/admin-products/list.test.ts` | M2 Step 4 integration coverage for URL filters, stale-safe updates, audit writes, and force-save override. |
 | `src/server/repositories/inventory-movement-repository.ts` | M1 addendum append-only inventory movement ledger repository. |
 | `tests/integration/repositories/inventory-movement-repository.test.ts` | M1 addendum repository and `compute_stock_status` trigger integration tests. |
 | `supabase/seed/feature-flags.sql` | Prepared default feature flag seed source; inlined into `0010_seed.sql` for migration-driven resets. |
@@ -293,6 +300,7 @@ Verification debt carried into M1 from the M0 final audit:
 - M2 STEP 2 / ADMIN MFA ENROLLMENT: Supabase Auth TOTP enrollment and returning-admin verification are wired through `/admin/mfa/enroll` and `/admin/mfa/verify`. `vit_admin_session` now preserves explicit `mfaVerifiedAt=null` pending sessions and carries `mfaRequired='enroll'|'verify'` for middleware redirects. Supabase does not generate recovery codes, so `0014_admin_mfa_recovery.sql` adds service-role-only hashed recovery-code storage; plaintext recovery codes are shown once via a short-lived HttpOnly cookie and are not written to `audit_log.diff`. `audit_action` now includes `mfa_enrolled`, and the corresponding diff records only factor metadata plus `recovery_codes_count`.
 - M2 STEP 3 SPEC CORRECTIONS: `INVENTORY_SPEC.md §3.6` corrected the stale `in_stock` claim; `API_SPEC.md §1.3` now includes `stale_data` and `insufficient_stock`; `API_SPEC.md §3.1 updateProduct` now carries `expected_updated_at`; `PRODUCT_CONTENT_SPEC §22.1.1` now exists as the Step 5 scored-fields placeholder; `ADMIN_PORTAL_SPEC §16` anchors the admin visual standards and `--admin-*` token contract.
 - M2 STEP 3 DESIGN SYSTEM: shadcn primitives are installed under `src/components/ui/` (`button`, `input`, `select`, `dropdown-menu`, `dialog`, `toast` via `sonner`, `sheet`, `command`, `tooltip`, `badge`, `checkbox`, `table`, `skeleton`, `separator`). Admin theme/keyboard providers live in `src/features/admin-shell/`, and admin chrome now uses the `--admin-*` token namespace with League Spartan body and MuseoModerno display fonts.
+- M2 STEP 4 PRODUCT LIST: `/admin/products` now renders the dense product list with URL-backed status/review-flag/stock/brand/category/search/sort filters, server-side pagination, optimistic inline edits for price/brand/category/status/visibility, stale-data responses with force-save affordance, and audit rows for product mutations. Step 6 still owns the real product drawer; Step 7 still owns real bulk operations.
 - DEFERRED DOC CLEANUP: `ARCHITECTURE.md §6` still contains the stale `missing_price for 360 rows` diagram count. Canonical post-import count remains `missing_price=369`; cleanup deferred to M3+ docs pass.
 - Vercel env matrix UI has a "wipe-on-edit" bug when editing per-environment values one at a time. Workaround: use Import .env with one file per environment, or use vercel CLI. Worth a runbook entry when M5 production env setup happens.
 

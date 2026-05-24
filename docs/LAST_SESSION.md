@@ -1,89 +1,61 @@
 # LAST_SESSION.md
 
-## M2 Step 3 - design system foundation landed
+## M2 Step 4 - product list page landed
 
 Date: 2026-05-24
 
-Objective completed: admin visual standards, token foundation, shadcn primitives, admin-shell providers, and the admin chrome foundation are implemented locally.
+Objective completed: `/admin/products` now has the Step 4 product-list foundation: URL-backed filters, server-side pagination, dense table layout, optimistic inline edit cells, stale-data responses, and audit-backed product mutations.
 
 ### Files created
 
-- `components.json`
-- `src/components/ui/button.tsx`
-- `src/components/ui/input.tsx`
-- `src/components/ui/select.tsx`
-- `src/components/ui/dropdown-menu.tsx`
-- `src/components/ui/dialog.tsx`
-- `src/components/ui/toast.tsx`
-- `src/components/ui/sonner.tsx`
-- `src/components/ui/sheet.tsx`
-- `src/components/ui/command.tsx`
-- `src/components/ui/tooltip.tsx`
-- `src/components/ui/badge.tsx`
-- `src/components/ui/checkbox.tsx`
-- `src/components/ui/table.tsx`
-- `src/components/ui/skeleton.tsx`
-- `src/components/ui/separator.tsx`
-- `src/components/ui/kbd.tsx`
-- `src/components/ui/theme-toggle.tsx`
-- `src/components/ui/input-group.tsx`
-- `src/components/ui/textarea.tsx`
-- `src/features/admin-shell/theme-provider.tsx`
-- `src/features/admin-shell/keyboard-provider.tsx`
-- `src/features/admin-shell/use-shortcuts.ts`
-- `src/features/admin-shell/index.tsx`
-- `src/types/admin-theme.ts`
+- `src/features/admin-products/queries.ts`
+- `src/features/admin-products/components/FilterBar.tsx`
+- `src/features/admin-products/components/ProductListTable.tsx`
+- `src/features/admin-products/components/InlineEditCell.tsx`
+- `tests/integration/admin-products/list.test.ts`
 
 ### Files modified
 
-- `docs/ADMIN_PORTAL_SPEC.md`
-- `docs/INVENTORY_SPEC.md`
-- `docs/API_SPEC.md`
-- `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md`
 - `docs/PROJECT_STATE.md`
 - `docs/LAST_SESSION.md`
-- `package.json`
-- `pnpm-lock.yaml`
-- `tailwind.config.ts`
-- `src/app/globals.css`
-- `src/app/layout.tsx`
-- `src/app/admin/layout.tsx`
-- `src/components/layout/AdminHeader.tsx`
-- `src/components/layout/AdminSidebar.tsx`
-- `src/components/admin/StatusBadge.tsx`
-- `src/components/admin/CompletionScoreBadge.tsx`
-- `src/lib/utils.ts`
+- `src/app/admin/products/page.tsx`
+- `src/features/admin-products/actions.ts`
+- `src/lib/validation/product.ts`
+- `src/server/repositories/product-admin-repository.ts`
 
 ### Implementation notes
 
-- `ADMIN_PORTAL_SPEC.md section 16` now defines the 9 quality constraints, `--admin-*` token map, approved primitive list, and Tailwind namespace rule.
-- `INVENTORY_SPEC.md section 3.6`, `API_SPEC.md section 1.3`, `API_SPEC.md section 3.1`, and `PRODUCT_CONTENT_SPEC section 22.1.1` received the Step 3 spec-correction batch.
-- The deprecated `shadcn-ui` package now redirects to `shadcn`; `pnpm dlx shadcn-ui@latest --help` succeeded with the deprecation notice, then `pnpm dlx shadcn@latest init/add` generated the primitives. The registry no longer has `toast`; `sonner` is the current toast primitive and `src/components/ui/toast.tsx` wraps it under the approved name.
-- Admin shell providers now compose theme, tooltip, toast, Cmd-K command placeholder, shortcut help, and Escape close handling.
-- Browser plugin verification was attempted but `iab` was unavailable in this session. HTTP route verification confirmed `/admin/sign-in` returns 200 and renders the admin sign-in shell.
+- `getProductList()` and `getProductFilterOptions()` call `requireAdmin()` before reading admin catalog data.
+- `updateProduct()`, `batchUpdateProducts()`, `publishProduct()`, `unpublishProduct()`, and `archiveProduct()` call `requireAdmin()` and write audit rows through the Step 1b audit-service helper.
+- Inline edit currently covers retail price, brand, category, status, and visibility. Stock quantity editing waits for the Step 8a inventory endpoint contract; Step 4 displays aggregate stock state.
+- The real product drawer remains Step 6. The `E` shortcut is wired to a stub alert so keyboard plumbing is proven without pretending the drawer exists yet.
+- Real bulk operations remain Step 7. The list selection affordance is present, with the bulk action button intentionally disabled until Step 7.
 
 ### Verification
 
 ```text
 pnpm typecheck: PASS
 pnpm lint: PASS (existing QR-code data URI <img> warning in /admin/mfa/enroll)
-pnpm build: PASS (First Load JS shared by all remains 102 kB)
-pnpm test: PASS (19 files, 90 tests)
+pnpm build: PASS (/admin/products dynamic route builds at 21.3 kB page size)
+pnpm test -- admin-products/list --reporter verbose: PASS (4 tests)
+pnpm test: PASS (20 files, 94 tests)
 pnpm scan:bundle-secrets: PASS
-HTTP /admin/sign-in: PASS (200; expected admin copy present)
-Browser/axe manual checkpoint: NOT RUN - in-app Browser backend reported unavailable: iab
+grep requireAdmin in Step 4 admin product action/query files: PASS
+grep for application-layer stock_status writes: PASS (generated types/test input only)
+HTTP unauthenticated /admin/products: PASS (307 to /admin/sign-in)
+Browser/axe manual checkpoint: NOT RUN - in-app Browser backend remained unavailable in this session
 ```
 
 ### HANDOFF
 
-files_created: [`components.json`, `src/components/ui/*`, `src/features/admin-shell/*`, `src/types/admin-theme.ts`]
+files_created: [`src/features/admin-products/queries.ts`, `src/features/admin-products/components/FilterBar.tsx`, `src/features/admin-products/components/ProductListTable.tsx`, `src/features/admin-products/components/InlineEditCell.tsx`, `tests/integration/admin-products/list.test.ts`]
 
-files_modified: [`docs/ADMIN_PORTAL_SPEC.md`, `docs/INVENTORY_SPEC.md`, `docs/API_SPEC.md`, `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `package.json`, `pnpm-lock.yaml`, `tailwind.config.ts`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/admin/layout.tsx`, `src/components/layout/AdminHeader.tsx`, `src/components/layout/AdminSidebar.tsx`, `src/components/admin/StatusBadge.tsx`, `src/components/admin/CompletionScoreBadge.tsx`, `src/lib/utils.ts`]
+files_modified: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/app/admin/products/page.tsx`, `src/features/admin-products/actions.ts`, `src/lib/validation/product.ts`, `src/server/repositories/product-admin-repository.ts`]
 
-patterns_established: [`ADMIN_PORTAL_SPEC section 16 is the M2 admin visual contract`, `admin design tokens use --admin-*`, `admin shell providers own theme + keyboard shortcut plumbing`, `toast primitive is represented by sonner wrapper`]
+patterns_established: [`admin product reads go through requireAdmin-gated query facade`, `admin product mutations go through requireAdmin-gated actions and audit-service`, `inline edit stale-data conflicts return stale_data and expose a Save anyway path`]
 
-next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md section 16`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`]
+next_step_must_read: [`docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md section 22`, `docs/ADMIN_PORTAL_SPEC.md section 6`, `src/features/admin-products/actions.ts`, `src/server/repositories/product-admin-repository.ts`]
 
-known_issues_introduced: [`Browser/axe manual checkpoint still needs to be run when the in-app browser backend is available.`]
+known_issues_introduced: [`Browser/axe manual checkpoint still needs to be run when the in-app browser backend is available. Authenticated visual smoke was not completed through the browser; automated build/test and unauthenticated middleware smoke passed.`]
 
-invariants_observed: [SECURITY INVARIANTS - no auth boundary changes; bundle scan clean. DESIGN INVARIANTS - admin tokens centralized; no new hand-rolled primitives in touched admin layout/status components.]
+invariants_observed: [SECURITY INVARIANTS - requireAdmin on admin product actions/queries; bundle scan clean; no direct stock_status writes. DESIGN INVARIANTS - product table uses admin tokens, shadcn table/select/button/input/badge/checkbox primitives, tabular numerals, scoped focus states.]
