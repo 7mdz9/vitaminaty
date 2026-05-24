@@ -16,6 +16,11 @@ type PaymentEventRow = Database["public"]["Tables"]["payment_events"]["Row"];
 type PaymentEventInsert = Database["public"]["Tables"]["payment_events"]["Insert"];
 type AdminClient = Pick<typeof supabaseAdmin, "from">;
 
+export type PaymentIntegrationEventStats = Readonly<{
+  lastSuccessfulWebhookAt: string | null;
+  failureCount24h: number;
+}>;
+
 const PAYMENT_EVENT_COLUMNS = [
   "id",
   "order_id",
@@ -63,6 +68,41 @@ export async function listEventsForOrder(
   }
 
   return (data as unknown as PaymentEventRow[]).map(mapPaymentEvent);
+}
+
+export async function getPaymentIntegrationEventStats(
+  provider: "paymob" | "stub",
+  client: AdminClient = supabaseAdmin,
+): Promise<PaymentIntegrationEventStats> {
+  const successful = await client
+    .from("payment_events")
+    .select("recorded_at")
+    .eq("provider", provider)
+    .in("kind", ["authorized", "captured", "refunded"])
+    .order("recorded_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (successful.error) {
+    throw new Error(`Payment integration success query failed: ${successful.error.message}`);
+  }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const failed = await client
+    .from("payment_events")
+    .select("id", { count: "exact", head: true })
+    .eq("provider", provider)
+    .eq("kind", "failed")
+    .gte("recorded_at", since);
+
+  if (failed.error) {
+    throw new Error(`Payment integration failure query failed: ${failed.error.message}`);
+  }
+
+  return {
+    lastSuccessfulWebhookAt: successful.data?.recorded_at ?? null,
+    failureCount24h: failed.count ?? 0,
+  };
 }
 
 function mapPaymentEvent(row: PaymentEventRow): PaymentEventRecord {

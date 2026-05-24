@@ -15,6 +15,11 @@ type ShipmentEventRow = Database["public"]["Tables"]["shipment_events"]["Row"];
 type ShipmentEventInsert = Database["public"]["Tables"]["shipment_events"]["Insert"];
 type AdminClient = Pick<typeof supabaseAdmin, "from">;
 
+export type ShipmentIntegrationEventStats = Readonly<{
+  lastSuccessfulWebhookAt: string | null;
+  failureCount24h: number;
+}>;
+
 const SHIPMENT_EVENT_COLUMNS = [
   "id",
   "order_id",
@@ -58,6 +63,41 @@ export async function listEventsForOrder(
   }
 
   return (data as unknown as ShipmentEventRow[]).map(mapShipmentEvent);
+}
+
+export async function getShipmentIntegrationEventStats(
+  provider: "icarry" | "stub" | "manual",
+  client: AdminClient = supabaseAdmin,
+): Promise<ShipmentIntegrationEventStats> {
+  const successful = await client
+    .from("shipment_events")
+    .select("recorded_at")
+    .eq("provider", provider)
+    .in("status", ["created", "picked_up", "in_transit", "out_for_delivery", "delivered"])
+    .order("recorded_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (successful.error) {
+    throw new Error(`Shipment integration success query failed: ${successful.error.message}`);
+  }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const failed = await client
+    .from("shipment_events")
+    .select("id", { count: "exact", head: true })
+    .eq("provider", provider)
+    .eq("status", "delivery_failed")
+    .gte("recorded_at", since);
+
+  if (failed.error) {
+    throw new Error(`Shipment integration failure query failed: ${failed.error.message}`);
+  }
+
+  return {
+    lastSuccessfulWebhookAt: successful.data?.recorded_at ?? null,
+    failureCount24h: failed.count ?? 0,
+  };
 }
 
 function mapShipmentEvent(row: ShipmentEventRow): ShipmentEventRecord {

@@ -18,8 +18,11 @@ export type AuditSingleEntityUpdateAction =
   | "unpublish"
   | "archive"
   | "restore"
+  | "role_change"
   | "flag_toggle"
-  | "image_upload";
+  | "image_upload"
+  | "mfa_reset"
+  | "integration_credentials_update";
 
 export type AuditSingleEntityUpdateDiff = Readonly<{
   version: 1;
