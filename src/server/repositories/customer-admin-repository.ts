@@ -55,6 +55,28 @@ export async function findCustomerByIdForAdmin(
   return data ? mapCustomer(data as unknown as CustomerRow) : null;
 }
 
+export async function findCustomersByIdsForAdmin(
+  ids: string[],
+  client: AdminClient = supabaseAdmin,
+): Promise<CustomerRecord[]> {
+  const uniqueIds = Array.from(new Set(ids)).filter(Boolean);
+
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("customers")
+    .select(CUSTOMER_COLUMNS)
+    .in("id", uniqueIds);
+
+  if (error) {
+    throw new Error(`Admin customers by ids query failed: ${error.message}`);
+  }
+
+  return (data as unknown as CustomerRow[]).map(mapCustomer);
+}
+
 export async function upsertCustomerForAdmin(
   row: CustomerInsert,
   client: AdminClient = supabaseAdmin,

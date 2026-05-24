@@ -11,6 +11,11 @@ export type AuthAdminUserSummary = {
   last_sign_in_at: string | null;
 };
 
+export type AuthUserEmailSummary = {
+  id: string;
+  email: string | null;
+};
+
 export async function listAuthAdmins(): Promise<AuthAdminUserSummary[]> {
   const { data, error } = await supabaseAdmin.auth.admin.listUsers();
 
@@ -47,4 +52,26 @@ export async function setAuthUserAdminRole(userId: string): Promise<AuthAdminUse
     created_at: data.user.created_at,
     last_sign_in_at: data.user.last_sign_in_at ?? null,
   };
+}
+
+export async function listAuthUserEmailsByIds(userIds: string[]): Promise<AuthUserEmailSummary[]> {
+  const uniqueIds = Array.from(new Set(userIds)).filter(Boolean);
+
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
+  const users = await Promise.all(
+    uniqueIds.map(async (id) => {
+      const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+
+      if (error) {
+        return { id, email: null };
+      }
+
+      return { id, email: data.user.email ?? null };
+    }),
+  );
+
+  return users;
 }
