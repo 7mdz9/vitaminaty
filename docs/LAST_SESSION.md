@@ -1,81 +1,71 @@
 # LAST_SESSION.md
 
-## M2 Step 10 complete - categories
+## M2 Verification refresh #4 complete
 
 Date: 2026-05-24
 
-Objective completed: implemented admin category management. `/admin/categories` now renders the category tree with keyboard and drag/drop reorder controls, `/admin/categories/[categoryId]` edits or creates categories, and reorder saves update sibling sort order and parent-child placement through a service-role-only database RPC.
-
-### Files created
-
-- `supabase/migrations/0016_category_parent_tree.sql`
-- `src/app/admin/categories/[categoryId]/page.tsx`
-- `src/features/admin-categories/queries.ts`
-- `src/features/admin-categories/actions.ts`
-- `src/features/admin-categories/components/CategoryTree.tsx`
-- `src/features/admin-categories/components/CategoryEditorForm.tsx`
-- `src/lib/validation/category.ts`
-- `tests/integration/admin-categories/reorder.test.ts`
-
-### Files modified
-
-- `docs/DB_SCHEMA.md`
-- `docs/PROJECT_STATE.md`
-- `docs/LAST_SESSION.md`
-- `scripts/import-products-from-md.ts`
-- `src/app/admin/categories/page.tsx`
-- `src/lib/supabase/types.generated.ts`
-- `src/server/repositories/category-repository.ts`
-- `src/types/category.ts`
-
-### Implementation notes
-
-- `0016_category_parent_tree.sql` adds nullable `categories.parent_id`, indexes `(parent_id, sort_order)`, and defines `admin_reorder_categories(jsonb)`.
-- The reorder RPC is not `SECURITY DEFINER`, sets `search_path = public`, and EXECUTE is granted only to `service_role` plus owner `postgres`.
-- `updateCategory` carries `expected_updated_at` and returns `stale_data` without audit writes when the row changed first.
-- `reorderCategories` writes one audit row for the operation, with old/new `sort_order` and `parent_id` maps for affected categories.
-- Category mutation actions are requireAdmin-gated server actions; repository access remains through `src/server/repositories/category-repository.ts`.
-- The M1 seed remains 16 top-level categories. Children appear once admins create or re-parent categories.
+Objective completed: re-verified the M2 admin/auth/catalog spine after Step 9 brands + normalization and Step 10 categories. No implementation changes were required.
 
 ### Verification
 
 ```text
 pnpm exec supabase db reset: PASS through 0016
 pnpm db:types: PASS
+pnpm exec tsx scripts/import-products-from-md.ts: PASS
+  products=787
+  distinct matched brands=44
+  products_without_brand=18
+  casePack=140
+  missingPrice=369
+  needsCategoryReview=36
 pnpm typecheck: PASS
-pnpm test -- admin-categories --reporter verbose: PASS (1 file, 3 tests)
+pnpm test -- admin-categories admin-brands admin-products auth services/repositories --reporter verbose: PASS (11 files, 43 tests)
 pnpm lint: PASS (existing QR-code <img> warning in /admin/mfa/enroll)
 pnpm test: PASS (28 files, 124 tests)
 pnpm build: PASS (same existing QR-code <img> warning)
 pnpm exec supabase db lint --local: PASS
 pnpm exec supabase migration list --local: PASS (0001-0016)
-pnpm scan:bundle-secrets: PASS
 pnpm exec supabase db advisors --local: PASS with existing project-wide warnings only
+pnpm scan:bundle-secrets: PASS
 grep -rL "requireAdmin()" src/features/admin-*/actions.ts: PASS (empty)
-Step 10 orphan marker sweep: PASS
+Admin token drift check: PASS (`--admin-*` tokens remain anchored in globals/Tailwind and active admin surfaces)
 Category data smoke: PASS (16 categories, 0 children, 16 visible)
-RPC grant smoke: PASS (postgres + service_role only)
-git diff --check: PASS (line-ending warnings only)
+Catalog data smoke: PASS (787 products, 44 distinct matched brands, 18 products without brand_id)
+Category RPC grant smoke: PASS (postgres + service_role only)
 ```
 
 ### Advisor Notes
 
-`pnpm exec supabase db advisors --local` returned the existing M1 performance/security warnings for older RLS policies/functions and `pg_trgm` in public. The new Step 10 RPC did not add a mutable-search-path warning.
+`pnpm exec supabase db advisors --local` still reports the known M1 backlog:
+
+- `auth_rls_initplan` performance warnings on older customer/order/support RLS policies.
+- `multiple_permissive_policies` performance warnings on older public/admin read-policy pairs.
+- `function_search_path_mutable` for older `touch_updated_at`, `is_admin`, and `compute_stock_status`.
+- `extension_in_public` for `pg_trgm`.
+
+No new Step 9 or Step 10 RPC mutable-search-path warning appeared.
+
+### Sweep Notes
+
+- Direct admin action authz sweep is empty.
+- Broad admin marker sweep found only planned future M2 placeholder routes (`/admin`, `/admin/products/import`, `/admin/orders`, `/admin/homepage`, `/admin/audit-log`, and settings routes) plus real form placeholder attributes.
+- Client-surface service-role scan found no direct service-role client imports or service-role key references under `src/app`, `src/features`, or `src/components`.
+- `wholesale_price_internal` still appears in the admin product editor pricing section as an intentional admin-only field.
 
 ### Manual / Browser Notes
 
-- Browser, axe, and manual keyboard QA were not run in this environment. Static lint/build passed, and the category tree includes keyboard grab/reorder controls with Space, Arrow keys, and Escape.
+- Browser, axe, and manual keyboard QA were not run in this environment.
 
 ### HANDOFF
 
-files_created: [`supabase/migrations/0016_category_parent_tree.sql`, `src/app/admin/categories/[categoryId]/page.tsx`, `src/features/admin-categories/queries.ts`, `src/features/admin-categories/actions.ts`, `src/features/admin-categories/components/CategoryTree.tsx`, `src/features/admin-categories/components/CategoryEditorForm.tsx`, `src/lib/validation/category.ts`, `tests/integration/admin-categories/reorder.test.ts`]
+files_created: []
 
-files_modified: [`docs/DB_SCHEMA.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `scripts/import-products-from-md.ts`, `src/app/admin/categories/page.tsx`, `src/lib/supabase/types.generated.ts`, `src/server/repositories/category-repository.ts`, `src/types/category.ts`]
+files_modified: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`]
 
-patterns_established: [`category admin mutations are requireAdmin-gated server actions`, `category tree reorder/re-parent is atomic through service-role-only RPC`, `category reorder writes one operation-level audit row`]
+patterns_established: [`Verification refreshes re-run migrations, generated types, canonical import, focused M2 suites, full suite, build, Supabase lint/advisors, bundle scan, authz sweep, token drift sweep, and data/RPC grant smokes`]
 
-next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md`, `docs/PROJECT_STATE.md`, `src/features/admin-categories/actions.ts`, `src/features/admin-categories/components/CategoryTree.tsx`]
+next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md §9`, `docs/proj_spec.md M2`, `src/server/repositories/order-admin-repository.ts`, `src/server/repositories/order-repository.ts`, `src/types/order.ts`]
 
 known_issues_introduced: [none]
 
-invariants_observed: [SECURITY INVARIANTS - requireAdmin coverage sweep empty, service-role-only RPC execute, bundle scan clean. AUDIT INVARIANTS - category create/update/reorder actions write audit rows. DATA INVARIANTS - parent_id and sort_order changes are applied atomically by the database RPC.]
+invariants_observed: [SECURITY INVARIANTS - requireAdmin coverage sweep empty, service-role client not imported into app/features/components, category RPC execute remains service-role-only, bundle scan clean. DATA INVARIANTS - canonical catalog import counts preserved after Step 9/10. BUILD INVARIANTS - lint/test/build all green.]
