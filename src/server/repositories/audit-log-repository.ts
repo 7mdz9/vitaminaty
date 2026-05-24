@@ -14,6 +14,25 @@ type AuditLogRow = Database["public"]["Tables"]["audit_log"]["Row"];
 type AuditLogInsert = Database["public"]["Tables"]["audit_log"]["Insert"];
 type AdminClient = Pick<typeof supabaseAdmin, "from">;
 
+export type AuditLogListFilters = Readonly<{
+  actor?: string;
+  action?: AuditLogRow["action"];
+  entityType?: string;
+  entityId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}>;
+
+export type AuditLogListResult = Readonly<{
+  entries: AuditLogRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}>;
+
 const AUDIT_LOG_COLUMNS = [
   "id",
   "actor_user_id",
@@ -61,6 +80,65 @@ export async function listEntries(
   return (data as unknown as AuditLogRow[]).map(mapAuditLog);
 }
 
+export async function listEntriesForAdmin(
+  filters: AuditLogListFilters = {},
+  client: AdminClient = supabaseAdmin,
+): Promise<AuditLogListResult> {
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 50;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = client
+    .from("audit_log")
+    .select(AUDIT_LOG_COLUMNS, { count: "exact" })
+    .order("occurred_at", { ascending: false })
+    .range(from, to);
+
+  if (filters.actor) {
+    const actorSearch = `actor_email.ilike.%${escapeLikePattern(filters.actor)}%`;
+    query = query.or(
+      isUuid(filters.actor) ? `${actorSearch},actor_user_id.eq.${filters.actor}` : actorSearch,
+    );
+  }
+
+  if (filters.action) {
+    query = query.eq("action", filters.action);
+  }
+
+  if (filters.entityType) {
+    query = query.eq("entity_type", filters.entityType);
+  }
+
+  if (filters.entityId) {
+    query = query.eq("entity_id", filters.entityId);
+  }
+
+  if (filters.dateFrom) {
+    query = query.gte("occurred_at", filters.dateFrom);
+  }
+
+  if (filters.dateTo) {
+    query = query.lte("occurred_at", filters.dateTo);
+  }
+
+  const { data, count, error } = await query;
+
+  if (error) {
+    throw new Error(`Audit log admin query failed: ${error.message}`);
+  }
+
+  const total = count ?? 0;
+
+  return {
+    entries: (data as unknown as AuditLogRow[]).map(mapAuditLog),
+    total,
+    page,
+    pageSize,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
 export async function listEntriesForEntity(
   entityType: string,
   entityId: string,
@@ -89,4 +167,14 @@ function mapAuditLog(row: AuditLogRow): AuditLogRecord {
 
 function mapJsonObject<T>(value: Json): T {
   return (value && typeof value === "object" && !Array.isArray(value) ? value : {}) as T;
+}
+
+function escapeLikePattern(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
