@@ -61,13 +61,21 @@ async function readAuditRequestContext(): Promise<{ ip: string | null; userAgent
 function inferEntityId(diff: AuditDiff): string | null {
   switch (diff.entity_type) {
     case "product":
-      return diff.product_id;
+      return diff.product_id ?? null;
+    case "brand":
+      return diff.brand_id ?? null;
+    case "category":
+      return diff.category_id ?? null;
+    case "homepage_config":
+      return diff.homepage_config_id ?? null;
+    case "integration":
+      return diff.integration_id ?? null;
     case "product_variant":
       return diff.variant_id;
     case "order":
       return diff.order_id;
     case "admin_user":
-      return diff.user_id;
+      return diff.user_id ?? null;
     case "bulk":
     case "bulk_publish":
       return null;

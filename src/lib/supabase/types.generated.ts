@@ -1046,6 +1046,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_brand_alias_and_recompute: {
+        Args: { p_alias: string; p_brand_id: string }
+        Returns: Json
+      }
       is_admin: { Args: never; Returns: boolean }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

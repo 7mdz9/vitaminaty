@@ -680,11 +680,13 @@ concern owned by the admin diff renderer (`ADMIN_PORTAL_SPEC.md §12.1`) and its
 "Show raw" affordance. Secrets, credentials, API keys, tokens, and password
 material MUST NOT be written into `audit_log.diff`.
 
-#### Shape 1: single-product update
+#### Shape 1: single-entity update
 
-Used for one product-level mutation. `changes[].field` is a stable field path
-such as `name`, `retail_price_aed`, `status`, `is_public_visible`,
-`admin_review_flags.missing_price`, or `content.description`.
+Used for one product, brand, category, homepage config, admin user, or
+integration mutation. `changes[].field` is a stable field path such as `name`,
+`retail_price_aed`, `status`, `is_public_visible`,
+`admin_review_flags.missing_price`, `content.description`,
+`aliases`, `logo_url`, or `is_visible_on_directory`.
 
 Allowed `action` values:
 `create`, `update`, `publish`, `unpublish`, `archive`, `restore`,
@@ -694,13 +696,13 @@ Allowed `action` values:
 {
   "version": 1,
   "action": "update",
-  "entity_type": "product",
-  "product_id": "uuid",
+  "entity_type": "brand",
+  "brand_id": "uuid",
   "changes": [
     {
-      "field": "retail_price_aed",
-      "before": 89,
-      "after": 94
+      "field": "aliases",
+      "before": ["ON"],
+      "after": ["ON", "Optimum Nutrition"]
     }
   ]
 }

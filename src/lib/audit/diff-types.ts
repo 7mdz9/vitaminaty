@@ -11,7 +11,7 @@ export type AuditFieldChange = Readonly<{
   after: AuditValue;
 }>;
 
-export type AuditProductUpdateAction =
+export type AuditSingleEntityUpdateAction =
   | "create"
   | "update"
   | "publish"
@@ -21,13 +21,20 @@ export type AuditProductUpdateAction =
   | "flag_toggle"
   | "image_upload";
 
-export type AuditProductUpdateDiff = Readonly<{
+export type AuditSingleEntityUpdateDiff = Readonly<{
   version: 1;
-  action: AuditProductUpdateAction;
-  entity_type: "product";
-  product_id: string;
+  action: AuditSingleEntityUpdateAction;
+  entity_type: "product" | "brand" | "category" | "homepage_config" | "admin_user" | "integration";
+  product_id?: string;
+  brand_id?: string;
+  category_id?: string;
+  homepage_config_id?: string;
+  user_id?: string;
+  integration_id?: string;
   changes: AuditFieldChange[];
 }>;
+
+export type AuditProductUpdateDiff = AuditSingleEntityUpdateDiff;
 
 export type AuditVariantStockAction =
   | "stock_adjustment"
@@ -147,7 +154,7 @@ export type AuditMfaEnrolledDiff = Readonly<{
 }>;
 
 export type AuditDiff =
-  | AuditProductUpdateDiff
+  | AuditSingleEntityUpdateDiff
   | AuditVariantStockDiff
   | AuditBulkOperationDiff
   | AuditBulkPublishOverrideDiff

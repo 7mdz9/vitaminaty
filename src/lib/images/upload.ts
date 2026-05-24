@@ -19,6 +19,8 @@ export type PreparedProductImageUpload = Readonly<{
   storagePath: string;
 }>;
 
+export type PreparedBrandImageUpload = PreparedProductImageUpload;
+
 export async function prepareProductImageUpload({
   file,
   brandSlug,
@@ -44,6 +46,31 @@ export async function prepareProductImageUpload({
     originalName: file.name,
     size: file.size,
     storagePath: `products/${safeBrandSlug}/${safeProductSlug}/${kind}-${hash}.${extension}`,
+  };
+}
+
+export async function prepareBrandImageUpload({
+  file,
+  brandSlug,
+  kind,
+}: Readonly<{
+  file: File;
+  brandSlug: string;
+  kind: "logo" | "hero";
+}>): Promise<PreparedBrandImageUpload> {
+  const contentType = validateProductImageFile(file);
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const hash = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
+  const extension = extensionForContentType(contentType);
+  const safeBrandSlug = generateSlug(brandSlug) || "brand";
+
+  return {
+    bytes,
+    contentType,
+    extension,
+    originalName: file.name,
+    size: file.size,
+    storagePath: `brands/${safeBrandSlug}/${kind}-${hash}.${extension}`,
   };
 }
 
