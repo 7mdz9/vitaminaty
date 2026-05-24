@@ -66,6 +66,8 @@ function inferEntityId(diff: AuditDiff): string | null {
       return diff.variant_id;
     case "order":
       return diff.order_id;
+    case "admin_user":
+      return diff.user_id;
     case "bulk":
     case "bulk_publish":
       return null;

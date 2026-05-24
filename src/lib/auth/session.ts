@@ -13,6 +13,7 @@ export type AdminSession = Readonly<{
   idleExpiresAt: number;
   absoluteExpiresAt: number;
   mfaVerifiedAt: number | null;
+  mfaRequired: "enroll" | "verify" | null;
 }>;
 
 export type CreateAdminSessionInput = Readonly<{
@@ -20,6 +21,7 @@ export type CreateAdminSessionInput = Readonly<{
   email: string;
   role: string;
   mfaVerifiedAt?: number | null;
+  mfaRequired?: "enroll" | "verify" | null;
   now?: number;
 }>;
 
@@ -42,7 +44,8 @@ export async function createAdminSessionCookieValue(
     lastSeenAt: now,
     idleExpiresAt: now + ADMIN_SESSION_IDLE_TIMEOUT_MS,
     absoluteExpiresAt: now + ADMIN_SESSION_ABSOLUTE_TIMEOUT_MS,
-    mfaVerifiedAt: input.mfaVerifiedAt ?? now,
+    mfaVerifiedAt: input.mfaVerifiedAt === undefined ? now : input.mfaVerifiedAt,
+    mfaRequired: input.mfaRequired ?? null,
   };
   const payload = encodeJson(session);
   const signature = await signPayload(payload);
@@ -127,7 +130,11 @@ function isAdminSession(value: unknown): value is AdminSession {
     typeof session.lastSeenAt === "number" &&
     typeof session.idleExpiresAt === "number" &&
     typeof session.absoluteExpiresAt === "number" &&
-    (typeof session.mfaVerifiedAt === "number" || session.mfaVerifiedAt === null)
+    (typeof session.mfaVerifiedAt === "number" || session.mfaVerifiedAt === null) &&
+    (session.mfaRequired === "enroll" ||
+      session.mfaRequired === "verify" ||
+      session.mfaRequired === null ||
+      session.mfaRequired === undefined)
   );
 }
 

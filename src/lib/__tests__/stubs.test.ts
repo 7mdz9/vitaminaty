@@ -15,11 +15,16 @@ describe("future cryptographic stubs", () => {
     }
   });
 
-  it("locks HMAC and hashing signatures until M5", () => {
-    expect(() => hmacSha256Hex({ secret: "secret", payload: "payload" })).toThrow(/M5/);
-    expect(() =>
-      verifyHmacSha256({ secret: "secret", payload: "payload", signature: "signature" }),
-    ).toThrow(/M5/);
-    expect(() => sha256Hex("payload")).toThrow(/M5/);
+  it("locks HMAC and hashing outputs used by MFA recovery-code storage", () => {
+    const signature = "b82fcb791acec57859b989b430a826488ce2e479fdf92326bd0a2e8375a42ba4";
+
+    expect(hmacSha256Hex({ secret: "secret", payload: "payload" })).toBe(signature);
+    expect(verifyHmacSha256({ secret: "secret", payload: "payload", signature })).toBe(true);
+    expect(verifyHmacSha256({ secret: "secret", payload: "payload", signature: "00" })).toBe(
+      false,
+    );
+    expect(sha256Hex("payload")).toBe(
+      "239f59ed55e737c77147cf55ad0c1b030b6d7ee748a7426952f9b852d5a935e5",
+    );
   });
 });

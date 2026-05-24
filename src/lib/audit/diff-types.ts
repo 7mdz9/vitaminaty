@@ -135,6 +135,16 @@ export type AuditRefundDiff = Readonly<{
   line_items: AuditRefundLineItem[];
 }>;
 
+export type AuditMfaEnrolledDiff = Readonly<{
+  version: 1;
+  action: "mfa_enrolled";
+  entity_type: "admin_user";
+  user_id: string;
+  factor_type: "totp";
+  factor_id: string;
+  recovery_codes_count: number;
+}>;
+
 export type AuditDiff =
   | AuditProductUpdateDiff
   | AuditVariantStockDiff
@@ -142,7 +152,8 @@ export type AuditDiff =
   | AuditBulkPublishOverrideDiff
   | AuditStaleDataOverrideDiff
   | AuditOrderStatusChangeDiff
-  | AuditRefundDiff;
+  | AuditRefundDiff
+  | AuditMfaEnrolledDiff;
 
 export function auditDiffToJson(diff: AuditDiff): Json {
   return diff as unknown as Json;

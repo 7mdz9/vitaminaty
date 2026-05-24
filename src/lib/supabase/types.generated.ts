@@ -90,6 +90,30 @@ export type Database = {
           },
         ]
       }
+      admin_mfa_recovery_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -1049,6 +1073,7 @@ export type Database = {
         | "order_refund"
         | "mfa_reset"
         | "integration_credentials_update"
+        | "mfa_enrolled"
       goal_tag:
         | "build_muscle"
         | "boost_energy"
@@ -1267,6 +1292,7 @@ export const Constants = {
         "order_refund",
         "mfa_reset",
         "integration_credentials_update",
+        "mfa_enrolled",
       ],
       goal_tag: [
         "build_muscle",

@@ -23,10 +23,11 @@ const expectedAuditActions = [
   "order_refund",
   "mfa_reset",
   "integration_credentials_update",
+  "mfa_enrolled",
 ];
 
 describe("0013 audit_action extension", () => {
-  it("extends audit_action to exactly 21 values in migration order", () => {
+  it("extends audit_action to the approved migration-order baseline", () => {
     const output = runLocalPsql("select enum_range(null::audit_action)::text");
     const values = output
       .replace(/^{|}$/g, "")

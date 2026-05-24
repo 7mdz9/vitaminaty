@@ -40,6 +40,36 @@ describe("admin auth middleware", () => {
     expect(response.headers.get("set-cookie")).toContain("vit_admin_session=");
   });
 
+  it("redirects pending first-time MFA admins to enrollment", async () => {
+    const { middleware } = await import("@/middleware");
+    const cookie = await createSessionCookie("admin", { mfaRequired: "enroll" });
+    const response = await middleware(createRequest("/admin/products", cookie));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost:3000/admin/mfa/enroll");
+  });
+
+  it("redirects pending returning MFA admins to verification", async () => {
+    const { middleware } = await import("@/middleware");
+    const cookie = await createSessionCookie("admin", { mfaRequired: "verify" });
+    const response = await middleware(createRequest("/admin/products", cookie));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost:3000/admin/mfa/verify");
+  });
+
+  it("allows pending MFA admins to access the matching MFA route", async () => {
+    const { middleware } = await import("@/middleware");
+    const enrollCookie = await createSessionCookie("admin", { mfaRequired: "enroll" });
+    const verifyCookie = await createSessionCookie("admin", { mfaRequired: "verify" });
+
+    const enrollResponse = await middleware(createRequest("/admin/mfa/enroll", enrollCookie));
+    const verifyResponse = await middleware(createRequest("/admin/mfa/verify", verifyCookie));
+
+    expect(enrollResponse.status).toBe(200);
+    expect(verifyResponse.status).toBe(200);
+  });
+
   it("blocks admin requests outside ADMIN_IP_ALLOWLIST", async () => {
     vi.stubEnv("ADMIN_IP_ALLOWLIST", "203.0.113.0/24");
     const { middleware } = await import("@/middleware");
@@ -63,14 +93,18 @@ describe("admin auth middleware", () => {
   });
 });
 
-async function createSessionCookie(role: string): Promise<string> {
+async function createSessionCookie(
+  role: string,
+  options: { mfaRequired?: "enroll" | "verify" | null } = {},
+): Promise<string> {
   const { createAdminSessionCookieValue } = await import("@/lib/auth/session");
 
   return createAdminSessionCookieValue({
     userId: "auth-test-user",
     email: `${role}@example.test`,
     role,
-    mfaVerifiedAt: Date.now(),
+    mfaVerifiedAt: options.mfaRequired ? null : Date.now(),
+    mfaRequired: options.mfaRequired ?? null,
   });
 }
 

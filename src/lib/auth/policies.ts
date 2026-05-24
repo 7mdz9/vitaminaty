@@ -11,6 +11,7 @@ export type RequiredAdmin = Readonly<{
   userId: string;
   email: string;
   role: "admin";
+  mfaRequired?: "enroll" | "verify" | null;
 }>;
 
 export async function requireAdmin(): Promise<RequiredAdmin> {
@@ -38,10 +39,19 @@ export async function requireAdminPendingMfa(): Promise<RequiredAdmin> {
 
   assertAdminRole(session);
 
+  if (hasVerifiedMfa(session)) {
+    throw new AuthorizationError({
+      code: "admin_mfa_already_verified",
+      message: "Admin MFA is already verified for this session.",
+      statusCode: 403,
+    });
+  }
+
   return {
     userId: session.userId,
     email: session.email,
     role: "admin",
+    mfaRequired: session.mfaRequired ?? null,
   };
 }
 

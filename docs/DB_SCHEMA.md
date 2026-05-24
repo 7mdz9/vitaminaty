@@ -128,6 +128,13 @@ CREATE TYPE audit_action AS ENUM (
   'role_change'
 );
 
+-- Added in M2 migrations 0013-0014 for admin portal audit coverage.
+-- 0013 adds: bulk_operation, bulk_publish_override, stale_data_override,
+-- stock_adjustment, stock_recount, variant_create, variant_delete,
+-- low_stock_threshold_change, order_status_change, order_refund, mfa_reset,
+-- integration_credentials_update.
+-- 0014 adds: mfa_enrolled.
+
 -- Added in M1 addendum migration 0012 (inventory tracking). DDL lives in 0012,
 -- documented here in §3 for catalog completeness. See INVENTORY_SPEC.md.
 CREATE TYPE stock_status AS ENUM (
@@ -872,6 +879,26 @@ Allowed `action` value: `order_refund`.
 }
 ```
 
+#### Shape 8: MFA enrollment
+
+Used when an admin completes first-time TOTP enrollment and receives recovery
+codes. Recovery codes are never written to the audit diff; only the count is
+recorded. Recovery-code hashes live in `admin_mfa_recovery_codes`.
+
+Allowed `action` value: `mfa_enrolled`.
+
+```json
+{
+  "version": 1,
+  "action": "mfa_enrolled",
+  "entity_type": "admin_user",
+  "user_id": "uuid",
+  "factor_type": "totp",
+  "factor_id": "supabase-factor-id",
+  "recovery_codes_count": 10
+}
+```
+
 ### 8.2 `feature_flags`
 
 Per `DECISION_CAPTURE.md` Decision 4.
@@ -951,6 +978,29 @@ CREATE INDEX inventory_movements_order_idx
 
 CREATE INDEX inventory_movements_reason_idx
   ON inventory_movements(reason, changed_at DESC);
+```
+
+### 8.5 `admin_mfa_recovery_codes` (added in M2 migration 0014)
+
+Service-role-only storage for hashed admin MFA recovery codes. Plaintext codes
+are shown once during enrollment and are never stored.
+
+```sql
+CREATE TABLE admin_mfa_recovery_codes (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  code_hash text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  used_at timestamptz,
+  UNIQUE (user_id, code_hash)
+);
+
+CREATE INDEX admin_mfa_recovery_codes_user_idx
+  ON admin_mfa_recovery_codes(user_id, created_at DESC);
+
+ALTER TABLE admin_mfa_recovery_codes ENABLE ROW LEVEL SECURITY;
+
+-- No SELECT/INSERT/UPDATE/DELETE policy; service-role-only access.
 ```
 
 ---

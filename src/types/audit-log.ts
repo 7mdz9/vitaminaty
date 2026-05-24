@@ -19,7 +19,8 @@ export type AuditAction =
   | "order_status_change"
   | "order_refund"
   | "mfa_reset"
-  | "integration_credentials_update";
+  | "integration_credentials_update"
+  | "mfa_enrolled";
 
 export interface AuditLogRecord {
   id: string;

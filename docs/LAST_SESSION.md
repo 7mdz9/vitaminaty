@@ -1,77 +1,69 @@
 # LAST_SESSION.md
 
-## M2 Step 1b - audit-service landed
+## M2 Step 2 - MFA enrollment landed
 
 Date: 2026-05-24
 
-Objective completed: the admin audit-service baseline is implemented locally, using the approved `DB_SCHEMA.md §8.1.1` seven-shape `audit_log.diff` contract.
+Objective completed: admin MFA enrollment and returning-session verification are implemented locally. Pending admin sessions now redirect to `/admin/mfa/enroll` for first-time setup or `/admin/mfa/verify` for returning TOTP verification.
 
 ### Files created
 
-- `src/lib/audit/diff-types.ts`
-- `src/server/services/audit-service.ts`
-- `src/features/audit-log/record.ts`
-- `tests/integration/services/audit-service.test.ts`
+- `supabase/migrations/0014_admin_mfa_recovery.sql`
+- `src/server/repositories/admin-mfa-recovery-repository.ts`
+- `src/app/admin/mfa/enroll/page.tsx`
+- `src/app/admin/mfa/verify/page.tsx`
+- `tests/integration/auth/mfa-enrollment.test.ts`
+- `tests/integration/migrations/0014_admin_mfa_recovery.test.ts`
 
 ### Files modified
 
 - `docs/DB_SCHEMA.md`
 - `docs/PROJECT_STATE.md`
 - `docs/LAST_SESSION.md`
+- `src/lib/auth/mfa.ts`
+- `src/lib/auth/policies.ts`
+- `src/lib/auth/session.ts`
+- `src/features/auth/admin-session.ts`
+- `src/middleware.ts`
+- `src/lib/crypto.ts`
+- `src/lib/audit/diff-types.ts`
+- `src/server/services/audit-service.ts`
+- `src/types/audit-log.ts`
+- `src/lib/supabase/types.generated.ts`
+- `tests/integration/auth/admin-auth.test.ts`
+- `tests/integration/migrations/0013_audit_action_extension.test.ts`
+- `tests/integration/services/audit-service.test.ts`
 
 ### Implementation notes
 
-- `DB_SCHEMA.md §8.1.1` documents seven versioned JSONB diff shape families:
-  1. single-product update
-  2. variant stock change
-  3. bulk operation
-  4. bulk publish with overrides
-  5. stale-data save override
-  6. order status change
-  7. refund
-- `src/lib/audit/diff-types.ts` mirrors the approved `§8.1.1` fields and action discriminators.
-- `src/server/services/audit-service.ts` reads request IP and user agent through `headers()`, composes the audit row, and appends through `audit-log-repository.ts`.
-- `src/features/audit-log/record.ts` exposes the feature-module-facing record helper.
-- Write-time PII behavior follows the approved invariant: audit rows store raw values for forensic/compliance use; redaction happens in the Step 12 renderer. Secrets, credentials, tokens, and password material must not be written to `audit_log.diff`.
+- `0014_admin_mfa_recovery.sql` adds `audit_action='mfa_enrolled'` and creates `admin_mfa_recovery_codes` with RLS enabled and zero policies, making access service-role-only.
+- Supabase TOTP enrollment uses `supabase.auth.mfa.enroll`, challenge, and verify. Supabase does not issue recovery codes, so the app generates 10 random recovery codes, stores HMAC-SHA-256 hashes, and displays plaintext once.
+- `audit_log.diff` for `mfa_enrolled` records factor metadata and `recovery_codes_count`; plaintext recovery codes are never written to audit rows.
+- `createAdminSessionCookieValue()` now preserves explicit `mfaVerifiedAt=null`; this fixed the Step 1a pending-MFA cookie bug where null had been accidentally coalesced to "verified now."
 
 ### Verification
 
 ```text
-pnpm exec supabase db reset: PASS through 0013
+pnpm exec supabase db reset: PASS through 0014
+pnpm db:types: PASS
 pnpm typecheck: PASS
-pnpm lint: PASS
-pnpm build: PASS
-pnpm test -- audit-service --reporter verbose: PASS (2 tests)
-pnpm test: PASS (17 files, 85 tests)
-pnpm scan:bundle-secrets: PASS (OK no service-role value in bundle)
-```
-
-SQL evidence:
-
-```text
-SELECT count(*) FROM pg_policies
-WHERE tablename='audit_log'
-AND cmd IN ('INSERT','UPDATE','DELETE');
--- 0
-```
-
-PII logging boundary evidence:
-
-```text
-rg -n "logger\.(info|error|warn|debug)\([^,]*(email|phone_e164|full_name)" src/server/services/audit-service.ts src/features/audit-log
--- no matches
+pnpm lint: PASS (one warning for Supabase QR-code data URI <img>)
+pnpm build: PASS (same QR-code lint warning)
+pnpm test -- admin-auth mfa-enrollment 0014_admin_mfa_recovery --reporter verbose: PASS (10 tests)
+pnpm test: PASS (19 files, 90 tests)
+pnpm scan:bundle-secrets: PASS
 ```
 
 ### HANDOFF
 
-files_created: [`src/lib/audit/diff-types.ts`, `src/server/services/audit-service.ts`, `src/features/audit-log/record.ts`, `tests/integration/services/audit-service.test.ts`]
+files_created: [`supabase/migrations/0014_admin_mfa_recovery.sql`, `src/server/repositories/admin-mfa-recovery-repository.ts`, `src/app/admin/mfa/enroll/page.tsx`, `src/app/admin/mfa/verify/page.tsx`, `tests/integration/auth/mfa-enrollment.test.ts`, `tests/integration/migrations/0014_admin_mfa_recovery.test.ts`]
 
-files_modified: [`docs/DB_SCHEMA.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`]
+files_modified: [`docs/DB_SCHEMA.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/lib/auth/mfa.ts`, `src/lib/auth/policies.ts`, `src/lib/auth/session.ts`, `src/features/auth/admin-session.ts`, `src/middleware.ts`, `src/lib/crypto.ts`, `src/lib/audit/diff-types.ts`, `src/server/services/audit-service.ts`, `src/types/audit-log.ts`, `src/lib/supabase/types.generated.ts`, `tests/integration/auth/admin-auth.test.ts`, `tests/integration/migrations/0013_audit_action_extension.test.ts`, `tests/integration/services/audit-service.test.ts`]
 
-patterns_established: [`audit_log.diff has seven approved JSONB shape families`, `audit-service is the admin mutation audit write orchestrator`, `PII redaction is render-time only; audit rows store raw values`, `audit_log remains append-only through RLS with service-role-only writes`]
+patterns_established: [`Supabase owns TOTP factors; Vitaminaty owns hashed recovery-code storage`, `mfa_enrolled audit diffs never contain plaintext recovery codes`, `pending-MFA sessions route by mfaRequired=enroll|verify`]
 
-next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md §2`, `docs/THREAT_MODEL.md §5.4`, `docs/DB_SCHEMA.md §8.1.1`]
+next_step_must_read: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `docs/THREAT_MODEL.md`, `docs/DB_SCHEMA.md §8.1.1`]
 
-known_issues_introduced: [none]
+known_issues_introduced: [`Manual QR scan with a real authenticator app still needs the user-facing checkpoint; automated coverage validates middleware redirects, recovery-code hashing, and mfa_enrolled audit rows.`]
 
-invariants_observed: [SECURITY INVARIANTS - audit writes use service-role repository only; no INSERT/UPDATE/DELETE RLS policies on audit_log; no PII logging at audit-service boundary; bundle scan clean.]
+invariants_observed: [SECURITY INVARIANTS - TOTP required before admin access; recovery-code hashes only; service-role-only recovery-code table; no plaintext recovery codes in audit diffs.]

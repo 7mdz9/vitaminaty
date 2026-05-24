@@ -73,7 +73,7 @@ describe("audit-service", () => {
     });
   });
 
-  it("round-trips all seven approved audit diff shapes through JSONB", async () => {
+  it("round-trips all approved audit diff shapes through JSONB", async () => {
     const { record } = await import("@/server/services/audit-service");
 
     for (const diff of buildDiffs()) {
@@ -194,6 +194,15 @@ function buildDiffs(): AuditDiff[] {
           amount_aed: 50,
         },
       ],
+    },
+    {
+      version: 1,
+      action: "mfa_enrolled",
+      entity_type: "admin_user",
+      user_id: "00000000-0000-4000-8000-000000000010",
+      factor_type: "totp",
+      factor_id: "totp-factor",
+      recovery_codes_count: 10,
     },
   ];
 }

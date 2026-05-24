@@ -41,8 +41,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (!hasVerifiedMfa(session) && request.nextUrl.pathname !== "/admin/mfa/enroll") {
-    return NextResponse.redirect(new URL("/admin/mfa/enroll", request.url));
+  const mfaPath = expectedMfaPath(session.mfaRequired);
+
+  if (!hasVerifiedMfa(session) && request.nextUrl.pathname !== mfaPath) {
+    return NextResponse.redirect(new URL(mfaPath, request.url));
   }
 
   const refreshedSession = refreshAdminSession(session);
@@ -53,6 +55,10 @@ export async function middleware(request: NextRequest) {
   );
 
   return response;
+}
+
+function expectedMfaPath(required: "enroll" | "verify" | null | undefined): string {
+  return required === "verify" ? "/admin/mfa/verify" : "/admin/mfa/enroll";
 }
 
 export const config = {
