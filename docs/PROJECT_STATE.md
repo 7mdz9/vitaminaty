@@ -25,7 +25,7 @@ M1 schema, RLS, reference seed data, repository-facing DB client surface, non-PI
 
 ## 2. Current milestone
 
-**M2 - Admin portal: Step 2 MFA enrollment COMPLETE locally (2026-05-24). Next: Verification refresh #1.**
+**M2 - Admin portal: Verification refresh #1 COMPLETE locally (2026-05-24). Next: Step 3 - design system foundation (paused until resumed).**
 
 M0 is complete. M1 Step 1 housekeeping/recon is complete. M1 Step 2 schema migrations 0001-0008 are authored and applied locally. M1 Step 3 RLS policies in `0009_rls_policies.sql` are authored and applied locally. M1 Step 4 reference seed data in `0010_seed.sql` is authored and applied locally. M1 Step 5 repository-facing Supabase DB wrappers, generated schema types, and bundle secret scan are implemented. M1 Step 6 non-PII repositories are implemented. M1 Step 7 PII and operational repositories are implemented, append-only event repositories are split into dedicated files, and the canonical `rls-cross-checks.test.ts` suite passes. M1 Step 8 import script is lint-clean and recovered after meta-model-blessed brand seed expansion: 787 products import with 44 distinct matched brands. M1 Step 9 admin seed script is implemented and verified locally. M1 Final Audit recovery added `0011_wholesale_revoke_writes.sql` and a column-privilege regression assertion. M1 Final Audit rerun passed; M1 is shipped. The HIGH_RIGOR M1 addendum migration `0012_inventory.sql` is implemented and verified; M2 now reads inventory tracking as a shipped precondition.
 
