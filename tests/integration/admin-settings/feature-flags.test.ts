@@ -120,7 +120,9 @@ describe("admin feature flag settings actions", () => {
   it("requires MFA and the typed phrase after HIGH_RIGOR sign-off", async () => {
     const before = flagFactory({ key: "paymob_live_mode", enabled: false });
     const after = flagFactory({ key: "paymob_live_mode", enabled: true });
-    mocks.readFile.mockResolvedValueOnce("M5 Paymob live-mode cross-check passed sign-off complete.");
+    mocks.readFile.mockResolvedValueOnce(
+      "M5 Paymob live-mode cross-check passed sign-off complete.",
+    );
     mocks.getFeatureFlag.mockResolvedValueOnce(before);
     mocks.updateFeatureFlagForAdminIfFresh.mockResolvedValueOnce(after);
 

@@ -53,7 +53,9 @@ async function main(): Promise<void> {
   });
 }
 
-function readSeedAdminEnv(input: Record<string, string | undefined> = globalThis.process.env): SeedAdminEnv {
+function readSeedAdminEnv(
+  input: Record<string, string | undefined> = globalThis.process.env,
+): SeedAdminEnv {
   const parsed = seedAdminEnvSchema.safeParse({
     email: input[seedAdminEmailKey],
     password: input[seedAdminPasswordKey],

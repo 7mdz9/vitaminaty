@@ -97,7 +97,9 @@ export function BrandEditorForm({ brand }: Readonly<{ brand: BrandRecord }>) {
             <span className="text-admin-text-muted">Display name</span>
             <Input
               value={form.display_name}
-              onChange={(event) => setForm((value) => ({ ...value, display_name: event.target.value }))}
+              onChange={(event) =>
+                setForm((value) => ({ ...value, display_name: event.target.value }))
+              }
             />
           </label>
           <label className="space-y-1 text-admin-sm">

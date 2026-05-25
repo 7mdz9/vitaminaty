@@ -21,7 +21,10 @@ export function SeoSection({ product, onSave, saving }: ProductEditorSectionProp
         </label>
         <label className="space-y-1 text-admin-sm">
           <span className="text-admin-text-muted">SEO description</span>
-          <Textarea value={description} onChange={(event) => setDescription(event.currentTarget.value)} />
+          <Textarea
+            value={description}
+            onChange={(event) => setDescription(event.currentTarget.value)}
+          />
         </label>
       </div>
       <Button

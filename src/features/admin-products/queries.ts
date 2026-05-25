@@ -1,10 +1,7 @@
 import "server-only";
 
 import { requireAdmin } from "@/lib/auth/policies";
-import {
-  AdminProductListInputSchema,
-  type AdminProductListInput,
-} from "@/lib/validation/product";
+import { AdminProductListInputSchema, type AdminProductListInput } from "@/lib/validation/product";
 import {
   findProductEditorDataForAdmin,
   findManyForAdmin,

@@ -129,7 +129,10 @@ export function FilterBar({
         <ProductSelect
           label="Brand"
           onChange={(value) => setParam("brand", value)}
-          options={[["all", "All brands"], ...brands.map((brand) => [brand.id, brand.label] as const)]}
+          options={[
+            ["all", "All brands"],
+            ...brands.map((brand) => [brand.id, brand.label] as const),
+          ]}
           value={searchParams.get("brand") ?? "all"}
         />
         <ProductSelect

@@ -1,5 +1,12 @@
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Database } from "@/lib/supabase/types.generated";
 
 type InventoryMovement = Database["public"]["Tables"]["inventory_movements"]["Row"];
@@ -15,9 +22,15 @@ export function InventoryHistoryTable({
         <TableRow>
           <TableHead scope="col">Timestamp</TableHead>
           <TableHead scope="col">Variant</TableHead>
-          <TableHead scope="col" className="text-right">Previous</TableHead>
-          <TableHead scope="col" className="text-right">New</TableHead>
-          <TableHead scope="col" className="text-right">Change</TableHead>
+          <TableHead scope="col" className="text-right">
+            Previous
+          </TableHead>
+          <TableHead scope="col" className="text-right">
+            New
+          </TableHead>
+          <TableHead scope="col" className="text-right">
+            Change
+          </TableHead>
           <TableHead scope="col">Reason</TableHead>
           <TableHead scope="col">Admin</TableHead>
           <TableHead scope="col">Order</TableHead>
@@ -36,14 +49,22 @@ export function InventoryHistoryTable({
                 {new Date(movement.changed_at).toLocaleString()}
               </TableCell>
               <TableCell className="font-mono text-admin-caption">{movement.variant_id}</TableCell>
-              <TableCell className="text-right tabular-nums">{movement.previous_quantity ?? "-"}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {movement.previous_quantity ?? "-"}
+              </TableCell>
               <TableCell className="text-right tabular-nums">{movement.new_quantity}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatChange(movement.change_amount)}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatChange(movement.change_amount)}
+              </TableCell>
               <TableCell>
                 <Badge variant="outline">{movement.reason.replace(/_/g, " ")}</Badge>
               </TableCell>
-              <TableCell className="font-mono text-admin-caption">{movement.changed_by ?? "-"}</TableCell>
-              <TableCell className="font-mono text-admin-caption">{movement.order_id ?? "-"}</TableCell>
+              <TableCell className="font-mono text-admin-caption">
+                {movement.changed_by ?? "-"}
+              </TableCell>
+              <TableCell className="font-mono text-admin-caption">
+                {movement.order_id ?? "-"}
+              </TableCell>
               <TableCell>{movement.change_reason_note ?? "-"}</TableCell>
             </TableRow>
           ))

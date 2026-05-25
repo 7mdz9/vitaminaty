@@ -175,7 +175,10 @@ async function bulkInsertImported(
     return;
   }
 
-  const { error } = await supabase.from("products").upsert(rows, { onConflict: "slug" }).select("id");
+  const { error } = await supabase
+    .from("products")
+    .upsert(rows, { onConflict: "slug" })
+    .select("id");
 
   if (error) {
     throw new Error(`Imported products bulk upsert failed: ${error.message}`);
@@ -229,10 +232,14 @@ function requireEnvValue(values: Map<string, string>, key: string): string {
   return value;
 }
 
-async function loadBrands(supabase: ReturnType<typeof createClient<Database>>): Promise<BrandRow[]> {
+async function loadBrands(
+  supabase: ReturnType<typeof createClient<Database>>,
+): Promise<BrandRow[]> {
   const { data, error } = await supabase
     .from("brands")
-    .select("id, display_name, slug, aliases, brand_tier, country_of_origin, hero_image_url, is_featured_homepage_brand, is_visible_on_directory, logo_url, long_description, short_description, created_at, updated_at")
+    .select(
+      "id, display_name, slug, aliases, brand_tier, country_of_origin, hero_image_url, is_featured_homepage_brand, is_visible_on_directory, logo_url, long_description, short_description, created_at, updated_at",
+    )
     .order("display_name", { ascending: true });
 
   if (error) {
@@ -247,7 +254,9 @@ async function loadCategories(
 ): Promise<CategoryRow[]> {
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, slug, parent_nav, parent_id, subcategories, supported_goals, listing_copy, seo_title, seo_description, is_visible, sort_order, created_at, updated_at")
+    .select(
+      "id, name, slug, parent_nav, parent_id, subcategories, supported_goals, listing_copy, seo_title, seo_description, is_visible, sort_order, created_at, updated_at",
+    )
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -347,7 +356,10 @@ function splitMarkdownRow(line: string): string[] {
 }
 
 function normalizeCell(cell: string): string {
-  return cell.replace(/<br\s*\/?>/gi, "\n").replace(/&amp;/gi, "&").trim();
+  return cell
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/&amp;/gi, "&")
+    .trim();
 }
 
 function parseSourceRows(value: string): number[] {
@@ -476,7 +488,9 @@ function resolveCategory(
   const mappedMdCategory = SOURCE_CATEGORY_ALIASES.get(row.sourceCategory);
 
   if (!mappedMdCategory) {
-    throw new Error(`No seeded MD category alias for ${row.sourceCategory} at ${SOURCE_FILE}:${row.sourceLine}`);
+    throw new Error(
+      `No seeded MD category alias for ${row.sourceCategory} at ${SOURCE_FILE}:${row.sourceLine}`,
+    );
   }
 
   const mapping = context.mappingsByMdCategory.get(mappedMdCategory);
@@ -561,7 +575,9 @@ function calculateCompletionScore(
   fieldsStatus: Record<(typeof FIELD_STATUS_KEYS)[number], FieldStatus>,
   reviewFlags: Record<(typeof REVIEW_FLAG_KEYS)[number], boolean>,
 ): number {
-  const completeFields = Object.values(fieldsStatus).filter((status) => status === "complete").length;
+  const completeFields = Object.values(fieldsStatus).filter(
+    (status) => status === "complete",
+  ).length;
   const reviewPenalty = Object.values(reviewFlags).filter(Boolean).length;
 
   return Math.max(0, Math.min(100, completeFields * 6 - reviewPenalty * 3));
@@ -690,7 +706,8 @@ async function verifyImport(
     products: rows.length,
     distinctBrands: new Set(rows.map((row) => row.brand_id).filter(Boolean)).size,
     casePack: rows.filter((row) => Boolean(readFlag(row.admin_review_flags, "case_pack"))).length,
-    missingPrice: rows.filter((row) => Boolean(readFlag(row.admin_review_flags, "missing_price"))).length,
+    missingPrice: rows.filter((row) => Boolean(readFlag(row.admin_review_flags, "missing_price")))
+      .length,
     needsCategoryReview: rows.filter((row) =>
       Boolean(readFlag(row.admin_review_flags, "needs_category_review")),
     ).length,
@@ -700,10 +717,14 @@ async function verifyImport(
       (row) => row.is_public_visible && Boolean(readFlag(row.admin_review_flags, "case_pack")),
     ).length,
     rowsMissingFieldStatusKeys: rows.filter(
-      (row) => Object.keys(row.fields_status as Record<string, unknown>).length !== FIELD_STATUS_KEYS.length,
+      (row) =>
+        Object.keys(row.fields_status as Record<string, unknown>).length !==
+        FIELD_STATUS_KEYS.length,
     ).length,
     rowsMissingReviewFlagKeys: rows.filter(
-      (row) => Object.keys(row.admin_review_flags as Record<string, unknown>).length !== REVIEW_FLAG_KEYS.length,
+      (row) =>
+        Object.keys(row.admin_review_flags as Record<string, unknown>).length !==
+        REVIEW_FLAG_KEYS.length,
     ).length,
   };
 }

@@ -112,14 +112,18 @@ export function BrandListTable({ brands }: Readonly<{ brands: AdminBrandListItem
             <TableCell className="font-medium text-admin-text">{brand.display_name}</TableCell>
             <TableCell className="text-admin-text-muted">{brand.slug}</TableCell>
             <TableCell className="text-right tabular-nums">{brand.aliases_count}</TableCell>
-            <TableCell className="text-right tabular-nums">{brand.products_visible_count}</TableCell>
+            <TableCell className="text-right tabular-nums">
+              {brand.products_visible_count}
+            </TableCell>
             <TableCell className="text-right tabular-nums">{brand.products_total_count}</TableCell>
             <TableCell>
               <Badge variant="outline">{brand.brand_tier ?? "unset"}</Badge>
             </TableCell>
             <TableCell>
               <Button
-                aria-label={brand.is_featured_homepage_brand ? "Remove featured brand" : "Feature brand"}
+                aria-label={
+                  brand.is_featured_homepage_brand ? "Remove featured brand" : "Feature brand"
+                }
                 disabled={pendingId === brand.id}
                 onClick={() => mutateFeatured(brand, !brand.is_featured_homepage_brand)}
                 size="icon"
@@ -142,7 +146,11 @@ export function BrandListTable({ brands }: Readonly<{ brands: AdminBrandListItem
               />
             </TableCell>
             <TableCell className="text-right">
-              <Button render={<Link href={`/admin/brands/${brand.id}`} />} size="icon" variant="ghost">
+              <Button
+                render={<Link href={`/admin/brands/${brand.id}`} />}
+                size="icon"
+                variant="ghost"
+              >
                 <Edit className="size-4" />
               </Button>
             </TableCell>

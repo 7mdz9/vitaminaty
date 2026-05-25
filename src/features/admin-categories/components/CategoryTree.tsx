@@ -43,7 +43,9 @@ export function CategoryTree({ categories }: Readonly<{ categories: AdminCategor
 
       return current.map((candidate) => {
         const siblingIndex = nextSiblings.findIndex((sibling) => sibling.id === candidate.id);
-        return siblingIndex >= 0 ? { ...candidate, sort_order: (siblingIndex + 1) * 10 } : candidate;
+        return siblingIndex >= 0
+          ? { ...candidate, sort_order: (siblingIndex + 1) * 10 }
+          : candidate;
       });
     });
   }
@@ -172,7 +174,9 @@ export function CategoryTree({ categories }: Readonly<{ categories: AdminCategor
         })),
       });
 
-      setStatus(result.ok ? `Saved ${result.changedCategoryIds.length} categories.` : result.message);
+      setStatus(
+        result.ok ? `Saved ${result.changedCategoryIds.length} categories.` : result.message,
+      );
     });
   }
 
@@ -256,7 +260,9 @@ function CategoryNode({
         tabIndex={0}
       >
         <div className="flex min-w-0 items-center gap-2">
-          <GripVertical className={dragging ? "size-4 text-admin-accent" : "size-4 text-admin-text-muted"} />
+          <GripVertical
+            className={dragging ? "size-4 text-admin-accent" : "size-4 text-admin-text-muted"}
+          />
           <span className="truncate font-medium text-admin-text">{category.name}</span>
           <Badge variant="outline">{category.parent_nav}</Badge>
           <span className="text-admin-caption text-admin-text-muted tabular-nums">
@@ -265,19 +271,43 @@ function CategoryNode({
           {!category.is_visible ? <Badge variant="outline">hidden</Badge> : null}
         </div>
         <div className="flex items-center gap-1">
-          <Button aria-label="Move up" onClick={() => onMove(category.id, -1)} size="icon" variant="ghost">
+          <Button
+            aria-label="Move up"
+            onClick={() => onMove(category.id, -1)}
+            size="icon"
+            variant="ghost"
+          >
             <ArrowUp className="size-4" />
           </Button>
-          <Button aria-label="Move down" onClick={() => onMove(category.id, 1)} size="icon" variant="ghost">
+          <Button
+            aria-label="Move down"
+            onClick={() => onMove(category.id, 1)}
+            size="icon"
+            variant="ghost"
+          >
             <ArrowDown className="size-4" />
           </Button>
-          <Button aria-label="Outdent" onClick={() => onOutdent(category.id)} size="icon" variant="ghost">
+          <Button
+            aria-label="Outdent"
+            onClick={() => onOutdent(category.id)}
+            size="icon"
+            variant="ghost"
+          >
             <ArrowLeft className="size-4" />
           </Button>
-          <Button aria-label="Indent" onClick={() => onIndent(category.id)} size="icon" variant="ghost">
+          <Button
+            aria-label="Indent"
+            onClick={() => onIndent(category.id)}
+            size="icon"
+            variant="ghost"
+          >
             <ArrowRight className="size-4" />
           </Button>
-          <Button render={<Link href={`/admin/categories/${category.id}`} />} size="icon" variant="ghost">
+          <Button
+            render={<Link href={`/admin/categories/${category.id}`} />}
+            size="icon"
+            variant="ghost"
+          >
             <Edit className="size-4" />
           </Button>
         </div>

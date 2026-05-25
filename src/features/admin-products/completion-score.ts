@@ -89,7 +89,10 @@ export function countActiveReviewFlags(flags: ProductAdminReviewFlags): number {
   return Object.values(flags).filter(Boolean).length;
 }
 
-function isTier1Complete(product: CompletionScoreInput, field: (typeof TIER_1_SCORED_FIELDS)[number]) {
+function isTier1Complete(
+  product: CompletionScoreInput,
+  field: (typeof TIER_1_SCORED_FIELDS)[number],
+) {
   switch (field) {
     case "name_raw":
     case "name":
@@ -102,7 +105,10 @@ function isTier1Complete(product: CompletionScoreInput, field: (typeof TIER_1_SC
   }
 }
 
-function isTier2Complete(product: CompletionScoreInput, field: (typeof TIER_2_SCORED_FIELDS)[number]) {
+function isTier2Complete(
+  product: CompletionScoreInput,
+  field: (typeof TIER_2_SCORED_FIELDS)[number],
+) {
   switch (field) {
     case "brand":
       return Boolean(product.brand_id) && isCompleteStatus(product.fields_status.brand);
@@ -111,7 +117,9 @@ function isTier2Complete(product: CompletionScoreInput, field: (typeof TIER_2_SC
     case "form":
       return Boolean(product.form) && isCompleteStatus(product.fields_status.form);
     case "retail_price":
-      return product.retail_price_aed !== null && isCompleteStatus(product.fields_status.retail_price);
+      return (
+        product.retail_price_aed !== null && isCompleteStatus(product.fields_status.retail_price)
+      );
     case "goal_tags":
       return (product.goal_tag_count ?? 0) > 0;
     case "image":
@@ -119,7 +127,10 @@ function isTier2Complete(product: CompletionScoreInput, field: (typeof TIER_2_SC
   }
 }
 
-function isTier3Complete(product: CompletionScoreInput, field: (typeof TIER_3_SCORED_FIELDS)[number]) {
+function isTier3Complete(
+  product: CompletionScoreInput,
+  field: (typeof TIER_3_SCORED_FIELDS)[number],
+) {
   const content = product.content;
   const labelData = product.label_data;
 
@@ -129,13 +140,20 @@ function isTier3Complete(product: CompletionScoreInput, field: (typeof TIER_3_SC
     case "benefits":
       return hasArray(content.benefits) && isCompleteStatus(product.fields_status.benefits);
     case "directions":
-      return hasText(content.directions_of_use) && isCompleteStatus(product.fields_status.directions);
+      return (
+        hasText(content.directions_of_use) && isCompleteStatus(product.fields_status.directions)
+      );
     case "warnings":
       return hasText(content.warnings) && isCompleteStatus(product.fields_status.warnings);
     case "storage":
-      return hasText(content.storage_instructions) && isCompleteStatus(product.fields_status.storage);
+      return (
+        hasText(content.storage_instructions) && isCompleteStatus(product.fields_status.storage)
+      );
     case "nutrition_panel":
-      return hasObject(labelData.nutrition_panel) && product.fields_status.nutrition_panel === "verified";
+      return (
+        hasObject(labelData.nutrition_panel) &&
+        isCompleteStatus(product.fields_status.nutrition_panel)
+      );
     case "ingredients":
       return hasText(labelData.ingredients) && isCompleteStatus(product.fields_status.ingredients);
     case "allergens":
@@ -143,11 +161,16 @@ function isTier3Complete(product: CompletionScoreInput, field: (typeof TIER_3_SC
     case "seo_title":
       return hasText(content.seo_title) && isCompleteStatus(product.fields_status.seo_title);
     case "seo_description":
-      return hasText(content.seo_description) && isCompleteStatus(product.fields_status.seo_description);
+      return (
+        hasText(content.seo_description) && isCompleteStatus(product.fields_status.seo_description)
+      );
     case "additional_images":
       return (product.additional_image_count ?? 0) > 0;
     case "often_bought_with":
-      return hasArray(content.often_bought_with_ids) && isCompleteStatus(product.fields_status.often_bought_with);
+      return (
+        hasArray(content.often_bought_with_ids) &&
+        isCompleteStatus(product.fields_status.often_bought_with)
+      );
     case "manufacturer_country":
       return hasText(content.manufacturer_country);
   }
@@ -165,6 +188,8 @@ function hasArray(value: unknown): value is unknown[] {
   return Array.isArray(value) && value.length > 0;
 }
 
-function hasObject(value: ProductContent[keyof ProductContent] | ProductLabelData[keyof ProductLabelData]): boolean {
+function hasObject(
+  value: ProductContent[keyof ProductContent] | ProductLabelData[keyof ProductLabelData],
+): boolean {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

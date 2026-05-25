@@ -152,9 +152,7 @@ export async function setVariantStock(
     changeReasonNote: input.changeReasonNote ?? null,
     actor: input.actor,
     force: input.force,
-    changes: [
-      { field: "stock_quantity", before: before.stock_quantity, after: input.newQuantity },
-    ],
+    changes: [{ field: "stock_quantity", before: before.stock_quantity, after: input.newQuantity }],
   });
 }
 
@@ -189,9 +187,7 @@ export async function adjustVariantStock(
     changeReasonNote: input.changeReasonNote ?? null,
     actor: input.actor,
     force: input.force,
-    changes: [
-      { field: "stock_quantity", before: before.stock_quantity, after: newQuantity },
-    ],
+    changes: [{ field: "stock_quantity", before: before.stock_quantity, after: newQuantity }],
   });
 }
 

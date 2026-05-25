@@ -15,7 +15,8 @@ export default async function AdminBrandsPage() {
         <div>
           <h2 className="font-admin-display text-xl text-admin-text">Brands</h2>
           <p className="text-admin-sm text-admin-text-muted">
-            {brands.length} canonical brands · {brands.filter((brand) => brand.products_total_count > 0).length} with products
+            {brands.length} canonical brands ·{" "}
+            {brands.filter((brand) => brand.products_total_count > 0).length} with products
           </p>
         </div>
         <Button render={<Link href="/admin/brands/normalize" />} size="sm">

@@ -227,6 +227,4 @@ export type AdminProductBulkAssignCategoryActionInput = z.infer<
 export type AdminProductBulkPublishActionInput = z.infer<
   typeof AdminProductBulkPublishActionSchema
 >;
-export type AdminProductImageUploadMetadata = z.infer<
-  typeof AdminProductImageUploadMetadataSchema
->;
+export type AdminProductImageUploadMetadata = z.infer<typeof AdminProductImageUploadMetadataSchema>;

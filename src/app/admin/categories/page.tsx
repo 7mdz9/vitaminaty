@@ -15,7 +15,8 @@ export default async function AdminCategoriesPage() {
         <div>
           <h2 className="font-admin-display text-xl text-admin-text">Categories</h2>
           <p className="text-admin-sm text-admin-text-muted">
-            {categories.length} categories · {categories.filter((category) => category.is_visible).length} visible
+            {categories.length} categories ·{" "}
+            {categories.filter((category) => category.is_visible).length} visible
           </p>
         </div>
         <Button render={<Link href="/admin/categories/new" />} size="sm">

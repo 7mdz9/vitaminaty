@@ -44,7 +44,8 @@ export default async function AdminProductQueuePage({
             {PRODUCT_QUEUE_LABELS[typedQueueKind]}
           </h2>
           <p className="text-admin-sm text-admin-text-muted">
-            {productList.total} products in queue · page {productList.page} of {productList.pageCount}
+            {productList.total} products in queue · page {productList.page} of{" "}
+            {productList.pageCount}
           </p>
         </div>
         <Button render={<Link href="/admin/products" />} size="sm" variant="outline">

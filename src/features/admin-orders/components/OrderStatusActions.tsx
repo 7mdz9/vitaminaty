@@ -145,11 +145,21 @@ export function OrderStatusActions({ order }: Readonly<{ order: OrderRecord }>) 
             />
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button disabled={isPending} onClick={() => submitRefund("full")} size="sm" variant="outline">
+            <Button
+              disabled={isPending}
+              onClick={() => submitRefund("full")}
+              size="sm"
+              variant="outline"
+            >
               <RotateCcw className="size-4" />
               Full refund
             </Button>
-            <Button disabled={isPending} onClick={() => submitRefund("partial")} size="sm" variant="outline">
+            <Button
+              disabled={isPending}
+              onClick={() => submitRefund("partial")}
+              size="sm"
+              variant="outline"
+            >
               Partial refund
             </Button>
           </div>

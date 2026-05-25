@@ -14,8 +14,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createProductVariant, archiveProductVariant, setVariantLowStockThreshold } from "@/features/admin-products/actions";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  createProductVariant,
+  archiveProductVariant,
+  setVariantLowStockThreshold,
+} from "@/features/admin-products/actions";
 import type { ProductRecord, ProductVariantRecord } from "@/types/product";
 import { StockEditCell } from "./StockEditCell";
 import { SectionCard } from "./sections/SectionCard";
@@ -35,7 +46,11 @@ export function VariantsSection({
   return (
     <SectionCard id="variants" title="Variants and stock">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <Button render={<Link href={`/admin/products/${product.id}/inventory`} />} size="sm" variant="outline">
+        <Button
+          render={<Link href={`/admin/products/${product.id}/inventory`} />}
+          size="sm"
+          variant="outline"
+        >
           <History className="size-4" />
           History
         </Button>
@@ -50,9 +65,15 @@ export function VariantsSection({
             <TableHead scope="col">Variant</TableHead>
             <TableHead scope="col">SKU</TableHead>
             <TableHead scope="col">Status</TableHead>
-            <TableHead scope="col" className="text-right">Stock</TableHead>
-            <TableHead scope="col" className="text-right">Low threshold</TableHead>
-            <TableHead scope="col" className="text-right">Actions</TableHead>
+            <TableHead scope="col" className="text-right">
+              Stock
+            </TableHead>
+            <TableHead scope="col" className="text-right">
+              Low threshold
+            </TableHead>
+            <TableHead scope="col" className="text-right">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -65,7 +86,9 @@ export function VariantsSection({
               <TableRow key={variant.id}>
                 <TableCell>
                   <div className="font-medium text-admin-text">{variantLabel(variant)}</div>
-                  <div className="text-admin-caption text-admin-text-muted">AED {variant.price_aed}</div>
+                  <div className="text-admin-caption text-admin-text-muted">
+                    AED {variant.price_aed}
+                  </div>
                 </TableCell>
                 <TableCell>{variant.sku ?? "-"}</TableCell>
                 <TableCell>
@@ -141,7 +164,11 @@ function ThresholdCell({
         onBlur={() => {
           const lowStockThreshold = Number.parseInt(value, 10);
 
-          if (Number.isNaN(lowStockThreshold) || lowStockThreshold < 0 || lowStockThreshold === variant.low_stock_threshold) {
+          if (
+            Number.isNaN(lowStockThreshold) ||
+            lowStockThreshold < 0 ||
+            lowStockThreshold === variant.low_stock_threshold
+          ) {
             return;
           }
 
@@ -166,7 +193,9 @@ function ThresholdCell({
           setMessage(null);
         }}
       />
-      {message ? <span className="max-w-28 text-admin-caption text-admin-text-muted">{message}</span> : null}
+      {message ? (
+        <span className="max-w-28 text-admin-caption text-admin-text-muted">{message}</span>
+      ) : null}
     </div>
   );
 }
@@ -204,11 +233,21 @@ function CreateVariantDialog({
           <TextField label="SKU" value={sku} onChange={setSku} />
           <NumberField label="Price AED" min={1} value={price} onChange={setPrice} />
           <NumberField label="Stock quantity" min={0} value={quantity} onChange={setQuantity} />
-          <NumberField label="Low-stock threshold" min={0} value={threshold} onChange={setThreshold} />
+          <NumberField
+            label="Low-stock threshold"
+            min={0}
+            value={threshold}
+            onChange={setThreshold}
+          />
           {message ? <p className="text-admin-sm text-admin-text-muted">{message}</p> : null}
         </div>
         <DialogFooter>
-          <Button disabled={isPending} type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            disabled={isPending}
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button
@@ -261,12 +300,18 @@ function ArchiveVariantDialog({
         <DialogHeader>
           <DialogTitle className="font-admin-display">Archive variant</DialogTitle>
           <DialogDescription>
-            The row stays in place for inventory history; stock is set to 0 and an audit row is written.
+            The row stays in place for inventory history; stock is set to 0 and an audit row is
+            written.
           </DialogDescription>
         </DialogHeader>
         {message ? <p className="text-admin-sm text-admin-text-muted">{message}</p> : null}
         <DialogFooter>
-          <Button disabled={isPending} type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            disabled={isPending}
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button
@@ -316,7 +361,11 @@ function TextField({
   return (
     <label className="space-y-1 text-admin-sm">
       <span className="text-admin-text-muted">{label}</span>
-      <Input required={required} value={value} onChange={(event) => onChange(event.currentTarget.value)} />
+      <Input
+        required={required}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
     </label>
   );
 }
@@ -335,7 +384,12 @@ function NumberField({
   return (
     <label className="space-y-1 text-admin-sm">
       <span className="text-admin-text-muted">{label}</span>
-      <Input min={min} type="number" value={value} onChange={(event) => onChange(event.currentTarget.value)} />
+      <Input
+        min={min}
+        type="number"
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
     </label>
   );
 }

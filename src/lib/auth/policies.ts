@@ -70,7 +70,9 @@ async function readSessionFromCookie(): Promise<AdminSession> {
   return session;
 }
 
-function assertAdminRole(session: AdminSession): asserts session is AdminSession & { role: "admin" } {
+function assertAdminRole(
+  session: AdminSession,
+): asserts session is AdminSession & { role: "admin" } {
   if (session.role !== "admin") {
     throw new AuthorizationError({
       code: "admin_role_required",

@@ -79,7 +79,11 @@ export async function transitionOrderStatus(
     const updated = await updateOrderIfFreshForAdmin(
       before.id,
       parsed.expectedUpdatedAt,
-      buildTransitionPatch(parsed.toStatus, parsed.trackingNumber ?? null, parsed.trackingUrl ?? null),
+      buildTransitionPatch(
+        parsed.toStatus,
+        parsed.trackingNumber ?? null,
+        parsed.trackingUrl ?? null,
+      ),
     );
 
     if (!updated) {
@@ -119,7 +123,9 @@ export async function transitionOrderStatus(
   }
 }
 
-export async function refundOrder(input: AdminOrderRefundActionInput): Promise<AdminOrderActionResult> {
+export async function refundOrder(
+  input: AdminOrderRefundActionInput,
+): Promise<AdminOrderActionResult> {
   try {
     const admin = await requireAdmin();
     const parsed = AdminOrderRefundActionSchema.parse(input);

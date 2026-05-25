@@ -14,7 +14,10 @@ export function ContentSection({ product, onSave, saving }: ProductEditorSection
   const [storage, setStorage] = useState(product.content.storage_instructions ?? "");
   const [warnings, setWarnings] = useState(product.content.warnings ?? "");
 
-  const benefitList = benefits.split("\n").map((item) => item.trim()).filter(Boolean);
+  const benefitList = benefits
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
   return (
     <SectionCard id="content" title="About this product">

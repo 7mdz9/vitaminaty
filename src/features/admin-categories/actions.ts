@@ -66,7 +66,11 @@ export async function updateCategory(
 
     const updated = parsed.force
       ? await updateCategoryForAdmin(before.id, normalizePatch(parsed.patch))
-      : await updateCategoryIfFresh(before.id, parsed.expectedUpdatedAt, normalizePatch(parsed.patch));
+      : await updateCategoryIfFresh(
+          before.id,
+          parsed.expectedUpdatedAt,
+          normalizePatch(parsed.patch),
+        );
 
     if (!updated) {
       return {

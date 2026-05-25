@@ -36,9 +36,7 @@ export default async function AdminOrdersPage({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-admin-display text-xl text-admin-text">Orders</h2>
-          <p className="text-admin-sm text-admin-text-muted">
-            {orders.length} orders shown
-          </p>
+          <p className="text-admin-sm text-admin-text-muted">{orders.length} orders shown</p>
         </div>
       </header>
 

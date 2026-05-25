@@ -47,14 +47,22 @@ export default async function AdminProductInventoryPage({
     <div className="space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border pb-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Button render={<Link href={`/admin/products/${productId}`} />} size="icon-sm" variant="outline">
+          <Button
+            render={<Link href={`/admin/products/${productId}`} />}
+            size="icon-sm"
+            variant="outline"
+          >
             <ArrowLeft className="size-4" />
           </Button>
           <div className="min-w-0">
-            <h2 className="truncate font-admin-display text-xl text-admin-text">{editor.product.name}</h2>
+            <h2 className="truncate font-admin-display text-xl text-admin-text">
+              {editor.product.name}
+            </h2>
             <div className="mt-1 flex items-center gap-2">
               <Badge variant="outline">Inventory history</Badge>
-              <span className="text-admin-sm text-admin-text-muted">{result.movements.length} rows</span>
+              <span className="text-admin-sm text-admin-text-muted">
+                {result.movements.length} rows
+              </span>
             </div>
           </div>
         </div>
@@ -93,7 +101,9 @@ function buildHistoryInput(
   };
 }
 
-function isInventoryReason(value: string | undefined): value is NonNullable<GetInventoryHistoryActionInput["reason"]> {
+function isInventoryReason(
+  value: string | undefined,
+): value is NonNullable<GetInventoryHistoryActionInput["reason"]> {
   return inventoryReasons.some((reason) => reason === value);
 }
 

@@ -33,11 +33,15 @@ export function BrandCategorySection({
         <label className="space-y-1 text-admin-sm">
           <span className="text-admin-text-muted">Form</span>
           <Select value={form} onValueChange={(value) => setForm(value ?? "__null")}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__null">Unassigned</SelectItem>
               {forms.map((option) => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -81,11 +85,15 @@ function Picker({
     <label className="space-y-1 text-admin-sm">
       <span className="text-admin-text-muted">{label}</span>
       <Select value={value} onValueChange={(next) => onChange(next ?? "__null")}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value="__null">Unassigned</SelectItem>
           {options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
+            <SelectItem key={option.id} value={option.id}>
+              {option.label}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>

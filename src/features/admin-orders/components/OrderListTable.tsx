@@ -58,7 +58,11 @@ export function OrderListTable({ orders }: Readonly<{ orders: AdminOrderListItem
                 <OrderStatusBadge status={row.order.status} />
               </TableCell>
               <TableCell className="text-right">
-                <Button render={<Link href={`/admin/orders/${row.order.id}`} />} size="icon" variant="ghost">
+                <Button
+                  render={<Link href={`/admin/orders/${row.order.id}`} />}
+                  size="icon"
+                  variant="ghost"
+                >
                   <Eye className="size-4" />
                 </Button>
               </TableCell>

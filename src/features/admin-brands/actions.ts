@@ -232,14 +232,12 @@ export async function addBrandAlias(
   }
 }
 
-export async function toggleVisibility(
-  input: {
-    brandId: string;
-    expectedUpdatedAt: string;
-    force?: boolean;
-    isVisible: boolean;
-  },
-): Promise<AdminBrandActionResult> {
+export async function toggleVisibility(input: {
+  brandId: string;
+  expectedUpdatedAt: string;
+  force?: boolean;
+  isVisible: boolean;
+}): Promise<AdminBrandActionResult> {
   return updateBrand({
     brandId: input.brandId,
     expectedUpdatedAt: input.expectedUpdatedAt,
@@ -248,14 +246,12 @@ export async function toggleVisibility(
   });
 }
 
-export async function toggleFeatured(
-  input: {
-    brandId: string;
-    expectedUpdatedAt: string;
-    force?: boolean;
-    isFeatured: boolean;
-  },
-): Promise<AdminBrandActionResult> {
+export async function toggleFeatured(input: {
+  brandId: string;
+  expectedUpdatedAt: string;
+  force?: boolean;
+  isFeatured: boolean;
+}): Promise<AdminBrandActionResult> {
   return updateBrand({
     brandId: input.brandId,
     expectedUpdatedAt: input.expectedUpdatedAt,
@@ -308,7 +304,8 @@ async function uploadBrandImage(
       kind,
     });
     const uploaded = await uploadBrandImageAssetForAdmin(asset);
-    const patch = kind === "logo" ? { logo_url: uploaded.publicUrl } : { hero_image_url: uploaded.publicUrl };
+    const patch =
+      kind === "logo" ? { logo_url: uploaded.publicUrl } : { hero_image_url: uploaded.publicUrl };
     const updated = await updateBrandForAdmin(before.id, patch);
     const field = kind === "logo" ? "logo_url" : "hero_image_url";
 

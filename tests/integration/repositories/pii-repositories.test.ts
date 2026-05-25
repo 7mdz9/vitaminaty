@@ -221,9 +221,7 @@ describe("PII repositories", () => {
         adminClient,
       ),
     ).resolves.toMatchObject({ entity_id: orderId });
-    await expect(
-      listEntriesForEntity("order", orderId, adminClient),
-    ).resolves.toHaveLength(1);
+    await expect(listEntriesForEntity("order", orderId, adminClient)).resolves.toHaveLength(1);
 
     const conversation = await createSupportConversationForAdmin(
       { customer_id: customerId, status: "open" },

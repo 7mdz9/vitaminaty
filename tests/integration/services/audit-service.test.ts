@@ -54,11 +54,14 @@ describe("audit-service", () => {
   it("writes actor, IP, user agent, and a single-product update diff", async () => {
     const { record } = await import("@/server/services/audit-service");
     const diff = buildDiffs()[0] as AuditProductUpdateDiff;
-    const entry = await record({
-      actor: { userId: actorUserId, email: actorEmail },
-      diff,
-      occurredAt: "2026-05-24T10:00:00.000Z",
-    }, adminClient);
+    const entry = await record(
+      {
+        actor: { userId: actorUserId, email: actorEmail },
+        diff,
+        occurredAt: "2026-05-24T10:00:00.000Z",
+      },
+      adminClient,
+    );
     auditLogIds.push(entry.id);
 
     expect(entry).toMatchObject({
@@ -77,10 +80,13 @@ describe("audit-service", () => {
     const { record } = await import("@/server/services/audit-service");
 
     for (const diff of buildDiffs()) {
-      const entry = await record({
-        actor: { userId: actorUserId, email: actorEmail },
-        diff,
-      }, adminClient);
+      const entry = await record(
+        {
+          actor: { userId: actorUserId, email: actorEmail },
+          diff,
+        },
+        adminClient,
+      );
       auditLogIds.push(entry.id);
 
       expect(entry.diff).toEqual(diff);

@@ -124,7 +124,9 @@ describe("admin product bulk actions", () => {
       admin_review_flags: { case_pack: true },
     });
     mocks.findProductsByIdsForAdmin.mockResolvedValueOnce([publishable, blocked]);
-    mocks.bulkUpdateProductsForAdmin.mockResolvedValueOnce([{ ...publishable, status: "published" }]);
+    mocks.bulkUpdateProductsForAdmin.mockResolvedValueOnce([
+      { ...publishable, status: "published" },
+    ]);
 
     const { bulkPublish } = await import("@/features/admin-products/actions");
     const result = await bulkPublish({
@@ -138,10 +140,10 @@ describe("admin product bulk actions", () => {
       updatedProductIds: [publishable.id],
       hardBlockedProductIds: [blocked.id],
     });
-    expect(mocks.bulkUpdateProductsForAdmin).toHaveBeenCalledWith(
-      [publishable.id],
-      { status: "published", is_public_visible: true },
-    );
+    expect(mocks.bulkUpdateProductsForAdmin).toHaveBeenCalledWith([publishable.id], {
+      status: "published",
+      is_public_visible: true,
+    });
     expect(mocks.record).toHaveBeenCalledWith(
       expect.objectContaining({
         diff: expect.objectContaining({

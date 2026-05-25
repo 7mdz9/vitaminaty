@@ -7,11 +7,7 @@ import { SectionCard } from "./SectionCard";
 import { nullableNumber } from "./section-utils";
 import type { ProductEditorSectionProps } from "./types";
 
-export function PricingVariantsSection({
-  product,
-  onSave,
-  saving,
-}: ProductEditorSectionProps) {
+export function PricingVariantsSection({ product, onSave, saving }: ProductEditorSectionProps) {
   const [retail, setRetail] = useState(product.retail_price_aed?.toString() ?? "");
   const [wholesale, setWholesale] = useState(product.wholesale_price_internal?.toString() ?? "");
   const [compareAt, setCompareAt] = useState(product.compare_at_price_aed?.toString() ?? "");
@@ -52,7 +48,12 @@ function NumberField({
   return (
     <label className="space-y-1 text-admin-sm">
       <span className="text-admin-text-muted">{label}</span>
-      <Input type="number" min={1} value={value} onChange={(event) => onChange(event.currentTarget.value)} />
+      <Input
+        type="number"
+        min={1}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
     </label>
   );
 }

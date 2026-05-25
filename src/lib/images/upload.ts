@@ -90,7 +90,9 @@ export function validateProductImageFile(file: File): ProductImageMimeType {
   return file.type as ProductImageMimeType;
 }
 
-function extensionForContentType(contentType: ProductImageMimeType): PreparedProductImageUpload["extension"] {
+function extensionForContentType(
+  contentType: ProductImageMimeType,
+): PreparedProductImageUpload["extension"] {
   switch (contentType) {
     case "image/jpeg":
       return "jpg";

@@ -26,7 +26,10 @@ export function InlineEditCell({
   value: string | number | boolean | null;
   kind: "money" | "select" | "toggle";
   options?: Array<{ value: string; label: string }>;
-  onSave: (value: string | number | boolean | null, force?: boolean) => Promise<{ ok: boolean; message?: string }>;
+  onSave: (
+    value: string | number | boolean | null,
+    force?: boolean,
+  ) => Promise<{ ok: boolean; message?: string }>;
 }>) {
   const [draft, setDraft] = useState(value);
   const [state, setState] = useState<InlineEditState>("idle");
@@ -94,7 +97,10 @@ export function InlineEditCell({
         >
           <SelectTrigger
             aria-label={ariaLabel}
-            className={cn("h-7 w-full rounded-admin-sm text-admin-caption", state === "dirty" && "border-admin-accent")}
+            className={cn(
+              "h-7 w-full rounded-admin-sm text-admin-caption",
+              state === "dirty" && "border-admin-accent",
+            )}
           >
             <SelectValue>
               {options.find((option) => option.value === selected)?.label ?? "Unassigned"}
@@ -158,7 +164,13 @@ function StateIcon({ state }: Readonly<{ state: InlineEditState }>) {
 
 function ForceSaveButton({ onClick }: Readonly<{ onClick: () => void }>) {
   return (
-    <Button className="h-7 rounded-admin-sm text-admin-caption" onClick={onClick} size="sm" type="button" variant="destructive">
+    <Button
+      className="h-7 rounded-admin-sm text-admin-caption"
+      onClick={onClick}
+      size="sm"
+      type="button"
+      variant="destructive"
+    >
       Save anyway
     </Button>
   );

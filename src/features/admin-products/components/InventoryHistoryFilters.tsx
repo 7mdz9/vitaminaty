@@ -32,7 +32,10 @@ export function InventoryHistoryFilters({
   end?: string;
 }>) {
   return (
-    <form action={`/admin/products/${productId}/inventory`} className="grid gap-2 md:grid-cols-[180px_1fr_1fr_1fr_auto]">
+    <form
+      action={`/admin/products/${productId}/inventory`}
+      className="grid gap-2 md:grid-cols-[180px_1fr_1fr_1fr_auto]"
+    >
       <Select name="reason" defaultValue={reason ?? "__all"}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Reason" />

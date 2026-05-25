@@ -85,29 +85,35 @@ export function ProductListTable({
     [rows, selectedIds],
   );
 
-  const prefetchDrawer = useCallback(async (productId: string): Promise<AdminProductDrawerDataResult> => {
-    if (drawerCache[productId]) {
-      return {
-        ok: true,
-        data: drawerCache[productId],
-      };
-    }
+  const prefetchDrawer = useCallback(
+    async (productId: string): Promise<AdminProductDrawerDataResult> => {
+      if (drawerCache[productId]) {
+        return {
+          ok: true,
+          data: drawerCache[productId],
+        };
+      }
 
-    setDrawerLoadingId(productId);
-    const result = await getProductDrawerData(productId);
-    setDrawerLoadingId((current) => (current === productId ? null : current));
+      setDrawerLoadingId(productId);
+      const result = await getProductDrawerData(productId);
+      setDrawerLoadingId((current) => (current === productId ? null : current));
 
-    if (result.ok) {
-      setDrawerCache((current) => ({ ...current, [productId]: result.data }));
-    }
+      if (result.ok) {
+        setDrawerCache((current) => ({ ...current, [productId]: result.data }));
+      }
 
-    return result;
-  }, [drawerCache]);
+      return result;
+    },
+    [drawerCache],
+  );
 
-  const openDrawer = useCallback((productId: string) => {
-    setDrawerProductId(productId);
-    void prefetchDrawer(productId);
-  }, [prefetchDrawer]);
+  const openDrawer = useCallback(
+    (productId: string) => {
+      setDrawerProductId(productId);
+      void prefetchDrawer(productId);
+    },
+    [prefetchDrawer],
+  );
 
   useShortcuts(
     useMemo(
@@ -212,7 +218,11 @@ export function ProductListTable({
 
   function applyBulkResult(
     result: AdminProductBulkActionResult,
-    context: { action: "assign_brand" | "assign_category" | "publish"; brandId?: string; categoryId?: string },
+    context: {
+      action: "assign_brand" | "assign_category" | "publish";
+      brandId?: string;
+      categoryId?: string;
+    },
   ) {
     if (!result.ok) {
       return;
@@ -263,7 +273,9 @@ export function ProductListTable({
         <p className="text-admin-sm text-admin-text-muted">
           {selectedIds.size > 0 ? `${selectedIds.size} selected` : `${rows.length} visible rows`}
         </p>
-        <span className="text-admin-caption text-admin-text-muted">J/K rows · E drawer · Cmd-K command</span>
+        <span className="text-admin-caption text-admin-text-muted">
+          J/K rows · E drawer · Cmd-K command
+        </span>
       </div>
       <Table>
         <TableHeader>
@@ -271,17 +283,25 @@ export function ProductListTable({
             <TableHead scope="col" className="w-8">
               <span className="sr-only">Select</span>
             </TableHead>
-            <TableHead scope="col" className="w-14">Image</TableHead>
-            <TableHead scope="col" className="min-w-72">Name</TableHead>
+            <TableHead scope="col" className="w-14">
+              Image
+            </TableHead>
+            <TableHead scope="col" className="min-w-72">
+              Name
+            </TableHead>
             <TableHead scope="col">Brand</TableHead>
             <TableHead scope="col">Category</TableHead>
-            <TableHead scope="col" className="text-right">Price</TableHead>
+            <TableHead scope="col" className="text-right">
+              Price
+            </TableHead>
             <TableHead scope="col">Stock</TableHead>
             <TableHead scope="col">Status</TableHead>
             <TableHead scope="col">Visible</TableHead>
             <TableHead scope="col">Score</TableHead>
             <TableHead scope="col">Flags</TableHead>
-            <TableHead scope="col" className="text-right">Actions</TableHead>
+            <TableHead scope="col" className="text-right">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -379,15 +399,21 @@ export function ProductListTable({
                 <FlagChips product={product} />
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+                <div
+                  className="flex justify-end gap-1"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <Button
                     render={
-                      <Link aria-label={`Edit ${product.name}`} href={`/admin/products/${product.id}`} />
+                      <Link
+                        aria-label={`Edit ${product.name}`}
+                        href={`/admin/products/${product.id}`}
+                      />
                     }
                     size="icon-sm"
                     variant="ghost"
                   >
-                      <Pencil className="size-4" />
+                    <Pencil className="size-4" />
                   </Button>
                   <ProductActionButton
                     icon={product.status === "published" ? EyeOff : Send}
@@ -429,7 +455,7 @@ export function ProductListTable({
       <ProductDrawer
         open={drawerProductId !== null}
         productId={drawerProductId}
-        data={drawerProductId ? drawerCache[drawerProductId] ?? null : null}
+        data={drawerProductId ? (drawerCache[drawerProductId] ?? null) : null}
         brands={brands}
         categories={categories}
         loading={drawerProductId !== null && drawerLoadingId === drawerProductId}
@@ -503,7 +529,13 @@ function ProductActionButton({
   onClick: () => Promise<void>;
 }>) {
   return (
-    <Button aria-label={label} onClick={() => void onClick()} size="icon-sm" type="button" variant="ghost">
+    <Button
+      aria-label={label}
+      onClick={() => void onClick()}
+      size="icon-sm"
+      type="button"
+      variant="ghost"
+    >
       <Icon className="size-4" />
     </Button>
   );

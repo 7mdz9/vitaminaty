@@ -61,7 +61,9 @@ function renderLines(diff: JsonObject, action: string): string[] {
   }
 
   if (action === "bulk_operation") {
-    return [`Affected products: ${numberValue(diff.affected_count) ?? readAffectedIds(diff).length}`];
+    return [
+      `Affected products: ${numberValue(diff.affected_count) ?? readAffectedIds(diff).length}`,
+    ];
   }
 
   if (action === "bulk_publish_override") {
@@ -88,7 +90,9 @@ function renderLines(diff: JsonObject, action: string): string[] {
   }
 
   if (action === "mfa_enrolled") {
-    return [`Recovery codes generated: ${formatValue("recovery_codes_count", diff.recovery_codes_count)}`];
+    return [
+      `Recovery codes generated: ${formatValue("recovery_codes_count", diff.recovery_codes_count)}`,
+    ];
   }
 
   return ["No structured diff fields available."];

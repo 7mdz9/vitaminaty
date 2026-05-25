@@ -222,7 +222,9 @@ async function countProductsByCategory(): Promise<Map<string, number>> {
 
   const counts = new Map<string, number>();
 
-  for (const row of (data as Array<Pick<Database["public"]["Tables"]["products"]["Row"], "category_id">>) ?? []) {
+  for (const row of (data as Array<
+    Pick<Database["public"]["Tables"]["products"]["Row"], "category_id">
+  >) ?? []) {
     if (row.category_id) {
       counts.set(row.category_id, (counts.get(row.category_id) ?? 0) + 1);
     }

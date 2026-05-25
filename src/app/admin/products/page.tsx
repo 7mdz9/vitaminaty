@@ -77,7 +77,12 @@ function PaginationFooter({
       <span className="text-admin-text-muted tabular-nums">
         {page} / {pageCount}
       </span>
-      <Button disabled={page >= pageCount} render={<a href={nextHref} />} size="sm" variant="outline">
+      <Button
+        disabled={page >= pageCount}
+        render={<a href={nextHref} />}
+        size="sm"
+        variant="outline"
+      >
         Next
       </Button>
     </div>

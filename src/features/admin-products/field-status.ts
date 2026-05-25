@@ -51,8 +51,8 @@ function removeUndefinedStatuses(
   patch: Partial<ProductFieldsStatus>,
 ): Partial<ProductFieldsStatus> {
   return Object.fromEntries(
-    Object.entries(patch).filter((entry): entry is [keyof ProductFieldsStatus, FieldStatusValue] =>
-      entry[1] !== undefined,
+    Object.entries(patch).filter(
+      (entry): entry is [keyof ProductFieldsStatus, FieldStatusValue] => entry[1] !== undefined,
     ),
   ) as Partial<ProductFieldsStatus>;
 }

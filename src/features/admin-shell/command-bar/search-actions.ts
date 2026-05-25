@@ -16,8 +16,20 @@ export type AdminCommandItem = Readonly<{
 }>;
 
 const queueItems: AdminCommandItem[] = [
-  command("queue:missing-price", "queue", "Missing price", "Product queue", "/admin/queues/missing-price"),
-  command("queue:missing-image", "queue", "Missing image", "Product queue", "/admin/queues/missing-image"),
+  command(
+    "queue:missing-price",
+    "queue",
+    "Missing price",
+    "Product queue",
+    "/admin/queues/missing-price",
+  ),
+  command(
+    "queue:missing-image",
+    "queue",
+    "Missing image",
+    "Product queue",
+    "/admin/queues/missing-image",
+  ),
   command(
     "queue:missing-stock-quantity",
     "queue",
@@ -39,9 +51,27 @@ const queueItems: AdminCommandItem[] = [
     "Product queue",
     "/admin/queues/needs-category-review",
   ),
-  command("queue:needs-label-data", "queue", "Needs label data", "Product queue", "/admin/queues/needs-label-data"),
-  command("queue:ready-to-publish", "queue", "Ready to publish", "Product queue", "/admin/queues/ready-to-publish"),
-  command("queue:out-of-stock", "queue", "Out of stock", "Product queue", "/admin/queues/out-of-stock"),
+  command(
+    "queue:needs-label-data",
+    "queue",
+    "Needs label data",
+    "Product queue",
+    "/admin/queues/needs-label-data",
+  ),
+  command(
+    "queue:ready-to-publish",
+    "queue",
+    "Ready to publish",
+    "Product queue",
+    "/admin/queues/ready-to-publish",
+  ),
+  command(
+    "queue:out-of-stock",
+    "queue",
+    "Out of stock",
+    "Product queue",
+    "/admin/queues/out-of-stock",
+  ),
   command("queue:low-stock", "queue", "Low stock", "Product queue", "/admin/queues/low-stock"),
 ];
 
@@ -68,11 +98,25 @@ export async function getAdminCommandItems(): Promise<{
     ...routeItems,
     ...queueItems,
     ...products.map((product) =>
-      command(`product:${product.id}`, "product", product.name, product.slug, `/admin/products/${product.id}`),
+      command(
+        `product:${product.id}`,
+        "product",
+        product.name,
+        product.slug,
+        `/admin/products/${product.id}`,
+      ),
     ),
-    ...brands.map((brand) => command(`brand:${brand.id}`, "brand", brand.label, brand.slug, `/admin/brands/${brand.id}`)),
+    ...brands.map((brand) =>
+      command(`brand:${brand.id}`, "brand", brand.label, brand.slug, `/admin/brands/${brand.id}`),
+    ),
     ...categories.map((category) =>
-      command(`category:${category.id}`, "category", category.label, category.slug, "/admin/categories"),
+      command(
+        `category:${category.id}`,
+        "category",
+        category.label,
+        category.slug,
+        "/admin/categories",
+      ),
     ),
   ];
 

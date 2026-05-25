@@ -56,7 +56,9 @@ export function CommandBar({
           onValueChange={setQuery}
         />
         <div className="flex items-center justify-between px-3 py-2 text-admin-caption text-admin-text-muted">
-          <span>{isPending ? "Loading..." : `${meta?.totalCount ?? items.length} searchable items`}</span>
+          <span>
+            {isPending ? "Loading..." : `${meta?.totalCount ?? items.length} searchable items`}
+          </span>
           <span>{meta?.decision === "client" ? "Client search" : null}</span>
         </div>
         <CommandList>
@@ -65,7 +67,9 @@ export function CommandBar({
             <CommandItem key={item.id} value={item.id} onSelect={() => go(item)}>
               <div className="min-w-0 flex-1">
                 <p className="truncate">{item.label}</p>
-                <p className="truncate text-admin-caption text-admin-text-muted">{item.description}</p>
+                <p className="truncate text-admin-caption text-admin-text-muted">
+                  {item.description}
+                </p>
               </div>
               <Badge variant="outline">{item.kind}</Badge>
             </CommandItem>

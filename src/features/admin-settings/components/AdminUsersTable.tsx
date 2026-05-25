@@ -46,9 +46,7 @@ const actionLabels = {
   revoke_mfa: "Revoke MFA",
 } as const;
 
-export function AdminUsersTable({
-  users,
-}: Readonly<{ users: AuthAdminUserSummary[] }>) {
+export function AdminUsersTable({ users }: Readonly<{ users: AuthAdminUserSummary[] }>) {
   const [rows, setRows] = useState(users);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -106,7 +104,10 @@ export function AdminUsersTable({
 
       if (result.ok) {
         if (pendingAction.kind === "invite" && result.user) {
-          setRows((current) => [result.user!, ...current.filter((row) => row.id !== result.user!.id)]);
+          setRows((current) => [
+            result.user!,
+            ...current.filter((row) => row.id !== result.user!.id),
+          ]);
         } else if (pendingAction.kind === "delete" && result.affectedUserId) {
           setRows((current) => current.filter((row) => row.id !== result.affectedUserId));
         } else if (result.user) {
@@ -164,7 +165,9 @@ export function AdminUsersTable({
                 <TableRow className="h-11" key={user.id}>
                   <TableCell>
                     <div className="font-medium text-admin-text">{user.email ?? "Unknown"}</div>
-                    <div className="font-mono text-admin-caption text-admin-text-muted">{user.id}</div>
+                    <div className="font-mono text-admin-caption text-admin-text-muted">
+                      {user.id}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.isActive ? "default" : "secondary"}>
@@ -249,10 +252,15 @@ export function AdminUsersTable({
         </section>
       </div>
 
-      <Dialog open={pendingAction !== null} onOpenChange={(open) => (!open ? setPendingAction(null) : null)}>
+      <Dialog
+        open={pendingAction !== null}
+        onOpenChange={(open) => (!open ? setPendingAction(null) : null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{pendingAction ? actionLabels[pendingAction.kind] : "Admin action"}</DialogTitle>
+            <DialogTitle>
+              {pendingAction ? actionLabels[pendingAction.kind] : "Admin action"}
+            </DialogTitle>
             <DialogDescription>
               MFA re-verification is required before this admin-user change is applied.
             </DialogDescription>
@@ -268,7 +276,9 @@ export function AdminUsersTable({
               />
             ) : pendingAction?.user ? (
               <div className="rounded-admin-md border border-admin-border bg-admin-surface-muted p-3 text-admin-sm">
-                <div className="font-medium text-admin-text">{pendingAction.user.email ?? "Unknown"}</div>
+                <div className="font-medium text-admin-text">
+                  {pendingAction.user.email ?? "Unknown"}
+                </div>
                 <div className="font-mono text-admin-caption text-admin-text-muted">
                   {pendingAction.user.id}
                 </div>

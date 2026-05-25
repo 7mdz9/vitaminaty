@@ -105,50 +105,57 @@ export function ProductDrawer({
     setMessage(null);
   }, [localData?.product]);
 
-  const save = useCallback(async (closeAfterSave = false) => {
-    const product = localData?.product;
+  const save = useCallback(
+    async (closeAfterSave = false) => {
+      const product = localData?.product;
 
-    if (!product) {
-      return;
-    }
+      if (!product) {
+        return;
+      }
 
-    const parsedPrice = price.trim() ? Number.parseInt(price, 10) : null;
-    const patch: AdminProductInlinePatch = {
-      retail_price_aed: Number.isNaN(parsedPrice) ? null : parsedPrice,
-      brand_id: brandId === "__null" ? null : brandId,
-      category_id: categoryId === "__null" ? null : categoryId,
-      status: status as typeof product.status,
-      is_public_visible: visible,
-      fields_status: {
-        retail_price: parsedPrice ? "complete" : "missing",
-        brand: brandId === "__null" ? "missing" : "complete",
-        category: categoryId === "__null" ? "missing" : "complete",
-      },
-    };
-    const result = await updateProductPartial({
-      productId: product.id,
-      expectedUpdatedAt: product.updated_at,
-      force: false,
-      patch,
-    });
+      const parsedPrice = price.trim() ? Number.parseInt(price, 10) : null;
+      const patch: AdminProductInlinePatch = {
+        retail_price_aed: Number.isNaN(parsedPrice) ? null : parsedPrice,
+        brand_id: brandId === "__null" ? null : brandId,
+        category_id: categoryId === "__null" ? null : categoryId,
+        status: status as typeof product.status,
+        is_public_visible: visible,
+        fields_status: {
+          retail_price: parsedPrice ? "complete" : "missing",
+          brand: brandId === "__null" ? "missing" : "complete",
+          category: categoryId === "__null" ? "missing" : "complete",
+        },
+      };
+      const result = await updateProductPartial({
+        productId: product.id,
+        expectedUpdatedAt: product.updated_at,
+        force: false,
+        patch,
+      });
 
-    if (!result.ok) {
-      setMessage(result.code === "stale_data" ? `${result.message} Reload before retrying.` : result.message);
-      return;
-    }
+      if (!result.ok) {
+        setMessage(
+          result.code === "stale_data"
+            ? `${result.message} Reload before retrying.`
+            : result.message,
+        );
+        return;
+      }
 
-    const next = {
-      ...localData,
-      product: result.product,
-    };
-    setLocalData(next);
-    onProductSaved(result.product);
-    setMessage("Saved");
+      const next = {
+        ...localData,
+        product: result.product,
+      };
+      setLocalData(next);
+      onProductSaved(result.product);
+      setMessage("Saved");
 
-    if (closeAfterSave) {
-      onOpenChange(false);
-    }
-  }, [brandId, categoryId, localData, onOpenChange, onProductSaved, price, status, visible]);
+      if (closeAfterSave) {
+        onOpenChange(false);
+      }
+    },
+    [brandId, categoryId, localData, onOpenChange, onProductSaved, price, status, visible],
+  );
 
   useShortcuts(
     useMemo(
@@ -167,7 +174,8 @@ export function ProductDrawer({
   );
 
   const product = localData?.product;
-  const primaryImage = localData?.images.find((image) => image.is_primary) ?? localData?.images[0] ?? null;
+  const primaryImage =
+    localData?.images.find((image) => image.is_primary) ?? localData?.images[0] ?? null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -188,13 +196,19 @@ export function ProductDrawer({
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {loading && !product ? <p className="text-admin-sm text-admin-text-muted">Loading drawer...</p> : null}
+          {loading && !product ? (
+            <p className="text-admin-sm text-admin-text-muted">Loading drawer...</p>
+          ) : null}
           {product ? (
             <>
               <div className="overflow-hidden rounded-admin-md border border-admin-border bg-admin-surface">
                 {primaryImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img alt={primaryImage.alt_text} className="aspect-video w-full object-cover" src={primaryImage.public_url} />
+                  <img
+                    alt={primaryImage.alt_text}
+                    className="aspect-video w-full object-cover"
+                    src={primaryImage.public_url}
+                  />
                 ) : (
                   <ImageUploadField
                     productId={product.id}
@@ -244,21 +258,38 @@ export function ProductDrawer({
                     onChange={(event) => setPrice(event.target.value)}
                   />
                 </label>
-                <DrawerSelect label="Brand" value={brandId} onChange={setBrandId} options={brands} />
-                <DrawerSelect label="Category" value={categoryId} onChange={setCategoryId} options={categories} />
+                <DrawerSelect
+                  label="Brand"
+                  value={brandId}
+                  onChange={setBrandId}
+                  options={brands}
+                />
+                <DrawerSelect
+                  label="Category"
+                  value={categoryId}
+                  onChange={setCategoryId}
+                  options={categories}
+                />
                 <label className="space-y-1 text-admin-sm">
                   <span className="text-admin-text-muted">Status</span>
                   <Select value={status} onValueChange={(value) => setStatus(value ?? "imported")}>
-                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </label>
                 <label className="flex items-center gap-2 text-admin-sm">
-                  <Checkbox checked={visible} onCheckedChange={(checked) => setVisible(checked === true)} />
+                  <Checkbox
+                    checked={visible}
+                    onCheckedChange={(checked) => setVisible(checked === true)}
+                  />
                   <span>Publicly visible</span>
                 </label>
               </div>
@@ -269,7 +300,10 @@ export function ProductDrawer({
                 ) : (
                   <div className="mt-2 space-y-2">
                     {localData.variants.map((variant) => (
-                      <div className="flex items-center justify-between gap-3 text-admin-sm" key={variant.id}>
+                      <div
+                        className="flex items-center justify-between gap-3 text-admin-sm"
+                        key={variant.id}
+                      >
                         <span className="min-w-0 truncate">{variant.flavor ?? variant.size}</span>
                         <div className="flex flex-wrap items-center justify-end gap-2 tabular-nums">
                           <StockEditCell
@@ -298,10 +332,15 @@ export function ProductDrawer({
                 <h3 className="font-admin-display text-admin-title">Missing fields</h3>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {Object.entries(product.fields_status)
-                    .filter(([, fieldStatus]) => fieldStatus === "missing" || fieldStatus === "needs_review")
+                    .filter(
+                      ([, fieldStatus]) =>
+                        fieldStatus === "missing" || fieldStatus === "needs_review",
+                    )
                     .slice(0, 8)
                     .map(([field]) => (
-                      <Badge key={field} variant="outline">{field.replace(/_/g, " ")}</Badge>
+                      <Badge key={field} variant="outline">
+                        {field.replace(/_/g, " ")}
+                      </Badge>
                     ))}
                 </div>
               </div>
@@ -313,19 +352,40 @@ export function ProductDrawer({
             {message ? <p className="text-admin-sm text-admin-text-muted">{message}</p> : null}
             <div className="flex flex-wrap justify-end gap-2">
               {product ? (
-                <Button render={<Link href={`/admin/products/${product.id}`} />} size="sm" variant="outline">
+                <Button
+                  render={<Link href={`/admin/products/${product.id}`} />}
+                  size="sm"
+                  variant="outline"
+                >
                   <ExternalLink className="size-4" />
                   Open full editor
                 </Button>
               ) : null}
-              <Button disabled={!product || isPending} onClick={() => onOpenChange(false)} size="sm" type="button" variant="outline">
+              <Button
+                disabled={!product || isPending}
+                onClick={() => onOpenChange(false)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
                 Cancel
               </Button>
-              <Button disabled={!product || isPending} onClick={() => startTransition(() => void save(false))} size="sm" type="button" variant="outline">
+              <Button
+                disabled={!product || isPending}
+                onClick={() => startTransition(() => void save(false))}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
                 <Save className="size-4" />
                 Save
               </Button>
-              <Button disabled={!product || isPending} onClick={() => startTransition(() => void save(true))} size="sm" type="button">
+              <Button
+                disabled={!product || isPending}
+                onClick={() => startTransition(() => void save(true))}
+                size="sm"
+                type="button"
+              >
                 Save & close
               </Button>
             </div>
@@ -351,11 +411,15 @@ function DrawerSelect({
     <label className="space-y-1 text-admin-sm">
       <span className="text-admin-text-muted">{label}</span>
       <Select value={value} onValueChange={(next) => onChange(next ?? "__null")}>
-        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value="__null">Unassigned</SelectItem>
           {options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
+            <SelectItem key={option.id} value={option.id}>
+              {option.label}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>

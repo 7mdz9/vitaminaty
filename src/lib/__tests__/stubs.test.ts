@@ -20,9 +20,7 @@ describe("future cryptographic stubs", () => {
 
     expect(hmacSha256Hex({ secret: "secret", payload: "payload" })).toBe(signature);
     expect(verifyHmacSha256({ secret: "secret", payload: "payload", signature })).toBe(true);
-    expect(verifyHmacSha256({ secret: "secret", payload: "payload", signature: "00" })).toBe(
-      false,
-    );
+    expect(verifyHmacSha256({ secret: "secret", payload: "payload", signature: "00" })).toBe(false);
     expect(sha256Hex("payload")).toBe(
       "239f59ed55e737c77147cf55ad0c1b030b6d7ee748a7426952f9b852d5a935e5",
     );

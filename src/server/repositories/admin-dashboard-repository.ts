@@ -13,6 +13,8 @@ export type AdminCatalogSnapshot = Readonly<{
   missingPrice: number;
   missingImage: number;
   missingStockQuantity: number;
+  needsCategoryReview: number;
+  needsBrandReview: number;
   outOfStock: number;
   lowStock: number;
   readyToPublish: number;
@@ -71,6 +73,8 @@ export async function getAdminCatalogSnapshot(): Promise<AdminCatalogSnapshot> {
   let missingPrice = 0;
   let missingImage = 0;
   let missingStockQuantity = 0;
+  let needsCategoryReview = 0;
+  let needsBrandReview = 0;
   let lowStock = 0;
   let outOfStock = 0;
   let outOfStockPublished = 0;
@@ -85,6 +89,8 @@ export async function getAdminCatalogSnapshot(): Promise<AdminCatalogSnapshot> {
     missingPrice += row.retail_price_aed ? 0 : 1;
     missingImage += flags.missing_image ? 1 : 0;
     missingStockQuantity += flags.missing_stock_quantity ? 1 : 0;
+    needsCategoryReview += flags.needs_category_review ? 1 : 0;
+    needsBrandReview += flags.needs_brand_review ? 1 : 0;
     outOfStock += isOutOfStock ? 1 : 0;
     lowStock += isLowStock ? 1 : 0;
     outOfStockPublished +=
@@ -97,6 +103,8 @@ export async function getAdminCatalogSnapshot(): Promise<AdminCatalogSnapshot> {
     missingPrice,
     missingImage,
     missingStockQuantity,
+    needsCategoryReview,
+    needsBrandReview,
     outOfStock,
     lowStock,
     readyToPublish: rows.filter((row) => row.status === "ready_to_publish").length,

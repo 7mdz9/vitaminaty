@@ -65,7 +65,9 @@ export async function beginAdminSettingsMfaChallenge(): Promise<AdminSettingsMfa
   }
 }
 
-export async function inviteAdminUser(input: AdminInviteActionInput): Promise<AdminUserActionResult> {
+export async function inviteAdminUser(
+  input: AdminInviteActionInput,
+): Promise<AdminUserActionResult> {
   try {
     const admin = await requireAdmin();
     const parsed = AdminInviteActionSchema.parse(input);
@@ -207,7 +209,9 @@ export async function revokeAdminMfa(
       return { ok: false, code: "not_found", message: "Admin user not found." };
     }
 
-    await Promise.all(before.factorIds.map((factorId) => deleteAuthAdminMfaFactor(before.id, factorId)));
+    await Promise.all(
+      before.factorIds.map((factorId) => deleteAuthAdminMfaFactor(before.id, factorId)),
+    );
     await record({
       actor: { userId: admin.userId, email: admin.email },
       entityId: before.id,
@@ -241,7 +245,9 @@ async function findAdminSummary(userId: string): Promise<AuthAdminUserSummary | 
   return (await listAuthAdmins()).find((user) => user.id === userId) ?? null;
 }
 
-function mapChallengeError(error: unknown): Extract<AdminSettingsMfaChallengeResult, { ok: false }> {
+function mapChallengeError(
+  error: unknown,
+): Extract<AdminSettingsMfaChallengeResult, { ok: false }> {
   if (isAppError(error)) {
     return {
       ok: false,

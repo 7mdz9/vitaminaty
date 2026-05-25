@@ -59,9 +59,8 @@ describe("admin MFA enrollment recovery codes", () => {
 
   it("stores recovery codes hashed and writes an mfa_enrolled audit row without plaintext codes", async () => {
     const { createRecoveryCodesForVerifiedMfa, hashRecoveryCode } = await import("@/lib/auth/mfa");
-    const { listRecoveryCodeHashes } = await import(
-      "@/server/repositories/admin-mfa-recovery-repository"
-    );
+    const { listRecoveryCodeHashes } =
+      await import("@/server/repositories/admin-mfa-recovery-repository");
     const factorId = "totp-factor-for-test";
 
     const result = await createRecoveryCodesForVerifiedMfa({

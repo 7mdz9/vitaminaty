@@ -166,7 +166,8 @@ function imageFactory(overrides: Partial<ProductImageRecord> = {}): ProductImage
     product_id: "00000000-0000-4000-8000-000000000001",
     variant_id: null,
     storage_path: "products/test/test-product/front-abc.png",
-    public_url: "http://127.0.0.1:54321/storage/v1/object/public/product-images/products/test/test-product/front-abc.png",
+    public_url:
+      "http://127.0.0.1:54321/storage/v1/object/public/product-images/products/test/test-product/front-abc.png",
     alt_text: "Test Product - front",
     kind: "front",
     sort_order: 0,

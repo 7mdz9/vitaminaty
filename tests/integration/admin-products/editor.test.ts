@@ -25,7 +25,9 @@ describe("admin product editor query", () => {
       email: "admin@example.test",
       role: "admin",
     });
-    mocks.listBrandOptionsForAdmin.mockResolvedValue([{ id: "brand-id", label: "Brand", slug: "brand" }]);
+    mocks.listBrandOptionsForAdmin.mockResolvedValue([
+      { id: "brand-id", label: "Brand", slug: "brand" },
+    ]);
     mocks.listCategoryOptionsForAdmin.mockResolvedValue([
       { id: "category-id", label: "Category", slug: "category" },
     ]);

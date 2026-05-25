@@ -4,6 +4,7 @@
 @tailwind utilities;
 
 @layer base {
+  /* prettier-ignore */
   :root {
     --color-action: #ff0000;
     --color-action-hover: #d40000;
@@ -26,8 +27,8 @@
     --color-border-default: rgba(89, 89, 89, 0.18);
     --color-border-subtle: rgba(89, 89, 89, 0.1);
     --color-success: #2a7d2e;
-    --font-display: var(--admin-font-display);
-    --font-body: var(--admin-font-body);
+    --font-display: var(--font-museo-moderno), var(--admin-font-display);
+    --font-body: var(--font-league-spartan), var(--admin-font-body);
     --fw-regular: 400;
     --fw-medium: 500;
     --fw-semibold: 600;
@@ -93,8 +94,8 @@
     --admin-dark-border: rgba(255, 255, 255, 0.14);
     --admin-dark-text: #FAFAFA;
     --admin-dark-text-muted: #C7C1BE;
-    --admin-font-body: var(--font-league-spartan), "League Spartan", system-ui, sans-serif;
-    --admin-font-display: var(--font-museo-moderno), "MuseoModerno", system-ui, sans-serif;
+    --admin-font-body: "League Spartan", system-ui, sans-serif;
+    --admin-font-display: "MuseoModerno", system-ui, sans-serif;
     --admin-fs-caption: 0.75rem;
     --admin-fs-body-sm: 0.875rem;
     --admin-fs-body: 1rem;

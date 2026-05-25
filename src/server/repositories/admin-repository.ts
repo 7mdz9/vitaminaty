@@ -26,7 +26,10 @@ export async function listAuthAdmins(): Promise<AuthAdminUserSummary[]> {
   }
 
   return data.users
-    .filter((user) => user.app_metadata?.role === "admin" || user.app_metadata?.role === "deactivated_admin")
+    .filter(
+      (user) =>
+        user.app_metadata?.role === "admin" || user.app_metadata?.role === "deactivated_admin",
+    )
     .map((user) => ({
       id: user.id,
       email: user.email ?? null,
@@ -80,7 +83,9 @@ export async function deactivateAuthAdmin(userId: string): Promise<AuthAdminUser
   const { data: current, error: currentError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
   if (currentError || !current.user) {
-    throw new Error(`Auth admin user query failed: ${currentError?.message ?? "No user returned."}`);
+    throw new Error(
+      `Auth admin user query failed: ${currentError?.message ?? "No user returned."}`,
+    );
   }
 
   const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {

@@ -80,9 +80,7 @@ export const HIGH_RIGOR_FEATURE_FLAG_GATES = {
   },
 } as const satisfies Partial<Record<FeatureFlagKey, HighRigorFeatureFlagGate>>;
 
-export function getHighRigorFeatureFlagGate(
-  key: FeatureFlagKey,
-): HighRigorFeatureFlagGate | null {
+export function getHighRigorFeatureFlagGate(key: FeatureFlagKey): HighRigorFeatureFlagGate | null {
   const gates: Partial<Record<FeatureFlagKey, HighRigorFeatureFlagGate>> =
     HIGH_RIGOR_FEATURE_FLAG_GATES;
 

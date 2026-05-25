@@ -218,10 +218,7 @@ async function updateVariantStock(
     "stock_quantity" | "low_stock_threshold"
   >,
 ): Promise<void> {
-  const { error } = await adminClient
-    .from("product_variants")
-    .update(patch)
-    .eq("id", variantId);
+  const { error } = await adminClient.from("product_variants").update(patch).eq("id", variantId);
 
   if (error) {
     throw new Error(`Could not update inventory test variant: ${error.message}`);

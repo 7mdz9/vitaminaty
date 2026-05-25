@@ -31,9 +31,8 @@ describe("admin audit queries", () => {
   });
 
   it("parses URL filters into repository filters and requires admin", async () => {
-    const { getAuditLogList, parseAuditLogSearchParams } = await import(
-      "@/features/admin-audit/queries"
-    );
+    const { getAuditLogList, parseAuditLogSearchParams } =
+      await import("@/features/admin-audit/queries");
     const parsed = parseAuditLogSearchParams({
       actor: "admin@example.test",
       action: "order_status_change",

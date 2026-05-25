@@ -39,12 +39,17 @@ export function BulkConfirmDialog({
         </DialogHeader>
         {needsDoubleConfirm ? (
           <label className="flex items-center gap-2 text-admin-sm">
-            <Checkbox checked={confirmed} onCheckedChange={(value) => setConfirmed(value === true)} />
+            <Checkbox
+              checked={confirmed}
+              onCheckedChange={(value) => setConfirmed(value === true)}
+            />
             <span>I understand this affects more than 20 products.</span>
           </label>
         ) : null}
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
           <Button type="button" onClick={onConfirm} disabled={needsDoubleConfirm && !confirmed}>
             Confirm
           </Button>

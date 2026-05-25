@@ -29,10 +29,7 @@ const expectedAuditActions = [
 describe("0013 audit_action extension", () => {
   it("extends audit_action to the approved migration-order baseline", () => {
     const output = runLocalPsql("select enum_range(null::audit_action)::text");
-    const values = output
-      .replace(/^{|}$/g, "")
-      .split(",")
-      .filter(Boolean);
+    const values = output.replace(/^{|}$/g, "").split(",").filter(Boolean);
 
     expect(values).toEqual(expectedAuditActions);
   });
@@ -41,7 +38,18 @@ describe("0013 audit_action extension", () => {
 function runLocalPsql(sql: string): string {
   return execFileSync(
     "docker",
-    ["exec", "-i", "supabase_db_vitaminaty", "psql", "-U", "postgres", "-d", "postgres", "-tAc", sql],
+    [
+      "exec",
+      "-i",
+      "supabase_db_vitaminaty",
+      "psql",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+      "-tAc",
+      sql,
+    ],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
   ).trim();
 }

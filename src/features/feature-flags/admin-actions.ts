@@ -4,16 +4,10 @@ import { readFile } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
 import { isAppError } from "@/lib/errors";
-import {
-  beginTotpChallenge,
-  verifyTotpChallenge,
-} from "@/lib/auth/mfa";
+import { beginTotpChallenge, verifyTotpChallenge } from "@/lib/auth/mfa";
 import { record } from "@/features/audit-log/record";
 import { clearFeatureFlagCache } from "@/features/feature-flags/eval";
-import {
-  getHighRigorFeatureFlagGate,
-  hasHighRigorSignoff,
-} from "@/features/feature-flags/gates";
+import { getHighRigorFeatureFlagGate, hasHighRigorSignoff } from "@/features/feature-flags/gates";
 import {
   FeatureFlagToggleActionSchema,
   type FeatureFlagToggleActionInput,
@@ -118,11 +112,7 @@ export async function toggleFeatureFlag(
         };
       }
 
-      if (
-        parsed.enabled &&
-        gate.enablePhrase &&
-        parsed.confirmationPhrase !== gate.enablePhrase
-      ) {
+      if (parsed.enabled && gate.enablePhrase && parsed.confirmationPhrase !== gate.enablePhrase) {
         return {
           ok: false,
           code: "confirmation_required",

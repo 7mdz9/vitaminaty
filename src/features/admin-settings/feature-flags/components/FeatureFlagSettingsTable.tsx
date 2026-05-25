@@ -41,9 +41,7 @@ const categoryLabels = {
   operational: "Operational",
 } as const;
 
-export function FeatureFlagSettingsTable({
-  flags,
-}: Readonly<{ flags: AdminFeatureFlagRow[] }>) {
+export function FeatureFlagSettingsTable({ flags }: Readonly<{ flags: AdminFeatureFlagRow[] }>) {
   const [rows, setRows] = useState(flags);
   const [pendingToggle, setPendingToggle] = useState<PendingToggle | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -82,7 +80,12 @@ export function FeatureFlagSettingsTable({
       const challenge = await beginFeatureFlagMfaChallenge();
 
       if (challenge.ok) {
-        setPendingToggle({ row, enabled, factorId: challenge.factorId, challengeId: challenge.challengeId });
+        setPendingToggle({
+          row,
+          enabled,
+          factorId: challenge.factorId,
+          challengeId: challenge.challengeId,
+        });
         setStatus(null);
       } else {
         setStatus(challenge.message);
@@ -177,7 +180,9 @@ export function FeatureFlagSettingsTable({
               <TableBody>
                 {(groupedRows[category] ?? []).map((row) => (
                   <TableRow className="h-11" key={row.key}>
-                    <TableCell className="font-mono text-admin-sm text-admin-text">{row.key}</TableCell>
+                    <TableCell className="font-mono text-admin-sm text-admin-text">
+                      {row.key}
+                    </TableCell>
                     <TableCell className="max-w-xl text-admin-sm text-admin-text-muted">
                       <div className="space-y-1">
                         <p>{row.description}</p>
@@ -222,7 +227,10 @@ export function FeatureFlagSettingsTable({
         ))}
       </div>
 
-      <Dialog open={pendingToggle !== null} onOpenChange={(open) => (!open ? setPendingToggle(null) : null)}>
+      <Dialog
+        open={pendingToggle !== null}
+        onOpenChange={(open) => (!open ? setPendingToggle(null) : null)}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Confirm HIGH_RIGOR flag change</DialogTitle>

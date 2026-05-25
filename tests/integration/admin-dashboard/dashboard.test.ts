@@ -64,6 +64,8 @@ describe("admin dashboard query", () => {
       missingPrice: 369,
       missingImage: 700,
       missingStockQuantity: 787,
+      needsCategoryReview: 18,
+      needsBrandReview: 10,
       outOfStock: 3,
       lowStock: 7,
       readyToPublish: 4,

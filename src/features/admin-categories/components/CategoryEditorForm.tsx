@@ -16,11 +16,7 @@ import { createCategory, updateCategory } from "@/features/admin-categories/acti
 import type { CategoryPatch } from "@/lib/validation/category";
 import type { CategoryRecord, ParentNav } from "@/types/category";
 
-const parentNavOptions: ParentNav[] = [
-  "Sport Nutrition",
-  "Health & Wellness",
-  "Snacks & Drinks",
-];
+const parentNavOptions: ParentNav[] = ["Sport Nutrition", "Health & Wellness", "Snacks & Drinks"];
 
 export function CategoryEditorForm({
   category,
@@ -103,14 +99,18 @@ export function CategoryEditorForm({
           <span className="text-admin-text-muted">Name</span>
           <Input
             value={form.name}
-            onChange={(event) => setForm((currentValue) => ({ ...currentValue, name: event.target.value }))}
+            onChange={(event) =>
+              setForm((currentValue) => ({ ...currentValue, name: event.target.value }))
+            }
           />
         </label>
         <label className="space-y-1 text-admin-sm">
           <span className="text-admin-text-muted">Slug</span>
           <Input
             value={form.slug}
-            onChange={(event) => setForm((currentValue) => ({ ...currentValue, slug: event.target.value }))}
+            onChange={(event) =>
+              setForm((currentValue) => ({ ...currentValue, slug: event.target.value }))
+            }
           />
         </label>
         <div className="space-y-1 text-admin-sm">

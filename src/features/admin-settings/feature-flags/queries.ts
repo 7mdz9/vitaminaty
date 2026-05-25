@@ -32,10 +32,7 @@ const CATEGORY_ORDER = {
 export async function getFeatureFlagSettings(): Promise<AdminFeatureFlagRow[]> {
   await requireAdmin();
 
-  const [rows, lastSessionText] = await Promise.all([
-    listFeatureFlags(),
-    readLastSessionText(),
-  ]);
+  const [rows, lastSessionText] = await Promise.all([listFeatureFlags(), readLastSessionText()]);
   const byKey = new Map(rows.map((row) => [row.key, row]));
   const users = await listAuthUserEmailsByIds(
     rows.flatMap((row) => (row.updated_by ? [row.updated_by] : [])),

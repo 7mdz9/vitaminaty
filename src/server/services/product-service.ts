@@ -96,7 +96,9 @@ export async function updateProductWithRecalculation(
     image_count: counts.imageCount,
     additional_image_count: counts.additionalImageCount,
   }).score;
-  const status = input.patch.status ?? deriveProductStatus(projected, before.status, Object.keys(input.patch).length);
+  const status =
+    input.patch.status ??
+    deriveProductStatus(projected, before.status, Object.keys(input.patch).length);
   const patch = toProductUpdate(input.patch, score, status);
   const updated = input.force
     ? await updateProductForAdmin(input.productId, patch)

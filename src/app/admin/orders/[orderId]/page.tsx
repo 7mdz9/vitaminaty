@@ -40,9 +40,7 @@ export default async function AdminOrderDetailPage({
             <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <h2 className="font-admin-display text-xl text-admin-text">
-              {detail.order.reference}
-            </h2>
+            <h2 className="font-admin-display text-xl text-admin-text">{detail.order.reference}</h2>
             <p className="text-admin-sm text-admin-text-muted">
               {detail.customer.email ?? detail.customer.name ?? "Guest order"}
             </p>
@@ -61,7 +59,10 @@ export default async function AdminOrderDetailPage({
           <OrderSummary order={detail.order} items={detail.items} />
           <InfoGrid order={detail.order} />
           <Timeline items={detail.timeline} />
-          <EventTables paymentEvents={detail.paymentEvents} shipmentEvents={detail.shipmentEvents} />
+          <EventTables
+            paymentEvents={detail.paymentEvents}
+            shipmentEvents={detail.shipmentEvents}
+          />
         </div>
         <OrderStatusActions order={detail.order} />
       </div>
@@ -108,7 +109,9 @@ function OrderSummary({
             <TableCell className="text-right text-admin-text-muted" colSpan={4}>
               Subtotal
             </TableCell>
-            <TableCell className="text-right tabular-nums">{formatAedNumber(order.subtotal_aed)}</TableCell>
+            <TableCell className="text-right tabular-nums">
+              {formatAedNumber(order.subtotal_aed)}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell className="text-right text-admin-text-muted" colSpan={4}>
@@ -122,7 +125,9 @@ function OrderSummary({
             <TableCell className="text-right text-admin-text-muted" colSpan={4}>
               VAT
             </TableCell>
-            <TableCell className="text-right tabular-nums">{formatAedNumber(order.vat_amount_aed)}</TableCell>
+            <TableCell className="text-right tabular-nums">
+              {formatAedNumber(order.vat_amount_aed)}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell className="text-right font-medium" colSpan={4}>
@@ -186,7 +191,10 @@ function Timeline({ items }: Readonly<{ items: AdminOrderTimelineItem[] }>) {
       <h3 className="font-admin-display text-admin-title text-admin-text">Timeline</h3>
       <ol className="mt-2 space-y-2">
         {items.map((item) => (
-          <li className="grid gap-1 text-admin-sm md:grid-cols-[180px_1fr]" key={`${item.label}-${item.occurredAt}`}>
+          <li
+            className="grid gap-1 text-admin-sm md:grid-cols-[180px_1fr]"
+            key={`${item.label}-${item.occurredAt}`}
+          >
             <span className="text-admin-text-muted">{formatDateTime(item.occurredAt)}</span>
             <span>
               {item.label}

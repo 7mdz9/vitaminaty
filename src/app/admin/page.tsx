@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { DashboardFlagToggles } from "@/features/admin-dashboard/components/DashboardFlagToggles";
 import { getAdminDashboardData } from "@/features/admin-dashboard/queries";
+import { renderAuditEntry } from "@/features/admin-audit/render";
 import type { AuditLogRecord } from "@/types/audit-log";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,16 @@ export default async function AdminDashboardPage() {
               href="/admin/products?flag=missing_stock_quantity"
               label="Missing stock"
               value={data.catalog.missingStockQuantity}
+            />
+            <QueueLink
+              href="/admin/products?flag=needs_category_review"
+              label="Category review"
+              value={data.catalog.needsCategoryReview}
+            />
+            <QueueLink
+              href="/admin/products?flag=needs_brand_review"
+              label="Brand review"
+              value={data.catalog.needsBrandReview}
             />
             <QueueLink
               href="/admin/products?stock_status=out_of_stock"
@@ -145,7 +156,7 @@ export default async function AdminDashboardPage() {
                     <Badge variant="outline">{product.status.replace(/_/g, " ")}</Badge>
                   </TableCell>
                   <TableCell className="text-admin-sm text-admin-text-muted">
-                    {product.editedByEmail ?? "Unknown"}
+                    {product.editedByEmail ? redactEmail(product.editedByEmail) : "Unknown"}
                   </TableCell>
                   <TableCell className="text-admin-sm text-admin-text-muted">
                     {formatDateTime(product.updatedAt)}
@@ -319,12 +330,12 @@ function CompactTable({
 }
 
 function ActivityRow({ entry }: Readonly<{ entry: AuditLogRecord }>) {
+  const rendered = renderAuditEntry(entry);
+
   return (
     <div className="flex min-h-12 items-center justify-between gap-3 py-2 text-admin-sm">
       <div>
-        <p className="text-admin-text">
-          {entry.actor_email ?? "System"} {entry.action.replace(/_/g, " ")}
-        </p>
+        <p className="text-admin-text">{rendered.summary}</p>
         <p className="text-admin-caption text-admin-text-muted">
           {entry.entity_type}
           {entry.entity_id ? ` / ${entry.entity_id.slice(0, 8)}` : ""}
@@ -364,4 +375,9 @@ function formatDateTime(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function redactEmail(value: string): string {
+  const [, domain] = value.split("@");
+  return domain ? `***@${domain}` : value;
 }

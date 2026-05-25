@@ -70,7 +70,9 @@ export function ProductEditor({
       return;
     }
 
-    setMessage(result.code === "stale_data" ? `${result.message} Reload before retrying.` : result.message);
+    setMessage(
+      result.code === "stale_data" ? `${result.message} Reload before retrying.` : result.message,
+    );
   }
 
   const sectionProps = {
@@ -111,7 +113,9 @@ export function ProductEditor({
               <ArrowLeft className="size-4" />
             </Button>
             <div className="min-w-0">
-              <h2 className="truncate font-admin-display text-xl text-admin-text">{product.name}</h2>
+              <h2 className="truncate font-admin-display text-xl text-admin-text">
+                {product.name}
+              </h2>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <StatusBadge status={product.status} />
                 <CompletionScoreBadge score={projectedScore.score} />
@@ -120,9 +124,15 @@ export function ProductEditor({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {message ? <span className="text-admin-sm text-admin-text-muted">{message}</span> : null}
-            <Button size="sm" type="button" variant="outline">Preview as Public</Button>
-            <Button size="sm" type="button"><Save className="size-4" /> Save</Button>
+            {message ? (
+              <span className="text-admin-sm text-admin-text-muted">{message}</span>
+            ) : null}
+            <Button size="sm" type="button" variant="outline">
+              Preview as Public
+            </Button>
+            <Button size="sm" type="button">
+              <Save className="size-4" /> Save
+            </Button>
           </div>
         </div>
       </header>
@@ -146,7 +156,9 @@ export function ProductEditor({
                   return [...current, variant].sort((a, b) => a.sort_order - b.sort_order);
                 }
 
-                return current.map((candidate) => (candidate.id === variant.id ? variant : candidate));
+                return current.map((candidate) =>
+                  candidate.id === variant.id ? variant : candidate,
+                );
               })
             }
           />
@@ -160,12 +172,17 @@ export function ProductEditor({
         <aside className="space-y-3 rounded-admin-md border border-admin-border bg-admin-surface p-3">
           <h3 className="font-admin-display text-admin-title">Status panel</h3>
           <p className="text-admin-sm text-admin-text-muted">
-            {projectedScore.tier1Complete}/6 import, {projectedScore.tier2Complete}/6 MVP, {projectedScore.tier3Complete}/13 quality.
+            {projectedScore.tier1Complete}/6 import, {projectedScore.tier2Complete}/6 MVP,{" "}
+            {projectedScore.tier3Complete}/13 quality.
           </p>
           <div className="flex flex-wrap gap-1">
-            {Object.entries(product.admin_review_flags).filter(([, active]) => active).map(([flag]) => (
-              <Badge key={flag} variant="outline">{flag.replace(/_/g, " ")}</Badge>
-            ))}
+            {Object.entries(product.admin_review_flags)
+              .filter(([, active]) => active)
+              .map(([flag]) => (
+                <Badge key={flag} variant="outline">
+                  {flag.replace(/_/g, " ")}
+                </Badge>
+              ))}
           </div>
         </aside>
       </div>
@@ -186,7 +203,11 @@ function Checklist({ product }: Readonly<{ product: ProductRecord }>) {
         ["seo", "SEO", product.fields_status.seo_title],
         ["internal", "Internal", product.status],
       ].map(([href, label, status]) => (
-        <a className="flex items-center justify-between rounded-admin-sm px-2 py-1 hover:bg-admin-surface-muted" href={`#${href}`} key={href}>
+        <a
+          className="flex items-center justify-between rounded-admin-sm px-2 py-1 hover:bg-admin-surface-muted"
+          href={`#${href}`}
+          key={href}
+        >
           <span>{label}</span>
           <span className="text-admin-caption text-admin-text-muted">{status}</span>
         </a>

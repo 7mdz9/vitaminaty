@@ -20,7 +20,10 @@ type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
 type ProductVariantRow = Database["public"]["Tables"]["product_variants"]["Row"];
 type ProductVariantInsert = Database["public"]["Tables"]["product_variants"]["Insert"];
-type ProductVariantUpdate = Omit<Database["public"]["Tables"]["product_variants"]["Update"], "stock_status">;
+type ProductVariantUpdate = Omit<
+  Database["public"]["Tables"]["product_variants"]["Update"],
+  "stock_status"
+>;
 type ProductImageRow = Database["public"]["Tables"]["product_images"]["Row"];
 type ProductImageInsert = Database["public"]["Tables"]["product_images"]["Insert"];
 type ProductGoalTagRow = Database["public"]["Tables"]["product_goal_tags"]["Row"];
@@ -150,9 +153,7 @@ export async function findManyForAdmin(
   const to = from + pageSize - 1;
   const filters = input.filters ?? {};
 
-  let query = supabaseAdmin
-    .from("products")
-    .select(ADMIN_PRODUCT_COLUMNS, { count: "exact" });
+  let query = supabaseAdmin.from("products").select(ADMIN_PRODUCT_COLUMNS, { count: "exact" });
 
   if (filters.stockStatus && filters.stockStatus !== "all") {
     const productIds = await findProductIdsByStockStatus(filters.stockStatus);
@@ -197,7 +198,9 @@ export async function findManyForAdmin(
   const search = filters.search?.trim();
   if (search) {
     const escaped = search.replace(/[%_]/g, (match) => `\\${match}`);
-    query = query.or(`name.ilike.%${escaped}%,name_raw.ilike.%${escaped}%,brand_raw.ilike.%${escaped}%`);
+    query = query.or(
+      `name.ilike.%${escaped}%,name_raw.ilike.%${escaped}%,brand_raw.ilike.%${escaped}%`,
+    );
   }
 
   switch (input.sort ?? "recently_updated") {
@@ -652,9 +655,7 @@ export async function uploadProductImageAssetForAdmin(
     throw new Error(`Product image storage upload failed: ${error.message}`);
   }
 
-  const { data } = supabaseAdmin.storage
-    .from(PRODUCT_IMAGE_BUCKET)
-    .getPublicUrl(asset.storagePath);
+  const { data } = supabaseAdmin.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(asset.storagePath);
 
   return { publicUrl: data.publicUrl };
 }
@@ -806,7 +807,12 @@ async function fetchBrandMap(ids: string[]): Promise<Map<string, string>> {
     throw new Error(`Admin brand hydration failed: ${error.message}`);
   }
 
-  return new Map(((data as Pick<BrandRow, "id" | "display_name">[]) ?? []).map((row) => [row.id, row.display_name]));
+  return new Map(
+    ((data as Pick<BrandRow, "id" | "display_name">[]) ?? []).map((row) => [
+      row.id,
+      row.display_name,
+    ]),
+  );
 }
 
 async function fetchCategoryMap(ids: string[]): Promise<Map<string, string>> {
@@ -823,7 +829,9 @@ async function fetchCategoryMap(ids: string[]): Promise<Map<string, string>> {
     throw new Error(`Admin category hydration failed: ${error.message}`);
   }
 
-  return new Map(((data as Pick<CategoryRow, "id" | "name">[]) ?? []).map((row) => [row.id, row.name]));
+  return new Map(
+    ((data as Pick<CategoryRow, "id" | "name">[]) ?? []).map((row) => [row.id, row.name]),
+  );
 }
 
 async function fetchPrimaryImageMap(productIds: string[]): Promise<Map<string, string>> {
@@ -869,7 +877,10 @@ async function fetchVariantSummaryMap(productIds: string[]): Promise<
     { statuses: ProductVariantRow["stock_status"][]; quantities: Array<number | null> }
   >();
 
-  for (const row of (data as Pick<ProductVariantRow, "product_id" | "stock_status" | "stock_quantity">[]) ?? []) {
+  for (const row of (data as Pick<
+    ProductVariantRow,
+    "product_id" | "stock_status" | "stock_quantity"
+  >[]) ?? []) {
     const current = grouped.get(row.product_id) ?? { statuses: [], quantities: [] };
     current.statuses.push(row.stock_status);
     current.quantities.push(row.stock_quantity);
@@ -893,7 +904,9 @@ async function fetchVariantSummaryMap(productIds: string[]): Promise<
     const allOut = summary.statuses.every((status) => status === "out_of_stock");
     const anyLow = summary.statuses.some((status) => status === "low_stock");
     const anyOut = summary.statuses.some((status) => status === "out_of_stock");
-    const anyIn = summary.statuses.some((status) => status === "in_stock" || status === "low_stock");
+    const anyIn = summary.statuses.some(
+      (status) => status === "in_stock" || status === "low_stock",
+    );
     const badge = hasMissingQuantity
       ? "missing"
       : allOut

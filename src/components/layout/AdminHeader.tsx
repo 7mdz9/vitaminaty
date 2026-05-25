@@ -15,7 +15,10 @@ export function AdminHeader() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className="gap-1 border-admin-border bg-admin-surface-muted text-admin-text" variant="outline">
+          <Badge
+            className="gap-1 border-admin-border bg-admin-surface-muted text-admin-text"
+            variant="outline"
+          >
             <ShieldCheck className="size-3.5 text-admin-success" />
             MFA
           </Badge>

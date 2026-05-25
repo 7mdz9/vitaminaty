@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-export const ParentNavSchema = z.enum([
-  "Sport Nutrition",
-  "Health & Wellness",
-  "Snacks & Drinks",
-]);
+export const ParentNavSchema = z.enum(["Sport Nutrition", "Health & Wellness", "Snacks & Drinks"]);
 
 export const CategoryPatchSchema = z
   .object({

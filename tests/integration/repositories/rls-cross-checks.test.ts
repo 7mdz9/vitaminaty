@@ -70,10 +70,7 @@ describe("M1 RLS cross-checks", () => {
   });
 
   it("denies anon reads of wholesale_price_internal from products", async () => {
-    const { error } = await anonClient
-      .from("products")
-      .select("wholesale_price_internal")
-      .limit(1);
+    const { error } = await anonClient.from("products").select("wholesale_price_internal").limit(1);
 
     expect(error?.message).toMatch(/permission denied/i);
   });
@@ -98,9 +95,7 @@ describe("M1 RLS cross-checks", () => {
       .eq("customer_id", customerA.customer.id);
 
     expect(ownError).toBeNull();
-    expect(ownOrders).toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: orderAId })]),
-    );
+    expect(ownOrders).toEqual(expect.arrayContaining([expect.objectContaining({ id: orderAId })]));
 
     const { data: otherOrders, error: otherError } = await customerA.client
       .from("orders")
@@ -191,7 +186,18 @@ function seedAdminUser(): void {
 function runLocalPsql(sql: string): string {
   return execFileSync(
     "docker",
-    ["exec", "-i", "supabase_db_vitaminaty", "psql", "-U", "postgres", "-d", "postgres", "-tAc", sql],
+    [
+      "exec",
+      "-i",
+      "supabase_db_vitaminaty",
+      "psql",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+      "-tAc",
+      sql,
+    ],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
   ).trim();
 }

@@ -54,13 +54,19 @@ export function AuditLogTable({ entries }: Readonly<{ entries: AuditLogRecord[] 
           ) : (
             rendered.map(({ entry, rendered: row }) => (
               <TableRow className="h-10" key={entry.id}>
-                <TableCell className="text-admin-text-muted">{formatDateTime(entry.occurred_at)}</TableCell>
-                <TableCell>{entry.actor_email ?? "Unknown"}</TableCell>
+                <TableCell className="text-admin-text-muted">
+                  {formatDateTime(entry.occurred_at)}
+                </TableCell>
+                <TableCell>
+                  {entry.actor_email ? redactEmail(entry.actor_email) : "Unknown"}
+                </TableCell>
                 <TableCell>{entry.action.replaceAll("_", " ")}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span>{entry.entity_type}</span>
-                    <span className="text-admin-caption text-admin-text-muted">{entry.entity_id ?? "none"}</span>
+                    <span className="text-admin-caption text-admin-text-muted">
+                      {entry.entity_id ?? "none"}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -78,7 +84,7 @@ export function AuditLogTable({ entries }: Readonly<{ entries: AuditLogRecord[] 
                     {row.summary}
                   </Button>
                 </TableCell>
-                <TableCell>{entry.ip ?? "none"}</TableCell>
+                <TableCell>{entry.ip ? redactIp(entry.ip) : "none"}</TableCell>
                 <TableCell className="max-w-56 truncate text-admin-text-muted">
                   {entry.user_agent ?? "none"}
                 </TableCell>
@@ -102,7 +108,8 @@ export function AuditLogTable({ entries }: Readonly<{ entries: AuditLogRecord[] 
               <SheetHeader>
                 <SheetTitle>{selected.rendered.summary}</SheetTitle>
                 <SheetDescription>
-                  {selected.entry.action.replaceAll("_", " ")} · {formatDateTime(selected.entry.occurred_at)}
+                  {selected.entry.action.replaceAll("_", " ")} ·{" "}
+                  {formatDateTime(selected.entry.occurred_at)}
                 </SheetDescription>
               </SheetHeader>
               <div className="space-y-4 px-4 pb-4">
@@ -128,7 +135,12 @@ export function AuditLogTable({ entries }: Readonly<{ entries: AuditLogRecord[] 
                     </ul>
                   </details>
                 ) : null}
-                <Button onClick={() => setShowRaw((value) => !value)} size="sm" type="button" variant="outline">
+                <Button
+                  onClick={() => setShowRaw((value) => !value)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
                   <FileJson className="size-4" />
                   {showRaw ? "Hide raw" : "Show raw"}
                 </Button>
@@ -152,4 +164,18 @@ function formatDateTime(value: string): string {
     timeStyle: "short",
     timeZone: "Asia/Dubai",
   }).format(new Date(value));
+}
+
+function redactEmail(value: string): string {
+  const [, domain] = value.split("@");
+  return domain ? `***@${domain}` : value;
+}
+
+function redactIp(value: string): string {
+  if (value.includes(":")) {
+    return `${value.split(":").slice(0, 3).join(":")}:...`;
+  }
+
+  const parts = value.split(".");
+  return parts.length === 4 ? `${parts[0]}.${parts[1]}.*.*` : value;
 }

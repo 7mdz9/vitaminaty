@@ -149,7 +149,12 @@ export function BrandNormalizationTool({
                       <Wand2 className="size-4" />
                       Map
                     </Button>
-                    <Button disabled={isPending} onClick={() => createCanonical(row)} size="sm" type="button">
+                    <Button
+                      disabled={isPending}
+                      onClick={() => createCanonical(row)}
+                      size="sm"
+                      type="button"
+                    >
                       <Plus className="size-4" />
                       New
                     </Button>

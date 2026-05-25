@@ -13,7 +13,15 @@ import {
 import { SectionCard } from "./SectionCard";
 import type { ProductEditorSectionProps } from "./types";
 
-const statuses = ["imported", "draft", "partial", "ready_to_publish", "published", "hidden", "archived"] as const;
+const statuses = [
+  "imported",
+  "draft",
+  "partial",
+  "ready_to_publish",
+  "published",
+  "hidden",
+  "archived",
+] as const;
 
 export function InternalSection({ product, onSave, saving }: ProductEditorSectionProps) {
   const [status, setStatus] = useState(product.status);
@@ -24,11 +32,18 @@ export function InternalSection({ product, onSave, saving }: ProductEditorSectio
       <div className="grid gap-3 md:grid-cols-2">
         <label className="space-y-1 text-admin-sm">
           <span className="text-admin-text-muted">Status</span>
-          <Select value={status} onValueChange={(value) => value && setStatus(value as typeof status)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={status}
+            onValueChange={(value) => value && setStatus(value as typeof status)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {statuses.map((option) => (
-                <SelectItem key={option} value={option}>{option.replace(/_/g, " ")}</SelectItem>
+                <SelectItem key={option} value={option}>
+                  {option.replace(/_/g, " ")}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

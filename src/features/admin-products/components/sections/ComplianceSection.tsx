@@ -11,22 +11,34 @@ export function ComplianceSection({ product, onSave, saving }: ProductEditorSect
   const [ingredients, setIngredients] = useState(product.label_data.ingredients ?? "");
   const [allergens, setAllergens] = useState((product.label_data.allergens ?? []).join(", "));
   const [servingSize, setServingSize] = useState(product.label_data.serving_size ?? "");
-  const allergenList = allergens.split(",").map((item) => item.trim()).filter(Boolean);
+  const allergenList = allergens
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
   return (
     <SectionCard id="compliance" title="Label data">
       <div className="grid gap-3">
         <label className="space-y-1 text-admin-sm">
           <span className="text-admin-text-muted">Ingredients</span>
-          <Textarea value={ingredients} onChange={(event) => setIngredients(event.currentTarget.value)} />
+          <Textarea
+            value={ingredients}
+            onChange={(event) => setIngredients(event.currentTarget.value)}
+          />
         </label>
         <label className="space-y-1 text-admin-sm">
           <span className="text-admin-text-muted">Allergens, comma-separated</span>
-          <Textarea value={allergens} onChange={(event) => setAllergens(event.currentTarget.value)} />
+          <Textarea
+            value={allergens}
+            onChange={(event) => setAllergens(event.currentTarget.value)}
+          />
         </label>
         <label className="space-y-1 text-admin-sm">
           <span className="text-admin-text-muted">Serving size</span>
-          <Textarea value={servingSize} onChange={(event) => setServingSize(event.currentTarget.value)} />
+          <Textarea
+            value={servingSize}
+            onChange={(event) => setServingSize(event.currentTarget.value)}
+          />
         </label>
       </div>
       <Button

@@ -23,9 +23,14 @@ export const SetVariantStockActionSchema = z.object({
 export const AdjustVariantStockActionSchema = z.object({
   variantId: z.string().uuid(),
   expectedUpdatedAt: z.string().datetime(),
-  delta: z.number().int().min(-100000).max(100000).refine((value) => value !== 0, {
-    message: "Delta must not be zero.",
-  }),
+  delta: z
+    .number()
+    .int()
+    .min(-100000)
+    .max(100000)
+    .refine((value) => value !== 0, {
+      message: "Delta must not be zero.",
+    }),
   changeReasonNote: NoteSchema,
   force: z.boolean().default(false),
 });
@@ -53,9 +58,14 @@ export const BulkAdjustVariantStockActionSchema = z.object({
       z.object({
         variantId: z.string().uuid(),
         expectedUpdatedAt: z.string().datetime(),
-        delta: z.number().int().min(-100000).max(100000).refine((value) => value !== 0, {
-          message: "Delta must not be zero.",
-        }),
+        delta: z
+          .number()
+          .int()
+          .min(-100000)
+          .max(100000)
+          .refine((value) => value !== 0, {
+            message: "Delta must not be zero.",
+          }),
       }),
     )
     .min(1)
@@ -77,11 +87,11 @@ export const GetInventoryHistoryActionSchema = z
     (value) =>
       Boolean(
         value.productId ||
-          value.variantId ||
-          value.orderId ||
-          value.reason ||
-          value.actorUserId ||
-          (value.start && value.end),
+        value.variantId ||
+        value.orderId ||
+        value.reason ||
+        value.actorUserId ||
+        (value.start && value.end),
       ),
     {
       message: "At least one inventory history filter is required.",

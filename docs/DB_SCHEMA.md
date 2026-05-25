@@ -1321,6 +1321,7 @@ Full inventory spec: `INVENTORY_SPEC.md`.
 15. `0015_brand_alias_normalization.sql` - adds `admin_add_brand_alias_and_recompute()` for atomic brand alias normalization and affected product recompute.
 16. `0016_category_parent_tree.sql` - adds `categories.parent_id`, `categories_parent_id_sort_idx`, and service-role-only `admin_reorder_categories(jsonb)` for atomic sibling reorder and re-parenting.
 17. `0017_homepage_config.sql` - adds singleton `homepage_configs` with public read/admin write RLS for curated hero, promo, product rails, featured brands, and goal order.
+18. `0018_harden_function_search_path.sql` - pins `search_path` on shared helper functions flagged by the Supabase security advisor (`touch_updated_at`, `is_admin`, `compute_stock_status`).
 
 The `scripts/import-products-from-md.ts` runs after migrations to populate `products` from `docs/reference/product.md`.
 

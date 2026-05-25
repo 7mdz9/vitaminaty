@@ -102,7 +102,9 @@ describe("admin inventory endpoints", () => {
   it("returns stale_data without appending movement or audit when expected_updated_at differs", async () => {
     const before = variantFactory();
     const current = variantFactory({ updated_at: "2026-05-24T14:05:00.000Z" });
-    mocks.findProductVariantByIdForAdmin.mockResolvedValueOnce(before).mockResolvedValueOnce(current);
+    mocks.findProductVariantByIdForAdmin
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(current);
     mocks.updateProductVariantForAdminIfFresh.mockResolvedValueOnce(null);
 
     const { setVariantStock } = await import("@/features/admin-products/actions");
@@ -183,7 +185,9 @@ describe("admin inventory endpoints", () => {
     const updated = variantFactory({ low_stock_threshold: 9, stock_quantity: 20 });
     mocks.findProductVariantByIdForAdmin.mockResolvedValueOnce(before);
     mocks.updateProductVariantForAdminIfFresh.mockResolvedValueOnce(updated);
-    mocks.appendMovement.mockResolvedValueOnce(movementFactory({ change_amount: 0, new_quantity: 20 }));
+    mocks.appendMovement.mockResolvedValueOnce(
+      movementFactory({ change_amount: 0, new_quantity: 20 }),
+    );
 
     const { setVariantLowStockThreshold } = await import("@/features/admin-products/actions");
     const result = await setVariantLowStockThreshold({
@@ -210,15 +214,22 @@ describe("admin inventory endpoints", () => {
 
   it("bulk-adjusts variants after preflight and writes one movement per variant", async () => {
     const first = variantFactory({ id: "00000000-0000-4000-8000-000000000201", stock_quantity: 5 });
-    const second = variantFactory({ id: "00000000-0000-4000-8000-000000000202", stock_quantity: 10 });
+    const second = variantFactory({
+      id: "00000000-0000-4000-8000-000000000202",
+      stock_quantity: 10,
+    });
     mocks.findProductVariantsByIdsForAdmin.mockResolvedValueOnce([first, second]);
     mocks.findProductVariantByIdForAdmin.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
     mocks.updateProductVariantForAdminIfFresh
       .mockResolvedValueOnce({ ...first, stock_quantity: 7 })
       .mockResolvedValueOnce({ ...second, stock_quantity: 8 });
     mocks.appendMovement
-      .mockResolvedValueOnce(movementFactory({ variant_id: first.id, new_quantity: 7, change_amount: 2 }))
-      .mockResolvedValueOnce(movementFactory({ variant_id: second.id, new_quantity: 8, change_amount: -2 }));
+      .mockResolvedValueOnce(
+        movementFactory({ variant_id: first.id, new_quantity: 7, change_amount: 2 }),
+      )
+      .mockResolvedValueOnce(
+        movementFactory({ variant_id: second.id, new_quantity: 8, change_amount: -2 }),
+      );
 
     const { bulkAdjustVariantStock } = await import("@/features/admin-products/actions");
     const result = await bulkAdjustVariantStock({
@@ -229,7 +240,10 @@ describe("admin inventory endpoints", () => {
       changeReasonNote: "Cycle count batch",
     });
 
-    expect(result).toMatchObject({ ok: true, results: [{ variant: { id: first.id } }, { variant: { id: second.id } }] });
+    expect(result).toMatchObject({
+      ok: true,
+      results: [{ variant: { id: first.id } }, { variant: { id: second.id } }],
+    });
     expect(mocks.appendMovement).toHaveBeenCalledTimes(2);
     expect(mocks.record).toHaveBeenCalledTimes(2);
   });
@@ -296,19 +310,21 @@ function variantFactory(overrides: Partial<ProductVariantRecord> = {}): ProductV
   };
 }
 
-function movementFactory(overrides: Partial<{
-  id: string;
-  product_id: string;
-  variant_id: string;
-  previous_quantity: number | null;
-  new_quantity: number;
-  change_amount: number;
-  reason: "manual_adjustment" | "stock_recount";
-  change_reason_note: string | null;
-  changed_by: string | null;
-  changed_at: string;
-  order_id: string | null;
-}> = {}) {
+function movementFactory(
+  overrides: Partial<{
+    id: string;
+    product_id: string;
+    variant_id: string;
+    previous_quantity: number | null;
+    new_quantity: number;
+    change_amount: number;
+    reason: "manual_adjustment" | "stock_recount";
+    change_reason_note: string | null;
+    changed_by: string | null;
+    changed_at: string;
+    order_id: string | null;
+  }> = {},
+) {
   return {
     id: "00000000-0000-4000-8000-000000000300",
     product_id: "00000000-0000-4000-8000-000000000001",

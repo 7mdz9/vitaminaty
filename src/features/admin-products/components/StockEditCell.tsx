@@ -59,7 +59,11 @@ export function StockEditCell({
     <div className="flex min-w-32 items-center justify-end gap-2">
       <Input
         aria-label="Stock quantity"
-        className={status === "dirty" ? "h-8 w-24 border-admin-accent text-right tabular-nums" : "h-8 w-24 text-right tabular-nums"}
+        className={
+          status === "dirty"
+            ? "h-8 w-24 border-admin-accent text-right tabular-nums"
+            : "h-8 w-24 text-right tabular-nums"
+        }
         disabled={isPending}
         min={0}
         type="number"
@@ -80,7 +84,9 @@ export function StockEditCell({
           Save anyway
         </Button>
       ) : null}
-      {message ? <span className="max-w-32 text-admin-caption text-admin-text-muted">{message}</span> : null}
+      {message ? (
+        <span className="max-w-32 text-admin-caption text-admin-text-muted">{message}</span>
+      ) : null}
     </div>
   );
 }

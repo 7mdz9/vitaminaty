@@ -26,7 +26,9 @@ import { requireAdminPendingMfa } from "@/lib/auth/policies";
 const RECOVERY_CODES_COOKIE = "vit_admin_recovery_codes_once";
 
 export async function signInAdmin(formData: FormData): Promise<never> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const password = String(formData.get("password") ?? "");
   const nextPath = normalizeAdminNextPath(String(formData.get("next") ?? "/admin"));
   const supabase = await createAdminSupabaseAuthClient();
@@ -128,7 +130,9 @@ function normalizeAdminNextPath(value: string): string {
 
 async function setVerifiedAdminSession(userId: string, email: string): Promise<void> {
   const cookieStore = await cookies();
-  const currentSession = await readAdminSessionCookieValue(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
+  const currentSession = await readAdminSessionCookieValue(
+    cookieStore.get(ADMIN_SESSION_COOKIE)?.value,
+  );
   const verifiedAt = Date.now();
   const session: AdminSession =
     currentSession ??

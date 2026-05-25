@@ -3,7 +3,10 @@
 import { useRef, useState, useTransition } from "react";
 import { ImagePlus, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { uploadProductImage, type AdminProductImageUploadResult } from "@/features/admin-products/actions";
+import {
+  uploadProductImage,
+  type AdminProductImageUploadResult,
+} from "@/features/admin-products/actions";
 import type { ProductImageKind } from "@/types/product";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -78,7 +81,11 @@ export function ImageUploadField({
     >
       {previewUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img alt="" className="max-h-32 rounded-admin-sm border border-admin-border object-contain" src={previewUrl} />
+        <img
+          alt=""
+          className="max-h-32 rounded-admin-sm border border-admin-border object-contain"
+          src={previewUrl}
+        />
       ) : (
         <ImagePlus className="size-8 text-admin-text-muted" />
       )}

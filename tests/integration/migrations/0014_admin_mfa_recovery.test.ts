@@ -22,7 +22,18 @@ describe("0014 admin MFA recovery", () => {
 function runLocalPsql(sql: string): string {
   return execFileSync(
     "docker",
-    ["exec", "-i", "supabase_db_vitaminaty", "psql", "-U", "postgres", "-d", "postgres", "-tAc", sql],
+    [
+      "exec",
+      "-i",
+      "supabase_db_vitaminaty",
+      "psql",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+      "-tAc",
+      sql,
+    ],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
   ).trim();
 }

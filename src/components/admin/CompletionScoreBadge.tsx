@@ -3,11 +3,7 @@ import { cn } from "@/lib/utils";
 export function CompletionScoreBadge({ score }: Readonly<{ score: number }>) {
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
   const tone =
-    clamped >= 80
-      ? "bg-admin-success"
-      : clamped >= 50
-        ? "bg-admin-warning"
-        : "bg-admin-danger";
+    clamped >= 80 ? "bg-admin-success" : clamped >= 50 ? "bg-admin-warning" : "bg-admin-danger";
 
   return (
     <div className="flex min-w-20 items-center gap-2 tabular-nums">

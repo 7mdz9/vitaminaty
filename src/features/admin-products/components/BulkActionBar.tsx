@@ -96,10 +96,14 @@ export function BulkActionBar({
       <p className="text-admin-sm text-admin-text">{selectedProducts.length} selected</p>
       <div className="flex flex-wrap items-center gap-2">
         <Select value={brandId} onValueChange={(value) => setBrandId(value ?? "")}>
-          <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 w-40">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             {brands.map((brand) => (
-              <SelectItem key={brand.id} value={brand.id}>{brand.label}</SelectItem>
+              <SelectItem key={brand.id} value={brand.id}>
+                {brand.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -114,10 +118,14 @@ export function BulkActionBar({
           Assign brand
         </Button>
         <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? "")}>
-          <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 w-44">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>{category.label}</SelectItem>
+              <SelectItem key={category.id} value={category.id}>
+                {category.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -131,12 +139,19 @@ export function BulkActionBar({
           <FolderTree className="size-4" />
           Assign category
         </Button>
-        <Button disabled={isPending} onClick={() => setPendingAction("publish")} size="sm" type="button">
+        <Button
+          disabled={isPending}
+          onClick={() => setPendingAction("publish")}
+          size="sm"
+          type="button"
+        >
           <Send className="size-4" />
           Publish
         </Button>
       </div>
-      {message ? <p className="w-full text-admin-caption text-admin-text-muted">{message}</p> : null}
+      {message ? (
+        <p className="w-full text-admin-caption text-admin-text-muted">{message}</p>
+      ) : null}
       <BulkConfirmDialog
         open={pendingAction !== null}
         count={selectedProducts.length}

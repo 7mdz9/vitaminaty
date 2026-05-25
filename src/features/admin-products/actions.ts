@@ -245,7 +245,9 @@ export async function batchUpdateProducts(
   };
 }
 
-export async function getProductDrawerData(productId: string): Promise<AdminProductDrawerDataResult> {
+export async function getProductDrawerData(
+  productId: string,
+): Promise<AdminProductDrawerDataResult> {
   try {
     await requireAdmin();
     const data = await findProductEditorDataForAdmin(productId);
@@ -279,7 +281,9 @@ export async function updateProductPartial(
   return updateProduct(input);
 }
 
-export async function uploadProductImage(formData: FormData): Promise<AdminProductImageUploadResult> {
+export async function uploadProductImage(
+  formData: FormData,
+): Promise<AdminProductImageUploadResult> {
   try {
     const admin = await requireAdmin();
     const file = formData.get("file");
@@ -489,7 +493,9 @@ export async function bulkAssignBrand(
     const admin = await requireAdmin();
     const parsed = AdminProductBulkAssignBrandActionSchema.parse(input);
     const before = await findProductsByIdsForAdmin(parsed.productIds);
-    const updated = await bulkUpdateProductsForAdmin(parsed.productIds, { brand_id: parsed.brandId });
+    const updated = await bulkUpdateProductsForAdmin(parsed.productIds, {
+      brand_id: parsed.brandId,
+    });
     const updatedIds = updated.map((product) => product.id);
 
     await record({
@@ -497,7 +503,9 @@ export async function bulkAssignBrand(
       diff: buildBulkOperationDiff("assign_brand", before, updatedIds, [
         {
           field: "brand_id",
-          before_by_product_id: Object.fromEntries(before.map((product) => [product.id, product.brand_id])),
+          before_by_product_id: Object.fromEntries(
+            before.map((product) => [product.id, product.brand_id]),
+          ),
           after: parsed.brandId,
         },
       ]),
@@ -521,7 +529,9 @@ export async function bulkAssignCategory(
     const admin = await requireAdmin();
     const parsed = AdminProductBulkAssignCategoryActionSchema.parse(input);
     const before = await findProductsByIdsForAdmin(parsed.productIds);
-    const updated = await bulkUpdateProductsForAdmin(parsed.productIds, { category_id: parsed.categoryId });
+    const updated = await bulkUpdateProductsForAdmin(parsed.productIds, {
+      category_id: parsed.categoryId,
+    });
     const updatedIds = updated.map((product) => product.id);
 
     await record({
@@ -529,7 +539,9 @@ export async function bulkAssignCategory(
       diff: buildBulkOperationDiff("assign_category", before, updatedIds, [
         {
           field: "category_id",
-          before_by_product_id: Object.fromEntries(before.map((product) => [product.id, product.category_id])),
+          before_by_product_id: Object.fromEntries(
+            before.map((product) => [product.id, product.category_id]),
+          ),
           after: parsed.categoryId,
         },
       ]),
@@ -563,7 +575,9 @@ export async function bulkPublish(
     }
 
     const hardBlocked = before.filter(isHardBlockedForBulkPublish);
-    const publishable = before.filter((product) => !hardBlocked.some((blocked) => blocked.id === product.id));
+    const publishable = before.filter(
+      (product) => !hardBlocked.some((blocked) => blocked.id === product.id),
+    );
     const reviewFlagsByProductId = Object.fromEntries(
       publishable
         .map((product) => [product.id, activeReviewFlags(product)] as const)
@@ -613,7 +627,9 @@ export async function bulkPublish(
         : buildBulkOperationDiff("bulk_publish", before, updatedIds, [
             {
               field: "status",
-              before_by_product_id: Object.fromEntries(before.map((product) => [product.id, product.status])),
+              before_by_product_id: Object.fromEntries(
+                before.map((product) => [product.id, product.status]),
+              ),
               after: "published",
             },
             {
@@ -724,7 +740,9 @@ function mapInventoryActionError(error: unknown): AdminInventoryActionErrorResul
   };
 }
 
-function revalidateInventoryResult(result: Awaited<ReturnType<typeof setVariantStockService>>): AdminInventoryActionResult {
+function revalidateInventoryResult(
+  result: Awaited<ReturnType<typeof setVariantStockService>>,
+): AdminInventoryActionResult {
   if (!result.ok) {
     return result;
   }
@@ -775,7 +793,9 @@ function buildBulkOperationDiff(
 }
 
 function isHardBlockedForBulkPublish(product: ProductRecord): boolean {
-  return Boolean(product.admin_review_flags.case_pack || !product.retail_price_aed || !product.brand_id);
+  return Boolean(
+    product.admin_review_flags.case_pack || !product.retail_price_aed || !product.brand_id,
+  );
 }
 
 function activeReviewFlags(product: ProductRecord): string[] {

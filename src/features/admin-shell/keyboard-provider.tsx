@@ -1,19 +1,7 @@
 "use client";
 
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { createContext, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Kbd } from "@/components/ui/kbd";
 import { CommandBar } from "./command-bar/CommandBar";
 import type { ShortcutBinding } from "./use-shortcuts";
@@ -117,7 +105,9 @@ export function KeyboardProvider({ children }: Readonly<{ children: ReactNode }>
 }
 
 function matchesShortcut(binding: ShortcutBinding, event: KeyboardEvent): boolean {
-  const metaMatches = binding.meta ? event.metaKey || event.ctrlKey : !event.metaKey && !event.ctrlKey;
+  const metaMatches = binding.meta
+    ? event.metaKey || event.ctrlKey
+    : !event.metaKey && !event.ctrlKey;
   const shiftMatches = binding.shift === undefined || binding.shift === event.shiftKey;
 
   return metaMatches && shiftMatches && event.key.toLowerCase() === binding.key.toLowerCase();
@@ -128,10 +118,7 @@ function isTextInput(target: EventTarget | null): boolean {
     return false;
   }
 
-  return (
-    target.isContentEditable ||
-    ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)
-  );
+  return target.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName);
 }
 
 function formatShortcut(binding: ShortcutBinding): string {

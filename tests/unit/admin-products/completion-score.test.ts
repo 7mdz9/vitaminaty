@@ -53,6 +53,32 @@ describe("completion_score", () => {
     expect(result.score).toBe(100);
   });
 
+  it("counts nutrition_panel when the field is complete or verified", () => {
+    const verified = calculateCompletionScore(
+      withCompleteCounts(
+        fullCompleteProduct({
+          fields_status: {
+            ...fullCompleteProduct().fields_status,
+            nutrition_panel: "verified",
+          },
+        }),
+      ),
+    );
+    const complete = calculateCompletionScore(
+      withCompleteCounts(
+        fullCompleteProduct({
+          fields_status: {
+            ...fullCompleteProduct().fields_status,
+            nutrition_panel: "complete",
+          },
+        }),
+      ),
+    );
+
+    expect(verified.tier3Complete).toBe(TIER_3_SCORED_FIELDS.length);
+    expect(complete.tier3Complete).toBe(TIER_3_SCORED_FIELDS.length);
+  });
+
   it("code constants match the approved section 22.1.1 field lists", () => {
     expect(TIER_1_SCORED_FIELDS).toEqual([
       "name_raw",

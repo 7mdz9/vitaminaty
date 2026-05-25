@@ -1,8 +1,5 @@
 import { AuditLogTable } from "@/features/admin-audit/components/AuditLogTable";
-import {
-  getAuditLogList,
-  parseAuditLogSearchParams,
-} from "@/features/admin-audit/queries";
+import { getAuditLogList, parseAuditLogSearchParams } from "@/features/admin-audit/queries";
 import { auditLogActionOptions, type AuditLogListSearchParams } from "@/lib/validation/audit-log";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +80,12 @@ function PaginationFooter({
       <span className="text-admin-text-muted tabular-nums">
         {page} / {pageCount}
       </span>
-      <Button disabled={page >= pageCount} render={<a href={nextHref} />} size="sm" variant="outline">
+      <Button
+        disabled={page >= pageCount}
+        render={<a href={nextHref} />}
+        size="sm"
+        variant="outline"
+      >
         Next
       </Button>
     </div>

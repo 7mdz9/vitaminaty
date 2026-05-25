@@ -46,6 +46,4 @@ export type AdminBrandPatch = z.infer<typeof AdminBrandPatchSchema>;
 export type AdminBrandUpdateActionInput = z.infer<typeof AdminBrandUpdateActionSchema>;
 export type AdminBrandCreateActionInput = z.infer<typeof AdminBrandCreateActionSchema>;
 export type AdminBrandAliasActionInput = z.infer<typeof AdminBrandAliasActionSchema>;
-export type AdminBrandImageUploadMetadata = z.infer<
-  typeof AdminBrandImageUploadMetadataSchema
->;
+export type AdminBrandImageUploadMetadata = z.infer<typeof AdminBrandImageUploadMetadataSchema>;

@@ -1,10 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/server/db/supabase-admin";
-import {
-  PRODUCT_IMAGE_BUCKET,
-  type PreparedBrandImageUpload,
-} from "@/lib/images/upload";
+import { PRODUCT_IMAGE_BUCKET, type PreparedBrandImageUpload } from "@/lib/images/upload";
 import type { Database } from "@/lib/supabase/types.generated";
 import type { BrandRecord } from "@/types/brand";
 
@@ -231,9 +228,7 @@ export async function uploadBrandImageAssetForAdmin(
     throw new Error(`Brand image storage upload failed: ${error.message}`);
   }
 
-  const { data } = supabaseAdmin.storage
-    .from(PRODUCT_IMAGE_BUCKET)
-    .getPublicUrl(asset.storagePath);
+  const { data } = supabaseAdmin.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(asset.storagePath);
 
   return { publicUrl: data.publicUrl };
 }

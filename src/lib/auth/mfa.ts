@@ -53,17 +53,13 @@ export async function createAdminSupabaseAuthClient() {
   );
 }
 
-export async function hasVerifiedTotpFactor(
-  supabase?: SupabaseAuthClient,
-): Promise<boolean> {
+export async function hasVerifiedTotpFactor(supabase?: SupabaseAuthClient): Promise<boolean> {
   const client = supabase ?? (await createAdminSupabaseAuthClient());
 
   return (await listVerifiedTotpFactors(client)).length > 0;
 }
 
-export async function beginTotpEnrollment(
-  supabase?: SupabaseAuthClient,
-): Promise<TotpEnrollment> {
+export async function beginTotpEnrollment(supabase?: SupabaseAuthClient): Promise<TotpEnrollment> {
   const client = supabase ?? (await createAdminSupabaseAuthClient());
   const { data, error } = await client.auth.mfa.enroll({
     factorType: "totp",
@@ -125,9 +121,7 @@ export async function verifyTotpEnrollment(input: {
   }
 }
 
-export async function beginTotpChallenge(
-  supabase?: SupabaseAuthClient,
-): Promise<TotpChallenge> {
+export async function beginTotpChallenge(supabase?: SupabaseAuthClient): Promise<TotpChallenge> {
   const client = supabase ?? (await createAdminSupabaseAuthClient());
   const factor = (await listVerifiedTotpFactors(client))[0];
 

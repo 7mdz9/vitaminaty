@@ -8,7 +8,10 @@ export const FeatureFlagKeySchema = z.enum(featureFlagKeys);
 export const FeatureFlagMfaChallengeSchema = z.object({
   factorId: z.string().trim().min(1),
   challengeId: z.string().trim().min(1),
-  code: z.string().trim().regex(/^\d{6}$/, "MFA code must be 6 digits."),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "MFA code must be 6 digits."),
 });
 
 export const FeatureFlagToggleActionSchema = z.object({
