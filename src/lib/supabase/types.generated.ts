@@ -353,6 +353,66 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_configs: {
+        Row: {
+          bestseller_product_ids: string[]
+          created_at: string
+          featured_brand_ids: string[]
+          goal_order: Database["public"]["Enums"]["goal_tag"][]
+          hero_cta_href: string
+          hero_cta_label: string
+          hero_subtitle: string
+          hero_title: string
+          id: string
+          new_arrival_product_ids: string[]
+          promo_banner_href: string | null
+          promo_banner_text: string | null
+          promo_ends_at: string | null
+          promo_starts_at: string | null
+          singleton_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bestseller_product_ids?: string[]
+          created_at?: string
+          featured_brand_ids?: string[]
+          goal_order?: Database["public"]["Enums"]["goal_tag"][]
+          hero_cta_href?: string
+          hero_cta_label?: string
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          new_arrival_product_ids?: string[]
+          promo_banner_href?: string | null
+          promo_banner_text?: string | null
+          promo_ends_at?: string | null
+          promo_starts_at?: string | null
+          singleton_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bestseller_product_ids?: string[]
+          created_at?: string
+          featured_brand_ids?: string[]
+          goal_order?: Database["public"]["Enums"]["goal_tag"][]
+          hero_cta_href?: string
+          hero_cta_label?: string
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          new_arrival_product_ids?: string[]
+          promo_banner_href?: string | null
+          promo_banner_text?: string | null
+          promo_ends_at?: string | null
+          promo_starts_at?: string | null
+          singleton_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       inventory_movements: {
         Row: {
           change_amount: number

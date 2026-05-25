@@ -1,54 +1,58 @@
 # LAST_SESSION.md
 
-## M2 Step 14 complete - integrations + admin users settings
+## M2 Step 15 complete - dashboard + homepage curation
 
-Date: 2026-05-24
+Date: 2026-05-25
 
-Objective completed: implemented the remaining admin settings routes for integrations and admin users. `/admin/settings/integrations` now shows Paymob/iCarry mode, webhook ledger health, and masked credential readiness. `/admin/settings/users` now lists Supabase Auth admins and supports MFA-gated invite, deactivate, soft-delete, and MFA reset actions.
+Objective completed: implemented the admin dashboard and homepage curation workflow. `/admin` now renders catalog snapshot metrics, queue links, operational alerts, recent orders, recently edited products, recent admin activity, operational feature-flag toggles, integration mode health, and current-admin progress. `/admin/homepage` now edits the singleton homepage curation config for hero copy, promo banner, product rails, featured brands, and goal pill order.
 
 ### Files created
 
-- `src/features/admin-settings/actions.ts`
-- `src/features/admin-settings/queries.ts`
-- `src/features/admin-settings/components/AdminUsersTable.tsx`
-- `src/features/admin-settings/components/IntegrationsStatusDashboard.tsx`
-- `src/lib/validation/admin-settings.ts`
-- `tests/integration/admin-settings/admin-users.test.ts`
+- `supabase/migrations/0017_homepage_config.sql`
+- `src/features/admin-dashboard/queries.ts`
+- `src/features/admin-dashboard/components/DashboardFlagToggles.tsx`
+- `src/features/admin-homepage/actions.ts`
+- `src/features/admin-homepage/queries.ts`
+- `src/features/admin-homepage/components/HomepageEditor.tsx`
+- `src/lib/validation/homepage.ts`
+- `src/server/repositories/admin-dashboard-repository.ts`
+- `src/server/repositories/homepage-config-admin-repository.ts`
+- `src/types/homepage.ts`
+- `tests/integration/admin-dashboard/dashboard.test.ts`
+- `tests/integration/admin-homepage/homepage.test.ts`
 
 ### Files modified
 
+- `docs/DB_SCHEMA.md`
 - `docs/PROJECT_STATE.md`
 - `docs/LAST_SESSION.md`
-- `src/app/admin/settings/integrations/page.tsx`
-- `src/app/admin/settings/users/page.tsx`
-- `src/lib/audit/diff-types.ts`
-- `src/server/repositories/admin-repository.ts`
-- `src/server/repositories/payment-event-repository.ts`
-- `src/server/repositories/shipment-event-repository.ts`
+- `src/app/admin/page.tsx`
+- `src/app/admin/homepage/page.tsx`
+- `src/lib/supabase/types.generated.ts`
 
 ### Implementation notes
 
-- Integration settings reads are requireAdmin-gated and summarize `payment_events` / `shipment_events` without adding mutation paths.
-- Credentials are rendered as configured/missing with last-4 masking only; no secret values are sent to the client.
-- Admin user actions all call `requireAdmin()` and require a fresh Supabase TOTP challenge/verify payload.
-- Admin invite uses Supabase Auth invite, then sets `app_metadata.role='admin'`.
-- Admin deactivation changes `app_metadata.role` to `deactivated_admin`; delete uses Supabase Auth soft-delete.
-- MFA reset deletes every listed Auth MFA factor for the target admin and records an `mfa_reset` audit row.
-- Self-deactivate, self-delete, and self-MFA-reset are blocked before MFA verification or repository writes.
+- Migration `0017_homepage_config.sql` adds singleton `homepage_configs` with public read RLS for future storefront use and admin write RLS for authenticated admins.
+- Homepage curation saves validate slot limits, promo schedule ordering, and selected product/brand IDs before stale-safe update.
+- Homepage saves write shape-family-1 audit rows with `entity_type='homepage_config'`.
+- Dashboard queries stay requireAdmin-gated and repository-backed; operational flag quick toggles reuse the existing feature flag action path.
+- Dashboard system health uses env-mode posture plus append-only payment/shipment event ledger stats; no secrets are exposed.
 
 ### Verification
 
 ```text
-Supabase changelog/doc preflight: PASS (no task-blocking Auth admin/MFA changes found)
-Supabase Auth admin/user-management docs checked: PASS
+Supabase changelog preflight: PASS (no task-blocking database/RLS changes found)
+pnpm db:reset: PASS (migrations 0001-0017)
+pnpm db:types: PASS
 pnpm typecheck: PASS
-pnpm test -- admin-settings --reporter verbose: PASS (2 files, 10 tests)
+pnpm test -- admin-homepage admin-dashboard --reporter verbose: PASS (2 files, 3 tests)
 pnpm lint: PASS (existing QR-code <img> warning in /admin/mfa/enroll)
-pnpm test: PASS (33 files, 142 tests)
-pnpm build: PASS (same existing QR-code <img> warning; integrations/users routes in output)
+pnpm test: PASS (35 files, 145 tests)
+pnpm build: PASS (same existing QR-code <img> warning; /admin and /admin/homepage in output)
 pnpm scan:bundle-secrets: PASS
-requireAdmin sweep for admin/feature-flag action files: PASS (empty)
-Step 14 marker sweep: PASS
+requireAdmin sweep for admin action files: PASS (empty)
+Step 15 marker sweep: PASS
+git diff --check: PASS (line-ending warnings only)
 ```
 
 ### Manual / Browser Notes
@@ -57,14 +61,14 @@ Step 14 marker sweep: PASS
 
 ### HANDOFF
 
-files_created: [`src/features/admin-settings/actions.ts`, `src/features/admin-settings/queries.ts`, `src/features/admin-settings/components/AdminUsersTable.tsx`, `src/features/admin-settings/components/IntegrationsStatusDashboard.tsx`, `src/lib/validation/admin-settings.ts`, `tests/integration/admin-settings/admin-users.test.ts`]
+files_created: [`supabase/migrations/0017_homepage_config.sql`, `src/features/admin-dashboard/queries.ts`, `src/features/admin-dashboard/components/DashboardFlagToggles.tsx`, `src/features/admin-homepage/actions.ts`, `src/features/admin-homepage/queries.ts`, `src/features/admin-homepage/components/HomepageEditor.tsx`, `src/lib/validation/homepage.ts`, `src/server/repositories/admin-dashboard-repository.ts`, `src/server/repositories/homepage-config-admin-repository.ts`, `src/types/homepage.ts`, `tests/integration/admin-dashboard/dashboard.test.ts`, `tests/integration/admin-homepage/homepage.test.ts`]
 
-files_modified: [`docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/app/admin/settings/integrations/page.tsx`, `src/app/admin/settings/users/page.tsx`, `src/lib/audit/diff-types.ts`, `src/server/repositories/admin-repository.ts`, `src/server/repositories/payment-event-repository.ts`, `src/server/repositories/shipment-event-repository.ts`]
+files_modified: [`docs/DB_SCHEMA.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/app/admin/page.tsx`, `src/app/admin/homepage/page.tsx`, `src/lib/supabase/types.generated.ts`]
 
-patterns_established: [`admin settings actions require MFA challenge payloads for sensitive Auth changes`, `Auth admin deactivation is role-based via app_metadata.role=deactivated_admin`, `Auth admin deletion uses Supabase soft-delete`, `integration settings expose only masked credential readiness and event-ledger health`]
+patterns_established: [`homepage_configs singleton row for curated public homepage content`, `homepage_config audit rows use shape-family-1 update diffs`, `dashboard data composed through repository helpers rather than route-local Supabase calls`]
 
-next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md §4`, `docs/ADMIN_PORTAL_SPEC.md §11`, `src/app/admin/page.tsx`, `src/app/admin/homepage/page.tsx`, `src/server/repositories/product-admin-repository.ts`, `src/server/repositories/brand-admin-repository.ts`, `src/server/repositories/category-repository.ts`]
+next_step_must_read: [`docs/ADMIN_PORTAL_SPEC.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/app/admin/page.tsx`, `src/app/admin/homepage/page.tsx`, `src/features/admin-dashboard/queries.ts`, `src/features/admin-homepage/actions.ts`]
 
 known_issues_introduced: [none]
 
-invariants_observed: [SECURITY INVARIANTS - requireAdmin gates every setting action/query, MFA re-verification gates sensitive Auth admin actions, service-role Auth operations stay repository-only. AUDIT INVARIANTS - admin invite/deactivate/delete/MFA reset write audit rows. SECRET INVARIANTS - bundle scan clean and integration credentials are last-4 masked only.]
+invariants_observed: [SECURITY INVARIANTS - dashboard/homepage queries and actions call requireAdmin, homepage writes are stale-safe, service-role Supabase access remains repository-only. AUDIT INVARIANTS - homepage saves write audit rows. SECRET INVARIANTS - bundle scan clean and dashboard integration health exposes only modes and event counts.]

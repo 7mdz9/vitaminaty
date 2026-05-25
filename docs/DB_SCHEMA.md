@@ -1007,6 +1007,51 @@ ALTER TABLE admin_mfa_recovery_codes ENABLE ROW LEVEL SECURITY;
 -- No SELECT/INSERT/UPDATE/DELETE policy; service-role-only access.
 ```
 
+### 8.6 `homepage_configs` (added in M2 migration 0017)
+
+Singleton admin-curated homepage configuration for M2 dashboard/homepage curation.
+The public M3 homepage can read this non-sensitive row; admin writes remain
+audit-logged through `audit_log` shape 1 with `entity_type='homepage_config'`.
+
+```sql
+CREATE TABLE homepage_configs (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  singleton_key text NOT NULL DEFAULT 'homepage',
+  hero_title text NOT NULL DEFAULT 'Vitaminaty',
+  hero_subtitle text NOT NULL DEFAULT 'Sports nutrition, vitamins, wellness, and healthy food in the UAE.',
+  hero_cta_label text NOT NULL DEFAULT 'Shop products',
+  hero_cta_href text NOT NULL DEFAULT '/products',
+  promo_banner_text text,
+  promo_banner_href text,
+  promo_starts_at timestamptz,
+  promo_ends_at timestamptz,
+  new_arrival_product_ids uuid[] NOT NULL DEFAULT '{}'::uuid[],
+  bestseller_product_ids uuid[] NOT NULL DEFAULT '{}'::uuid[],
+  featured_brand_ids uuid[] NOT NULL DEFAULT '{}'::uuid[],
+  goal_order goal_tag[] NOT NULL DEFAULT ARRAY[
+    'build_muscle',
+    'boost_energy',
+    'recovery',
+    'weight_management',
+    'endurance'
+  ]::goal_tag[],
+  updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT homepage_configs_singleton_key_check CHECK (singleton_key = 'homepage'),
+  CONSTRAINT homepage_configs_singleton_key_unique UNIQUE (singleton_key),
+  CONSTRAINT homepage_configs_new_arrivals_limit CHECK (cardinality(new_arrival_product_ids) <= 4),
+  CONSTRAINT homepage_configs_bestsellers_limit CHECK (cardinality(bestseller_product_ids) <= 4),
+  CONSTRAINT homepage_configs_featured_brands_limit CHECK (cardinality(featured_brand_ids) <= 2),
+  CONSTRAINT homepage_configs_goal_order_limit CHECK (cardinality(goal_order) <= 5),
+  CONSTRAINT homepage_configs_promo_window_check CHECK (
+    promo_starts_at IS NULL
+    OR promo_ends_at IS NULL
+    OR promo_ends_at > promo_starts_at
+  )
+);
+```
+
 ---
 
 ## 9. RLS policies
@@ -1218,6 +1263,21 @@ CREATE POLICY inventory_movements_admin_read ON inventory_movements
 -- See INVENTORY_SPEC.md §4.4.
 ```
 
+### 9.11 Homepage config (added in M2 migration 0017)
+
+```sql
+ALTER TABLE homepage_configs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY homepage_configs_public_read ON homepage_configs
+  FOR SELECT TO anon, authenticated
+  USING (true);
+
+CREATE POLICY homepage_configs_admin_all ON homepage_configs
+  FOR ALL TO authenticated
+  USING (is_admin())
+  WITH CHECK (is_admin());
+```
+
 ---
 
 ## 10. Migration sequence (M1)
@@ -1260,6 +1320,7 @@ Full inventory spec: `INVENTORY_SPEC.md`.
 14. `0014_admin_mfa_recovery.sql` - stores hashed admin MFA recovery codes behind service-role-only access.
 15. `0015_brand_alias_normalization.sql` - adds `admin_add_brand_alias_and_recompute()` for atomic brand alias normalization and affected product recompute.
 16. `0016_category_parent_tree.sql` - adds `categories.parent_id`, `categories_parent_id_sort_idx`, and service-role-only `admin_reorder_categories(jsonb)` for atomic sibling reorder and re-parenting.
+17. `0017_homepage_config.sql` - adds singleton `homepage_configs` with public read/admin write RLS for curated hero, promo, product rails, featured brands, and goal order.
 
 The `scripts/import-products-from-md.ts` runs after migrations to populate `products` from `docs/reference/product.md`.
 
