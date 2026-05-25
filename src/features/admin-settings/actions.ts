@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
 import { beginTotpChallenge, verifyTotpChallenge } from "@/lib/auth/mfa";
-import { isAppError } from "@/lib/errors";
+import { isAppError, type ErrorCode } from "@/lib/errors";
 import { record } from "@/features/audit-log/record";
 import {
   AdminInviteActionSchema,
@@ -28,7 +28,7 @@ export type AdminSettingsMfaChallengeResult =
     }
   | {
       ok: false;
-      code: "authorization_error" | "validation_error" | "unknown";
+      error: ErrorCode;
       message: string;
     };
 
@@ -40,13 +40,7 @@ export type AdminUserActionResult =
     }
   | {
       ok: false;
-      code:
-        | "not_found"
-        | "self_action_blocked"
-        | "mfa_required"
-        | "validation_error"
-        | "authorization_error"
-        | "unknown";
+      error: ErrorCode;
       message: string;
     };
 
@@ -107,7 +101,7 @@ export async function deactivateAdminUser(
     if (parsed.userId === admin.userId) {
       return {
         ok: false,
-        code: "self_action_blocked",
+        error: "unauthorized",
         message: "Admins cannot deactivate their own admin access.",
       };
     }
@@ -116,7 +110,7 @@ export async function deactivateAdminUser(
     const before = await findAdminSummary(parsed.userId);
 
     if (!before) {
-      return { ok: false, code: "not_found", message: "Admin user not found." };
+      return { ok: false, error: "not_found", message: "Admin user not found." };
     }
 
     const deactivated = await deactivateAuthAdmin(parsed.userId);
@@ -152,7 +146,7 @@ export async function deleteAdminUser(
     if (parsed.userId === admin.userId) {
       return {
         ok: false,
-        code: "self_action_blocked",
+        error: "unauthorized",
         message: "Admins cannot delete their own admin account.",
       };
     }
@@ -161,7 +155,7 @@ export async function deleteAdminUser(
     const before = await findAdminSummary(parsed.userId);
 
     if (!before) {
-      return { ok: false, code: "not_found", message: "Admin user not found." };
+      return { ok: false, error: "not_found", message: "Admin user not found." };
     }
 
     await deleteAuthAdmin(parsed.userId);
@@ -197,7 +191,7 @@ export async function revokeAdminMfa(
     if (parsed.userId === admin.userId) {
       return {
         ok: false,
-        code: "self_action_blocked",
+        error: "unauthorized",
         message: "Admins cannot revoke their own MFA from this panel.",
       };
     }
@@ -206,7 +200,7 @@ export async function revokeAdminMfa(
     const before = await findAdminSummary(parsed.userId);
 
     if (!before) {
-      return { ok: false, code: "not_found", message: "Admin user not found." };
+      return { ok: false, error: "not_found", message: "Admin user not found." };
     }
 
     await Promise.all(
@@ -251,14 +245,14 @@ function mapChallengeError(
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown MFA challenge error.",
   };
 }
@@ -267,14 +261,14 @@ function mapUserActionError(error: unknown): Extract<AdminUserActionResult, { ok
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown admin user action error.",
   };
 }

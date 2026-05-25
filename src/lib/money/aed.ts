@@ -9,14 +9,12 @@ export type AedAmount = number & {
 function assertValidAedInteger(value: number): void {
   if (!Number.isSafeInteger(value)) {
     throw new ValidationError({
-      code: "aed_amount_not_integer",
       message: "AED amounts must be safe whole integers.",
     });
   }
 
   if (value < 0) {
     throw new ValidationError({
-      code: "aed_amount_negative",
       message: "AED amounts cannot be negative.",
     });
   }
@@ -42,14 +40,12 @@ export function subtract(left: AedAmount, right: AedAmount): AedAmount {
 export function multiplyByQuantity(amount: AedAmount, quantity: number): AedAmount {
   if (!Number.isSafeInteger(quantity)) {
     throw new ValidationError({
-      code: "quantity_not_integer",
       message: "Quantity must be a safe whole integer.",
     });
   }
 
   if (quantity < 0) {
     throw new ValidationError({
-      code: "quantity_negative",
       message: "Quantity cannot be negative.",
     });
   }

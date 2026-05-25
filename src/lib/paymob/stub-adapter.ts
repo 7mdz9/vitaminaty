@@ -40,7 +40,7 @@ export class StubPaymentAdapter implements PaymentAdapter {
     });
 
     throw new IntegrationError({
-      code: "paymob_stub_webhook_not_supported",
+      code: "payment_provider_error",
       message: "Stub Paymob adapter does not accept webhook events.",
     });
   }

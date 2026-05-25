@@ -71,7 +71,7 @@ export function ProductEditor({
     }
 
     setMessage(
-      result.code === "stale_data" ? `${result.message} Reload before retrying.` : result.message,
+      result.error === "stale_data" ? `${result.message} Reload before retrying.` : result.message,
     );
   }
 

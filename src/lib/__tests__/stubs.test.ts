@@ -11,7 +11,7 @@ describe("future cryptographic stubs", () => {
       deriveIdempotencyKey(["customer", "cart"]);
     } catch (error) {
       expect(isAppError(error)).toBe(true);
-      expect((error as Error & { code: string }).code).toBe("not_implemented");
+      expect((error as Error & { code: string }).code).toBe("internal_error");
     }
   });
 

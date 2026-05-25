@@ -12,7 +12,7 @@ describe("completion_score", () => {
     expect(calculateCompletionScore(productFactory()).score).toBe(0);
   });
 
-  it("allMVPComplete -> 60", () => {
+  it("allMVPComplete -> 66", () => {
     const result = calculateCompletionScore({
       ...mvpCompleteProduct(),
       goal_tag_count: 1,
@@ -21,7 +21,7 @@ describe("completion_score", () => {
     });
 
     expect(result.rawPreClampValue).toBe(66);
-    expect(result.score).toBe(60);
+    expect(result.score).toBe(66);
   });
 
   it("allComplete -> 100", () => {

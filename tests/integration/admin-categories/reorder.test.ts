@@ -85,7 +85,7 @@ describe("admin category actions", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      code: "stale_data",
+      error: "stale_data",
       current: { updated_at: current.updated_at },
     });
     expect(mocks.record).not.toHaveBeenCalled();

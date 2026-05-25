@@ -3,7 +3,7 @@
 import { readFile } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
-import { isAppError } from "@/lib/errors";
+import { isAppError, type ErrorCode } from "@/lib/errors";
 import { beginTotpChallenge, verifyTotpChallenge } from "@/lib/auth/mfa";
 import { record } from "@/features/audit-log/record";
 import { clearFeatureFlagCache } from "@/features/feature-flags/eval";
@@ -26,7 +26,7 @@ export type FeatureFlagMfaChallengeResult =
     }
   | {
       ok: false;
-      code: "authorization_error" | "validation_error" | "unknown";
+      error: ErrorCode;
       message: string;
     };
 
@@ -37,15 +37,7 @@ export type FeatureFlagToggleResult =
     }
   | {
       ok: false;
-      code:
-        | "not_found"
-        | "locked"
-        | "mfa_required"
-        | "confirmation_required"
-        | "stale_data"
-        | "validation_error"
-        | "authorization_error"
-        | "unknown";
+      error: ErrorCode;
       message: string;
       current?: FeatureFlagRecord | null;
       requiredPhrase?: string;
@@ -79,7 +71,7 @@ export async function toggleFeatureFlag(
     if (!before) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Feature flag not found.",
       };
     }
@@ -99,7 +91,7 @@ export async function toggleFeatureFlag(
       if (!hasHighRigorSignoff(gate, lastSessionText)) {
         return {
           ok: false,
-          code: "locked",
+          error: "feature_disabled",
           message: `${parsed.key} is locked until ${gate.signoffLabel} is recorded in LAST_SESSION.md.`,
         };
       }
@@ -107,7 +99,7 @@ export async function toggleFeatureFlag(
       if (!parsed.mfa) {
         return {
           ok: false,
-          code: "mfa_required",
+          error: "mfa_required",
           message: "MFA re-verification is required for this HIGH_RIGOR flag.",
         };
       }
@@ -115,7 +107,7 @@ export async function toggleFeatureFlag(
       if (parsed.enabled && gate.enablePhrase && parsed.confirmationPhrase !== gate.enablePhrase) {
         return {
           ok: false,
-          code: "confirmation_required",
+          error: "conflict",
           message: `Type ${gate.enablePhrase} to enable this flag.`,
           requiredPhrase: gate.enablePhrase,
         };
@@ -133,7 +125,7 @@ export async function toggleFeatureFlag(
     if (!updated) {
       return {
         ok: false,
-        code: "stale_data",
+        error: "stale_data",
         message: "This feature flag changed after the settings page loaded.",
         current: await getFeatureFlag(parsed.key),
       };
@@ -177,14 +169,14 @@ function mapChallengeError(error: unknown): Extract<FeatureFlagMfaChallengeResul
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown MFA challenge error.",
   };
 }
@@ -193,14 +185,14 @@ function mapToggleError(error: unknown): FeatureFlagToggleErrorResult {
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown feature flag action error.",
   };
 }

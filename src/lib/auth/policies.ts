@@ -21,7 +21,7 @@ export async function requireAdmin(): Promise<RequiredAdmin> {
 
   if (!hasVerifiedMfa(session)) {
     throw new AuthorizationError({
-      code: "admin_mfa_required",
+      code: "mfa_required",
       message: "Admin MFA verification is required.",
       statusCode: 403,
     });
@@ -41,7 +41,6 @@ export async function requireAdminPendingMfa(): Promise<RequiredAdmin> {
 
   if (hasVerifiedMfa(session)) {
     throw new AuthorizationError({
-      code: "admin_mfa_already_verified",
       message: "Admin MFA is already verified for this session.",
       statusCode: 403,
     });
@@ -61,7 +60,7 @@ async function readSessionFromCookie(): Promise<AdminSession> {
 
   if (!session) {
     throw new AuthorizationError({
-      code: "admin_session_required",
+      code: "unauthenticated",
       message: "Admin session is required.",
       statusCode: 401,
     });
@@ -75,7 +74,6 @@ function assertAdminRole(
 ): asserts session is AdminSession & { role: "admin" } {
   if (session.role !== "admin") {
     throw new AuthorizationError({
-      code: "admin_role_required",
       message: "Admin role is required.",
       statusCode: 403,
     });

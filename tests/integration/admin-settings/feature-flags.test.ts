@@ -111,7 +111,7 @@ describe("admin feature flag settings actions", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      code: "locked",
+      error: "feature_disabled",
     });
     expect(mocks.updateFeatureFlagForAdminIfFresh).not.toHaveBeenCalled();
     expect(mocks.record).not.toHaveBeenCalled();
@@ -166,7 +166,7 @@ describe("admin feature flag settings actions", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      code: "stale_data",
+      error: "stale_data",
       current: { updated_at: current.updated_at },
     });
     expect(mocks.record).not.toHaveBeenCalled();

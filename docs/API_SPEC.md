@@ -69,6 +69,9 @@ type ErrorCode =
   | 'shipping_provider_error'
   | 'rate_limited'
   | 'feature_disabled'
+  | 'force_override_required'  // bulk publish found soft review flags and needs explicit override reason
+  | 'all_products_blocked'     // bulk publish selection contains no publishable products
+  | 'mfa_required'             // admin is authorized, but this sensitive action needs MFA re-verification
   | 'internal_error';
 ```
 
@@ -520,6 +523,84 @@ Output: {
     committed?: boolean
   }
 }
+```
+
+### 3.9 Admin user management
+
+Admin user management is implemented in `src/features/admin-settings/actions.ts` and rendered under `/admin/settings/users`. These actions operate only on Supabase Auth admin users: users whose `app_metadata.role` is `admin` or `deactivated_admin`.
+
+Authz model:
+- Caller: signed Vitaminaty admin session with `requireAdmin()`.
+- MFA: every mutating action requires Supabase TOTP re-verification through an MFA challenge payload.
+- Target scope: another Auth admin user. Self-deactivate, self-delete, and self-MFA-reset are blocked server-side and return `unauthorized` with a specific message.
+- Data class: admin Auth identity metadata. Email addresses are PII and are visible only to admins in this surface; rendered audit views redact PII unless the admin explicitly opens raw JSON.
+- Residency/retention: stored in Supabase Auth/Postgres in the configured UAE deployment posture for the project. Audit rows are append-only and retained for forensic/compliance history; soft-deleted Auth users retain Supabase's provider-managed tombstone.
+
+#### `beginAdminSettingsMfaChallenge()`
+
+Starts a TOTP challenge for the signed-in admin before invite/deactivate/delete/MFA-reset actions.
+
+```typescript
+Input: none
+Output:
+  | { ok: true, factorId: string, challengeId: string }
+  | { ok: false, error: ErrorCode, message: string }
+```
+
+#### `inviteAdminUser(input)`
+
+Invites a new Supabase Auth user by email, then assigns `app_metadata.role='admin'`. Writes one `audit_log` row with `action='create'`, `entity_type='admin_user'`, and changes for `email` and `app_metadata.role`.
+
+```typescript
+Input: {
+  email: string,
+  mfa: { factorId: string, challengeId: string, code: string }
+}
+Output:
+  | { ok: true, user: AuthAdminUserSummary }
+  | { ok: false, error: ErrorCode, message: string }
+```
+
+#### `deactivateAdminUser(input)`
+
+Changes the target Auth user's `app_metadata.role` to `deactivated_admin`. Self-deactivation is blocked. Writes one `audit_log` row with `action='role_change'`, `entity_type='admin_user'`, and changes for `app_metadata.role` and `active`.
+
+```typescript
+Input: {
+  userId: uuid,
+  mfa: { factorId: string, challengeId: string, code: string }
+}
+Output:
+  | { ok: true, user: AuthAdminUserSummary }
+  | { ok: false, error: 'not_found' | 'unauthorized' | 'mfa_required' | 'validation_failed' | 'internal_error', message: string }
+```
+
+#### `deleteAdminUser(input)`
+
+Soft-deletes the target Auth admin through Supabase Auth admin APIs. Self-delete is blocked. Writes one `audit_log` row with `action='archive'`, `entity_type='admin_user'`, and changes for `deleted` and `email`.
+
+```typescript
+Input: {
+  userId: uuid,
+  mfa: { factorId: string, challengeId: string, code: string }
+}
+Output:
+  | { ok: true, affectedUserId: uuid }
+  | { ok: false, error: 'not_found' | 'unauthorized' | 'mfa_required' | 'validation_failed' | 'internal_error', message: string }
+```
+
+#### `revokeAdminMfa(input)`
+
+Deletes all TOTP factors attached to the target Auth admin. Self-MFA-reset is blocked. Writes one `audit_log` row with `action='mfa_reset'`, `entity_type='admin_user'`, and changes for `mfa_enrolled` and `mfa_factor_count`.
+
+```typescript
+Input: {
+  userId: uuid,
+  mfa: { factorId: string, challengeId: string, code: string }
+}
+Output:
+  | { ok: true, user: AuthAdminUserSummary }
+  | { ok: false, error: 'not_found' | 'unauthorized' | 'mfa_required' | 'validation_failed' | 'internal_error', message: string }
 ```
 
 ---

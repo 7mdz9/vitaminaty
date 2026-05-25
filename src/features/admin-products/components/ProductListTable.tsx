@@ -164,7 +164,7 @@ export function ProductListTable({
       ok: result.ok,
       message: result.ok
         ? undefined
-        : result.code === "stale_data"
+        : result.error === "stale_data"
           ? `${result.message} Original editor: ${
               result.current?.original_editor.email ?? "another admin"
             }.`

@@ -99,7 +99,7 @@ describe("admin order actions", () => {
       notifyCustomer: true,
     });
 
-    expect(result).toMatchObject({ ok: false, code: "validation_error" });
+    expect(result).toMatchObject({ ok: false, error: "validation_failed" });
     expect(mocks.updateOrderIfFreshForAdmin).not.toHaveBeenCalled();
     expect(mocks.record).not.toHaveBeenCalled();
   });
@@ -119,7 +119,7 @@ describe("admin order actions", () => {
       notifyCustomer: true,
     });
 
-    expect(result).toMatchObject({ ok: false, code: "stale_data" });
+    expect(result).toMatchObject({ ok: false, error: "stale_data" });
     expect(mocks.appendShipmentEvent).not.toHaveBeenCalled();
     expect(mocks.record).not.toHaveBeenCalled();
   });

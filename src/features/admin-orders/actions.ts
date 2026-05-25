@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
-import { isAppError } from "@/lib/errors";
+import { isAppError, type ErrorCode } from "@/lib/errors";
 import {
   AdminOrderRefundActionSchema,
   AdminOrderStatusTransitionActionSchema,
@@ -27,14 +27,7 @@ export type AdminOrderActionResult =
     }
   | {
       ok: false;
-      code:
-        | "not_found"
-        | "stale_data"
-        | "invalid_transition"
-        | "refund_amount_invalid"
-        | "validation_error"
-        | "authorization_error"
-        | "unknown";
+      error: ErrorCode;
       message: string;
       current?: OrderRecord | null;
     };
@@ -57,13 +50,13 @@ export async function transitionOrderStatus(
     const before = await findOrderByIdForAdmin(parsed.orderId);
 
     if (!before) {
-      return { ok: false, code: "not_found", message: "Order not found." };
+      return { ok: false, error: "not_found", message: "Order not found." };
     }
 
     if (!canTransition(before.status, parsed.toStatus)) {
       return {
         ok: false,
-        code: "invalid_transition",
+        error: "conflict",
         message: `Cannot move order from ${before.status} to ${parsed.toStatus}.`,
       };
     }
@@ -71,7 +64,7 @@ export async function transitionOrderStatus(
     if (parsed.toStatus === "shipped" && !parsed.trackingNumber) {
       return {
         ok: false,
-        code: "validation_error",
+        error: "validation_failed",
         message: "Tracking number is required before marking an order as shipped.",
       };
     }
@@ -89,7 +82,7 @@ export async function transitionOrderStatus(
     if (!updated) {
       return {
         ok: false,
-        code: "stale_data",
+        error: "stale_data",
         message: "This order changed after the page loaded.",
         current: await findOrderByIdForAdmin(before.id),
       };
@@ -132,13 +125,13 @@ export async function refundOrder(
     const before = await findOrderByIdForAdmin(parsed.orderId);
 
     if (!before) {
-      return { ok: false, code: "not_found", message: "Order not found." };
+      return { ok: false, error: "not_found", message: "Order not found." };
     }
 
     if (!isRefundable(before.status)) {
       return {
         ok: false,
-        code: "invalid_transition",
+        error: "conflict",
         message: `Cannot refund an order with status ${before.status}.`,
       };
     }
@@ -146,7 +139,7 @@ export async function refundOrder(
     if (parsed.amountAed > before.total_aed) {
       return {
         ok: false,
-        code: "refund_amount_invalid",
+        error: "validation_failed",
         message: "Refund amount cannot exceed the order total.",
       };
     }
@@ -159,7 +152,7 @@ export async function refundOrder(
     if (!updated) {
       return {
         ok: false,
-        code: "stale_data",
+        error: "stale_data",
         message: "This order changed after the page loaded.",
         current: await findOrderByIdForAdmin(before.id),
       };
@@ -291,11 +284,11 @@ async function appendShipmentStatusEventIfNeeded(
 
 async function getCustomerEmail(customerId: string | null): Promise<string> {
   if (!customerId) {
-    return "unknown";
+    return "internal_error";
   }
 
   const [user] = await listAuthUserEmailsByIds([customerId]);
-  return user?.email ?? "unknown";
+  return user?.email ?? "internal_error";
 }
 
 function revalidateOrderPaths(orderId: string): void {
@@ -304,10 +297,10 @@ function revalidateOrderPaths(orderId: string): void {
 }
 
 function mapOrderActionError(error: unknown): AdminOrderActionErrorResult {
-  if (isAppError(error) && error.code === "UNAUTHORIZED") {
+  if (isAppError(error)) {
     return {
       ok: false,
-      code: "authorization_error",
+      error: error.code,
       message: error.message,
     };
   }
@@ -315,14 +308,14 @@ function mapOrderActionError(error: unknown): AdminOrderActionErrorResult {
   if (error instanceof Error && error.name === "ZodError") {
     return {
       ok: false,
-      code: "validation_error",
+      error: "validation_failed",
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown order action error.",
   };
 }

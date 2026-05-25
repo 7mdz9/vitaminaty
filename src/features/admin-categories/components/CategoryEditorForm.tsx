@@ -67,7 +67,7 @@ export function CategoryEditorForm({
         if (result.ok) {
           setCurrent(result.category);
           setStatus("Saved.");
-        } else if (result.code === "stale_data" && result.current) {
+        } else if (result.error === "stale_data" && result.current) {
           setCurrent(result.current);
           setStatus("This category changed in another session. Reloaded latest values.");
         } else {

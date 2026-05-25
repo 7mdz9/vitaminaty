@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
-import { isAppError } from "@/lib/errors";
+import { isAppError, type ErrorCode } from "@/lib/errors";
 import { generateSlug } from "@/lib/slug";
 import { record } from "@/features/audit-log/record";
 import { prepareBrandImageUpload } from "@/lib/images/upload";
@@ -36,13 +36,7 @@ export type AdminBrandActionResult =
     }
   | {
       ok: false;
-      code:
-        | "not_found"
-        | "stale_data"
-        | "featured_limit"
-        | "validation_error"
-        | "authorization_error"
-        | "unknown";
+      error: ErrorCode;
       message: string;
       current?: BrandRecord | null;
     };
@@ -60,7 +54,7 @@ export async function updateBrand(
     if (!before) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Brand not found.",
       };
     }
@@ -72,7 +66,7 @@ export async function updateBrand(
     ) {
       return {
         ok: false,
-        code: "featured_limit",
+        error: "conflict",
         message: "Only two brands can be featured on the homepage.",
       };
     }
@@ -84,7 +78,7 @@ export async function updateBrand(
     if (!updated) {
       return {
         ok: false,
-        code: "stale_data",
+        error: "stale_data",
         message: "This brand changed after the editor loaded.",
         current: await findBrandByIdForAdmin(before.id),
       };
@@ -176,7 +170,7 @@ export async function addBrandAlias(
     if (!before) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Brand not found.",
       };
     }
@@ -187,7 +181,7 @@ export async function addBrandAlias(
     if (!after) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Brand not found after alias update.",
       };
     }
@@ -283,7 +277,7 @@ async function uploadBrandImage(
     if (!(file instanceof File)) {
       return {
         ok: false,
-        code: "validation_error",
+        error: "validation_failed",
         message: "Image file is required.",
       };
     }
@@ -293,7 +287,7 @@ async function uploadBrandImage(
     if (!before) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Brand not found.",
       };
     }
@@ -388,14 +382,14 @@ function mapBrandActionError(error: unknown): AdminBrandActionErrorResult {
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown brand action error.",
   };
 }

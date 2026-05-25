@@ -34,7 +34,7 @@ export function OrderStatusActions({ order }: Readonly<{ order: OrderRecord }>) 
         setMessage("Order status updated.");
       } else {
         setMessage(result.message);
-        if (result.code === "stale_data" && result.current) {
+        if (result.error === "stale_data" && result.current) {
           setCurrent(result.current);
         }
       }
@@ -58,7 +58,7 @@ export function OrderStatusActions({ order }: Readonly<{ order: OrderRecord }>) 
         setMessage("Refund recorded.");
       } else {
         setMessage(result.message);
-        if (result.code === "stale_data" && result.current) {
+        if (result.error === "stale_data" && result.current) {
           setCurrent(result.current);
         }
       }

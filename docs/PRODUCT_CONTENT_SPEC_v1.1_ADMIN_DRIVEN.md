@@ -796,8 +796,6 @@ Tier 3 scored fields (13 fields, 3 points each):
 
 Cross-reference: `Â§8.1` and `Â§8.3` describe the broader content model; this subsection is the authoritative subset that contributes to `completion_score`.
 
-MVP-only cap: when all Tier 1 and Tier 2 scored fields are complete but zero Tier 3 scored fields are complete, the stored/displayed `completion_score` is capped at 60 even though the raw formula value is 66. The implementation must keep `rawPreClampValue` available in tests so the formula arithmetic remains auditable.
-
 ### Â§22.2 Usage
 
 - Admin product list shows score as a progress bar per row.

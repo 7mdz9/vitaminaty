@@ -68,7 +68,7 @@ export async function beginTotpEnrollment(supabase?: SupabaseAuthClient): Promis
 
   if (error || !data) {
     throw new AuthorizationError({
-      code: "admin_mfa_enrollment_failed",
+      code: "mfa_required",
       message: error?.message ?? "Could not start MFA enrollment.",
     });
   }
@@ -77,7 +77,7 @@ export async function beginTotpEnrollment(supabase?: SupabaseAuthClient): Promis
 
   if (!totp?.qr_code || !totp.secret) {
     throw new AuthorizationError({
-      code: "admin_mfa_enrollment_failed",
+      code: "mfa_required",
       message: "Supabase did not return a TOTP QR code and secret.",
     });
   }
@@ -102,7 +102,7 @@ export async function verifyTotpEnrollment(input: {
 
   if (challengeError || !challenge?.id) {
     throw new AuthorizationError({
-      code: "admin_mfa_challenge_failed",
+      code: "mfa_required",
       message: challengeError?.message ?? "Could not create MFA challenge.",
     });
   }
@@ -115,7 +115,7 @@ export async function verifyTotpEnrollment(input: {
 
   if (verifyError) {
     throw new AuthorizationError({
-      code: "admin_mfa_verification_failed",
+      code: "mfa_required",
       message: "MFA code was not accepted.",
     });
   }
@@ -127,7 +127,7 @@ export async function beginTotpChallenge(supabase?: SupabaseAuthClient): Promise
 
   if (!factor) {
     throw new AuthorizationError({
-      code: "admin_mfa_factor_required",
+      code: "mfa_required",
       message: "Admin MFA factor is required.",
     });
   }
@@ -136,7 +136,7 @@ export async function beginTotpChallenge(supabase?: SupabaseAuthClient): Promise
 
   if (error || !data?.id) {
     throw new AuthorizationError({
-      code: "admin_mfa_challenge_failed",
+      code: "mfa_required",
       message: error?.message ?? "Could not create MFA challenge.",
     });
   }
@@ -160,7 +160,7 @@ export async function verifyTotpChallenge(input: {
 
   if (error) {
     throw new AuthorizationError({
-      code: "admin_mfa_verification_failed",
+      code: "mfa_required",
       message: "MFA code was not accepted.",
     });
   }
@@ -210,7 +210,7 @@ async function listVerifiedTotpFactors(supabase: SupabaseAuthClient): Promise<Mf
 
   if (error) {
     throw new AuthorizationError({
-      code: "admin_mfa_factor_query_failed",
+      code: "mfa_required",
       message: error.message,
     });
   }
@@ -223,7 +223,6 @@ function normalizeMfaCode(value: string): string {
 
   if (!/^\d{6}$/.test(code)) {
     throw new ValidationError({
-      code: "invalid_mfa_code",
       message: "MFA code must be 6 digits.",
     });
   }

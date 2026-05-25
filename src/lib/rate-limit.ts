@@ -79,7 +79,7 @@ export class UpstashRateLimiter implements RateLimiter {
     void key;
     void options;
     throw new IntegrationError({
-      code: "rate_limiter_not_configured",
+      code: "rate_limited",
       message:
         this.config.redisRestUrl && this.config.redisRestToken
           ? "Upstash rate limiter is reserved for Step 7 wiring."
@@ -104,14 +104,14 @@ export const rateLimiter = createRateLimiter();
 function validateRateLimitOptions(options: RateLimitOptions): void {
   if (!Number.isSafeInteger(options.limit) || options.limit <= 0) {
     throw new IntegrationError({
-      code: "rate_limit_invalid_limit",
+      code: "validation_failed",
       message: "Rate limit must be a positive safe integer.",
     });
   }
 
   if (!Number.isSafeInteger(options.windowMs) || options.windowMs <= 0) {
     throw new IntegrationError({
-      code: "rate_limit_invalid_window",
+      code: "validation_failed",
       message: "Rate limit window must be a positive safe integer.",
     });
   }

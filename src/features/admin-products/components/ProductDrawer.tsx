@@ -135,7 +135,7 @@ export function ProductDrawer({
 
       if (!result.ok) {
         setMessage(
-          result.code === "stale_data"
+          result.error === "stale_data"
             ? `${result.message} Reload before retrying.`
             : result.message,
         );

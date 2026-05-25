@@ -71,7 +71,7 @@ export class StubShippingAdapter implements ShippingAdapter {
     });
 
     throw new IntegrationError({
-      code: "icarry_stub_webhook_not_supported",
+      code: "shipping_provider_error",
       message: "Stub iCarry adapter does not accept webhook events.",
     });
   }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
-import { isAppError } from "@/lib/errors";
+import { isAppError, type ErrorCode } from "@/lib/errors";
 import {
   HomepageConfigUpdateActionSchema,
   type HomepageConfigUpdateActionInput,
@@ -24,7 +24,7 @@ export type HomepageConfigActionResult =
     }
   | {
       ok: false;
-      code: "not_found" | "stale_data" | "validation_error" | "authorization_error" | "unknown";
+      error: ErrorCode;
       message: string;
       current?: HomepageConfigRecord;
     };
@@ -40,7 +40,7 @@ export async function updateHomepageConfig(
     if (before.id !== parsed.configId) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Homepage config not found.",
       };
     }
@@ -61,7 +61,7 @@ export async function updateHomepageConfig(
     ) {
       return {
         ok: false,
-        code: "validation_error",
+        error: "validation_failed",
         message: "One or more selected homepage products no longer exist.",
       };
     }
@@ -69,7 +69,7 @@ export async function updateHomepageConfig(
     if (parsed.featuredBrandIds.some((id) => !selectedBrandIds.has(id))) {
       return {
         ok: false,
-        code: "validation_error",
+        error: "validation_failed",
         message: "One or more selected homepage brands no longer exist.",
       };
     }
@@ -100,7 +100,7 @@ export async function updateHomepageConfig(
     if (!updated) {
       return {
         ok: false,
-        code: "stale_data",
+        error: "stale_data",
         message: "Homepage curation changed after this page loaded.",
         current: await getHomepageConfigForAdmin(),
       };
@@ -167,14 +167,14 @@ function mapHomepageActionError(
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown homepage action error.",
   };
 }

@@ -48,7 +48,7 @@ export type ProductUpdateServiceResult =
     }>
   | Readonly<{
       ok: false;
-      code: "not_found" | "stale_data";
+      error: "not_found" | "stale_data";
       message: string;
       current?: ProductRecord | null;
     }>;
@@ -71,7 +71,7 @@ export type ProductImageUploadServiceResult =
     }>
   | Readonly<{
       ok: false;
-      code: "not_found" | "validation_error";
+      error: "not_found" | "validation_failed";
       message: string;
     }>;
 
@@ -83,7 +83,7 @@ export async function updateProductWithRecalculation(
   if (!before) {
     return {
       ok: false,
-      code: "not_found",
+      error: "not_found",
       message: "Product not found.",
     };
   }
@@ -107,7 +107,7 @@ export async function updateProductWithRecalculation(
   if (!updated) {
     return {
       ok: false,
-      code: "stale_data",
+      error: "stale_data",
       message: "This product changed after the editor loaded.",
       current: await findProductByIdForAdmin(input.productId),
     };
@@ -138,7 +138,7 @@ export async function uploadProductImageWithAudit(
   if (!before) {
     return {
       ok: false,
-      code: "not_found",
+      error: "not_found",
       message: "Product not found.",
     };
   }
@@ -156,7 +156,7 @@ export async function uploadProductImageWithAudit(
   } catch (error) {
     return {
       ok: false,
-      code: "validation_error",
+      error: "validation_failed",
       message: error instanceof Error ? error.message : "Invalid product image.",
     };
   }

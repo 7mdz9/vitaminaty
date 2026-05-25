@@ -16,17 +16,17 @@ describe("app errors", () => {
       new ValidationError({ message: "Bad input" }),
       new NotFoundError({ message: "Missing" }),
       new AuthorizationError({ message: "Forbidden" }),
-      new PaymentError({ code: "payment_declined", message: "Declined" }),
-      new IntegrationError({ code: "vendor_down", message: "Vendor down" }),
+      new PaymentError({ message: "Declined" }),
+      new IntegrationError({ message: "Vendor down" }),
     ];
 
     expect(errors.every((error) => error instanceof AppError)).toBe(true);
     expect(errors.map((error) => error.code)).toEqual([
-      "validation_error",
+      "validation_failed",
       "not_found",
-      "authorization_error",
-      "payment_declined",
-      "vendor_down",
+      "unauthorized",
+      "payment_provider_error",
+      "shipping_provider_error",
     ]);
     expect(isAppError(errors[0])).toBe(true);
     expect(isAppError(new Error("plain"))).toBe(false);
@@ -64,7 +64,7 @@ describe("rate limiter", () => {
     const limiter = new UpstashRateLimiter();
 
     await expect(limiter.check("ip:1", { limit: 1, windowMs: 1_000 })).rejects.toMatchObject({
-      code: "rate_limiter_not_configured",
+      code: "rate_limited",
     });
   });
 
@@ -73,7 +73,7 @@ describe("rate limiter", () => {
     await expect(
       createRateLimiter("upstash").check("ip:1", { limit: 1, windowMs: 1_000 }),
     ).rejects.toMatchObject({
-      code: "rate_limiter_not_configured",
+      code: "rate_limited",
     });
   });
 });

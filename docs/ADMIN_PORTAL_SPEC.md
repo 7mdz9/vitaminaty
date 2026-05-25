@@ -825,6 +825,7 @@ Every action below writes an `audit_log` row:
 
 Documented for reference:
 
+- MD import re-run UI (upload a replacement Markdown source, dry-run diff, commit, and audit log). M2 ships only the admin-gated read-only import status surface at `/admin/products/import`; the mutating dry-run/commit workflow is deferred until a future data-operations milestone.
 - Reviews moderation queue (when reviews system ships)
 - Promo code engine (campaign creator, code generator, usage limits)
 - Customer support conversation viewer (when AI support ships per `AI_SUPPORT_FUTURE_SPEC.md`)
@@ -906,6 +907,8 @@ The current shadcn registry provides the toast surface through `sonner`; `src/co
 ### 16.4 Tailwind namespace
 
 Tailwind exposes admin tokens as `admin-*` utilities where useful (`admin-accent`, `admin-bg`, `admin-surface`, `admin-border`, `admin-text`, and matching dark-mode variables). Feature code must prefer these tokens over literal colors.
+
+The canonical `--admin-*` custom-property block in `src/app/globals.css` is guarded with a targeted `/* prettier-ignore */` comment. That comment is part of the visual-token contract: it prevents formatter normalization from changing the character-verbatim hex values and casing listed in §16.2. Do not remove it unless §16.2 and the token audit are updated together.
 
 ---
 _End of `ADMIN_PORTAL_SPEC.md` v1.1 — extended 2026-05-23 with §4 dashboard expansion, §5.3 bulk-operation safeguards, §5.4–5.13 UX enhancements, §10 inventory editing surfaces, §12.1 audit-log diff view._

@@ -68,15 +68,9 @@ export function calculateCompletionScore(product: CompletionScoreInput): Complet
   const activeFlagCount = countActiveReviewFlags(product.admin_review_flags);
   const rawPreClampValue =
     tier1Complete * 5 + tier2Complete * 6 + tier3Complete * 3 - activeFlagCount * 5;
-  const mvpOnlyCapApplies =
-    tier1Complete === TIER_1_SCORED_FIELDS.length &&
-    tier2Complete === TIER_2_SCORED_FIELDS.length &&
-    tier3Complete === 0 &&
-    activeFlagCount === 0;
-  const cappedValue = mvpOnlyCapApplies ? Math.min(rawPreClampValue, 60) : rawPreClampValue;
 
   return {
-    score: Math.max(0, Math.min(100, cappedValue)),
+    score: Math.max(0, Math.min(100, rawPreClampValue)),
     rawPreClampValue,
     tier1Complete,
     tier2Complete,

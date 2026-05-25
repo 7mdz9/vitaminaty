@@ -34,7 +34,7 @@ type InventoryOperationResult =
     }>
   | Readonly<{
       ok: false;
-      code: "not_found" | "stale_data" | "insufficient_stock";
+      error: "not_found" | "stale_data" | "insufficient_stock";
       message: string;
       current?: ProductVariantRecord | null;
     }>;
@@ -127,7 +127,7 @@ export type BulkAdjustVariantStockResult =
     }>
   | Readonly<{
       ok: false;
-      code: "not_found" | "stale_data" | "insufficient_stock";
+      error: "not_found" | "stale_data" | "insufficient_stock";
       message: string;
       variantId?: string;
       current?: ProductVariantRecord | null;
@@ -171,7 +171,7 @@ export async function adjustVariantStock(
   if (newQuantity < 0) {
     return {
       ok: false,
-      code: "insufficient_stock",
+      error: "insufficient_stock",
       message: "Stock adjustment would reduce the variant below zero.",
       current: before,
     };
@@ -293,7 +293,7 @@ export async function bulkAdjustVariantStock(
     if (!variant) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Variant not found.",
         variantId: adjustment.variantId,
       };
@@ -302,7 +302,7 @@ export async function bulkAdjustVariantStock(
     if (variant.updated_at !== adjustment.expectedUpdatedAt) {
       return {
         ok: false,
-        code: "stale_data",
+        error: "stale_data",
         message: "At least one selected variant changed after the inventory view loaded.",
         variantId: adjustment.variantId,
         current: variant,
@@ -312,7 +312,7 @@ export async function bulkAdjustVariantStock(
     if ((variant.stock_quantity ?? 0) + adjustment.delta < 0) {
       return {
         ok: false,
-        code: "insufficient_stock",
+        error: "insufficient_stock",
         message: "At least one stock adjustment would reduce a variant below zero.",
         variantId: adjustment.variantId,
         current: variant,
@@ -333,7 +333,7 @@ export async function bulkAdjustVariantStock(
     if (!result.ok) {
       return {
         ok: false,
-        code: result.code,
+        error: result.error,
         message: result.message,
         variantId: adjustment.variantId,
         current: result.current,
@@ -547,7 +547,7 @@ async function writeVariantAudit(input: {
 async function stale(variantId: string): Promise<Extract<InventoryOperationResult, { ok: false }>> {
   return {
     ok: false,
-    code: "stale_data",
+    error: "stale_data",
     message: "This variant changed after the inventory view loaded.",
     current: await findProductVariantByIdForAdmin(variantId),
   };
@@ -556,7 +556,7 @@ async function stale(variantId: string): Promise<Extract<InventoryOperationResul
 function notFound(): Extract<InventoryOperationResult, { ok: false }> {
   return {
     ok: false,
-    code: "not_found",
+    error: "not_found",
     message: "Variant not found.",
   };
 }

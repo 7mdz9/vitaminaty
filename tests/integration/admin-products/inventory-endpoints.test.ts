@@ -116,7 +116,7 @@ describe("admin inventory endpoints", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      code: "stale_data",
+      error: "stale_data",
       current: { updated_at: current.updated_at },
     });
     expect(mocks.appendMovement).not.toHaveBeenCalled();
@@ -134,7 +134,7 @@ describe("admin inventory endpoints", () => {
       delta: -3,
     });
 
-    expect(result).toMatchObject({ ok: false, code: "insufficient_stock" });
+    expect(result).toMatchObject({ ok: false, error: "insufficient_stock" });
     expect(mocks.updateProductVariantForAdminIfFresh).not.toHaveBeenCalled();
     expect(mocks.appendMovement).not.toHaveBeenCalled();
   });
@@ -270,7 +270,7 @@ describe("admin inventory endpoints", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      code: "stale_data",
+      error: "stale_data",
       variantId: variants[2].id,
     });
     expect(mocks.updateProductVariantForAdminIfFresh).not.toHaveBeenCalled();

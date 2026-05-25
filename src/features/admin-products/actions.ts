@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
-import { isAppError } from "@/lib/errors";
+import { isAppError, type ErrorCode } from "@/lib/errors";
 import { record } from "@/features/audit-log/record";
 import {
   AdminProductBulkAssignBrandActionSchema,
@@ -67,7 +67,7 @@ export type AdminProductActionResult =
     }
   | {
       ok: false;
-      code: "not_found" | "stale_data" | "validation_error" | "authorization_error" | "unknown";
+      error: ErrorCode;
       message: string;
       current?: {
         updated_at: string;
@@ -93,13 +93,7 @@ export type AdminProductBulkActionResult =
     }
   | {
       ok: false;
-      code:
-        | "force_override_required"
-        | "all_products_blocked"
-        | "not_found"
-        | "validation_error"
-        | "authorization_error"
-        | "unknown";
+      error: ErrorCode;
       message: string;
       hardBlockedProductIds?: string[];
       reviewFlagsByProductId?: Record<string, string[]>;
@@ -112,7 +106,7 @@ export type AdminProductDrawerDataResult =
     }
   | {
       ok: false;
-      code: "not_found" | "authorization_error" | "unknown";
+      error: ErrorCode;
       message: string;
     };
 
@@ -124,7 +118,7 @@ export type AdminProductImageUploadResult =
     }
   | {
       ok: false;
-      code: "not_found" | "validation_error" | "authorization_error" | "unknown";
+      error: ErrorCode;
       message: string;
     };
 
@@ -138,13 +132,7 @@ export type AdminInventoryActionResult =
     }
   | {
       ok: false;
-      code:
-        | "not_found"
-        | "stale_data"
-        | "insufficient_stock"
-        | "validation_error"
-        | "authorization_error"
-        | "unknown";
+      error: ErrorCode;
       message: string;
       current?: ProductVariantRecord | null;
     };
@@ -157,13 +145,7 @@ export type AdminInventoryBulkActionResult =
     }
   | {
       ok: false;
-      code:
-        | "not_found"
-        | "stale_data"
-        | "insufficient_stock"
-        | "validation_error"
-        | "authorization_error"
-        | "unknown";
+      error: ErrorCode;
       message: string;
       variantId?: string;
       current?: ProductVariantRecord | null;
@@ -176,7 +158,7 @@ export type AdminInventoryHistoryResult =
     }
   | {
       ok: false;
-      code: "validation_error" | "authorization_error" | "unknown";
+      error: ErrorCode;
       message: string;
     };
 
@@ -203,7 +185,7 @@ export async function updateProduct(
     if (!result.ok) {
       return {
         ok: false,
-        code: result.code,
+        error: result.error,
         message: result.message,
         current: result.current
           ? {
@@ -255,7 +237,7 @@ export async function getProductDrawerData(
     if (!data) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Product not found.",
       };
     }
@@ -269,7 +251,7 @@ export async function getProductDrawerData(
 
     return {
       ok: false,
-      code: mapped.code === "authorization_error" ? "authorization_error" : "unknown",
+      error: mapped.error,
       message: mapped.message,
     };
   }
@@ -291,7 +273,7 @@ export async function uploadProductImage(
     if (!(file instanceof File)) {
       return {
         ok: false,
-        code: "validation_error",
+        error: "validation_failed",
         message: "Image file is required.",
       };
     }
@@ -419,7 +401,7 @@ export async function bulkAdjustVariantStock(
 
     return {
       ok: false,
-      code: mapped.code,
+      error: mapped.error,
       message: mapped.message,
       current: mapped.current,
     };
@@ -443,10 +425,7 @@ export async function getInventoryHistory(
 
     return {
       ok: false,
-      code:
-        mapped.code === "authorization_error" || mapped.code === "validation_error"
-          ? mapped.code
-          : "unknown",
+      error: mapped.error,
       message: mapped.message,
     };
   }
@@ -569,7 +548,7 @@ export async function bulkPublish(
     if (before.length === 0) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "No matching products were found.",
       };
     }
@@ -587,7 +566,7 @@ export async function bulkPublish(
     if (publishable.length === 0) {
       return {
         ok: false,
-        code: "all_products_blocked",
+        error: "all_products_blocked",
         message: "Every selected product is hard-blocked from bulk publish.",
         hardBlockedProductIds: hardBlocked.map((product) => product.id),
         reviewFlagsByProductId,
@@ -597,7 +576,7 @@ export async function bulkPublish(
     if (Object.keys(reviewFlagsByProductId).length > 0 && !parsed.forceOverride) {
       return {
         ok: false,
-        code: "force_override_required",
+        error: "force_override_required",
         message: "Some selected products have unresolved review flags.",
         hardBlockedProductIds: hardBlocked.map((product) => product.id),
         reviewFlagsByProductId,
@@ -702,14 +681,14 @@ function mapActionError(error: unknown): AdminProductActionErrorResult {
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown product action error.",
   };
 }
@@ -719,10 +698,7 @@ function mapImageActionError(error: unknown): AdminProductImageUploadResult {
 
   return {
     ok: false,
-    code:
-      mapped.code === "authorization_error" || mapped.code === "validation_error"
-        ? mapped.code
-        : "unknown",
+    error: mapped.error,
     message: mapped.message,
   };
 }
@@ -732,10 +708,7 @@ function mapInventoryActionError(error: unknown): AdminInventoryActionErrorResul
 
   return {
     ok: false,
-    code:
-      mapped.code === "authorization_error" || mapped.code === "validation_error"
-        ? mapped.code
-        : "unknown",
+    error: mapped.error,
     message: mapped.message,
   };
 }
@@ -767,10 +740,7 @@ function mapBulkActionError(error: unknown): AdminProductBulkActionResult {
 
   return {
     ok: false,
-    code:
-      mapped.code === "authorization_error" || mapped.code === "validation_error"
-        ? mapped.code
-        : "unknown",
+    error: mapped.error,
     message: mapped.message,
   };
 }

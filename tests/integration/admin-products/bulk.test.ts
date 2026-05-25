@@ -101,7 +101,7 @@ describe("admin product bulk actions", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      code: "force_override_required",
+      error: "force_override_required",
       reviewFlagsByProductId: {
         [product.id]: ["missing_image"],
       },

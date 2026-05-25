@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/policies";
-import { isAppError } from "@/lib/errors";
+import { isAppError, type ErrorCode } from "@/lib/errors";
 import { record } from "@/features/audit-log/record";
 import {
   CategoryCreateActionSchema,
@@ -30,7 +30,7 @@ export type AdminCategoryActionResult =
     }
   | {
       ok: false;
-      code: "not_found" | "stale_data" | "validation_error" | "authorization_error" | "unknown";
+      error: ErrorCode;
       message: string;
       current?: CategoryRecord | null;
     };
@@ -42,7 +42,7 @@ export type AdminCategoryReorderResult =
     }
   | {
       ok: false;
-      code: "validation_error" | "authorization_error" | "unknown";
+      error: ErrorCode;
       message: string;
     };
 
@@ -59,7 +59,7 @@ export async function updateCategory(
     if (!before) {
       return {
         ok: false,
-        code: "not_found",
+        error: "not_found",
         message: "Category not found.",
       };
     }
@@ -75,7 +75,7 @@ export async function updateCategory(
     if (!updated) {
       return {
         ok: false,
-        code: "stale_data",
+        error: "stale_data",
         message: "This category changed after the editor loaded.",
         current: await findCategoryByIdForAdmin(before.id),
       };
@@ -189,10 +189,7 @@ export async function reorderCategories(
     const mapped = mapCategoryActionError(error);
     return {
       ok: false,
-      code:
-        mapped.code === "authorization_error" || mapped.code === "validation_error"
-          ? mapped.code
-          : "unknown",
+      error: mapped.error,
       message: mapped.message,
     };
   }
@@ -237,14 +234,14 @@ function mapCategoryActionError(error: unknown): AdminCategoryActionErrorResult 
   if (isAppError(error)) {
     return {
       ok: false,
-      code: error.code === "authorization_error" ? "authorization_error" : "validation_error",
+      error: error.code,
       message: error.message,
     };
   }
 
   return {
     ok: false,
-    code: "unknown",
+    error: "internal_error",
     message: error instanceof Error ? error.message : "Unknown category action error.",
   };
 }

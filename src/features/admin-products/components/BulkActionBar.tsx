@@ -79,7 +79,7 @@ export function BulkActionBar({
               overrideReason,
             });
 
-    if (!result.ok && result.code === "force_override_required") {
+    if (!result.ok && result.error === "force_override_required") {
       setForceState({
         reviewFlagsByProductId: result.reviewFlagsByProductId ?? {},
         hardBlockedProductIds: result.hardBlockedProductIds ?? [],

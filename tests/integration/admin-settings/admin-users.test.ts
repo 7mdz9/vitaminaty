@@ -138,7 +138,7 @@ describe("admin settings", () => {
       mfa: mfaPayload(),
     });
 
-    expect(result).toMatchObject({ ok: false, code: "self_action_blocked" });
+    expect(result).toMatchObject({ ok: false, error: "unauthorized" });
     expect(mocks.verifyTotpChallenge).not.toHaveBeenCalled();
     expect(mocks.deactivateAuthAdmin).not.toHaveBeenCalled();
   });

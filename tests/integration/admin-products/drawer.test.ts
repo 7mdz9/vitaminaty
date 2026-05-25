@@ -85,7 +85,7 @@ describe("admin product drawer", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      code: "validation_error",
+      error: "validation_failed",
     });
     expect(mocks.uploadProductImageAssetForAdmin).not.toHaveBeenCalled();
     expect(mocks.insertProductImageForAdmin).not.toHaveBeenCalled();

@@ -50,7 +50,7 @@ export function StockEditCell({
         return;
       }
 
-      setStatus(result.code === "stale_data" ? "stale" : "error");
+      setStatus(result.error === "stale_data" ? "stale" : "error");
       setMessage(result.message);
     });
   }

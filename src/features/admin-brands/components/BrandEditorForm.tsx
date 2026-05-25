@@ -59,7 +59,7 @@ export function BrandEditorForm({ brand }: Readonly<{ brand: BrandRecord }>) {
       if (result.ok) {
         setCurrent(result.brand);
         setStatus("Saved.");
-      } else if (result.code === "stale_data" && result.current) {
+      } else if (result.error === "stale_data" && result.current) {
         setCurrent(result.current);
         setStatus("This brand changed in another session. Reloaded the latest values.");
       } else {

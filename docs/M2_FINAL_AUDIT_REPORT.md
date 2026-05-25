@@ -6,6 +6,18 @@
 
 M2 is code-complete locally after the fixes listed below. It is not declared shipped until the human Final Walkthrough is executed and explicitly signed off.
 
+## Recovery Addendum - 2026-05-25
+
+The meta-model grading findings from this report have been reconciled in the follow-up HIGH_RIGOR recovery step:
+
+- ErrorCode drift is closed: API_SPEC §1.3 now has the 17-value canonical enum, `AppError.code` is typed as `ErrorCode`, and admin action failures use `{ ok:false, error, message }`.
+- The erroneous completion-score temporary 60-point adjustment is removed; `allMVPComplete` now scores 66 per the formula.
+- API_SPEC §3.9 now documents shipped admin-user management actions.
+- ADMIN_PORTAL_SPEC §16.4 documents the token-block `prettier-ignore` mechanic.
+- The Step 15 MD import dry-run/commit UI is logged as a future data-operations deferral.
+
+The only remaining M2 ship gate from this report is the human Final Walkthrough.
+
 ## Findings
 
 ### BLOCKER
@@ -14,7 +26,7 @@ None after audit-time fixes.
 
 ### MAJOR
 
-1. **ErrorCode contract drift remains.** `docs/API_SPEC.md` defines client errors as `{ ok: false, error: ErrorCode, message }` with the canonical enum at `docs/API_SPEC.md:58`. The M2 action surface still returns `{ ok: false, code, message }` and uses non-spec codes such as `validation_error`, `authorization_error`, `unknown`, `locked`, `mfa_required`, `force_override_required`, and domain-specific admin codes. Evidence: `src/lib/errors.ts:24`, `src/lib/errors.ts:46`, `src/features/admin-products/actions.ts:70`, `src/features/feature-flags/admin-actions.ts:35`. This is safe for the current tested M2 admin UI because clients branch on the implemented action result types, but the public API contract should be reconciled before the M3/M4 public/customer action surface hardens.
+1. **RESOLVED by recovery addendum: ErrorCode contract drift.** `docs/API_SPEC.md` defines client errors as `{ ok: false, error: ErrorCode, message }` with the canonical enum at `docs/API_SPEC.md:58`. The recovery step extended that enum to 17 values and changed M2 admin action failures to the canonical `error` field and vocabulary.
 
 2. **Final Walkthrough is still a human gate.** Browser-driven axe scans, keyboard-only end-to-end testing, adversarial HIGH_RIGOR attempts, and latency checks across the full imported dataset were not completed by a human reviewer in this session. M2 remains `PASS-WITH-DEFERRED` until reviewer sign-off.
 
