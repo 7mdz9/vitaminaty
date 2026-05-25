@@ -24,33 +24,33 @@ This means:
 - An admin publishing a product → server action.
 - Paymob calling back after a payment → REST route under `/api/webhooks/paymob`.
 
-### 1.2 Server action contract
+### 1.2 Server action and read-query contracts
 
-Every server action follows this shape:
+Admin server functions follow one of two contracts depending on their behavior.
+
+**Mutating actions** create, update, delete, archive, publish, run bulk operations, initiate MFA challenges, or flip settings. They return a discriminated union:
 
 ```typescript
-// File: src/features/{feature}/actions.ts
-'use server';
-
-import { z } from 'zod';
-import { requireCustomer } from '@/lib/auth/policies';
-
-const InputSchema = z.object({ /* ... */ });
-type Output = { ok: true; data: T } | { ok: false; error: ErrorCode; message: string };
-
-export async function someAction(rawInput: unknown): Promise<Output> {
-  // 1. Validate input
-  const input = InputSchema.parse(rawInput);
-  // 2. Verify authorization
-  const customer = await requireCustomer();
-  // 3. Call service layer
-  const result = await service.doWork(input, customer);
-  // 4. Return discriminated union
-  return { ok: true, data: result };
-}
+type Output<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: ErrorCode; message: string };
 ```
 
-Errors are never thrown to the client. They're returned as `{ ok: false, error, message }` discriminated unions. The client renders `message` to the user; `error` is the machine-readable code for branching logic.
+The discriminator is the `ok` field. On success, payload-specific data lives in `data` or in a named field such as `product`, `user`, `order`, `affectedUserId`, or `results`. On failure, `error` is a value from the §1.3 `ErrorCode` enum and `message` is human-readable context for the UI.
+
+**Read-only queries** list, get, history, search, or aggregate data without side effects. They return the queried value directly:
+
+```typescript
+type Output<T> = T;
+```
+
+T may be a primitive, a raw list, or a custom object with domain-specific metadata such as pagination envelopes, search-result metadata, or dashboard aggregations. The only structural constraint is that T does not carry an `ok` discriminator field; that would conflict with the mutating-action shape.
+
+Read-query failures propagate as thrown errors handled by the nearest Server Component error boundary, or by an action-layer `mapXxxError()` helper when a read-shaped operation is intentionally exposed to a Client Component transition. Read queries do not use the `{ ok }` wrapper by default because their failure modes collapse to authorization failure from `requireAdmin()` before the query runs, validation failure before repository access, or internal error through exception propagation.
+
+This raw-query rule applies to admin read functions including `getAdminUsers`, `getProductList`, `getProductFilterOptions`, `getProductEditor`, `getQueue`, `getAuditLogList`, `getBrandList`, `getBrand`, `getUnmatchedBrandRaws`, `getOrphanCanonicalBrands`, `getAdminOrderList`, `getAdminOrderDetail`, `getCategoryList`, `getCategory`, `getHomepageCurationData`, `getFeatureFlagSettings`, `getIntegrationSettings`, `getAdminDashboardData`, and `getAdminCommandItems`.
+
+For ambiguous cases, use the mutating-action contract when the UI needs a specific actionable failure state such as `not_found`, `stale_data`, `force_override_required`, or `all_products_blocked`, even if the operation is read-shaped. The semantic UI contract, not the HTTP-like verb, decides.
 
 ### 1.3 Error codes
 
