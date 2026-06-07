@@ -24,6 +24,8 @@ const expectedAuditActions = [
   "mfa_reset",
   "integration_credentials_update",
   "mfa_enrolled",
+  "delete",
+  "feature_flag_override",
 ];
 
 describe("0013 audit_action extension", () => {

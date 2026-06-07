@@ -6,7 +6,7 @@ import { getFeatureFlag } from "@/server/repositories/feature-flag-repository";
 const dbCache = new Map<FeatureFlagKey, boolean | null>();
 
 export async function isEnabled(key: FeatureFlagKey): Promise<boolean> {
-  const override = readEnvOverride(key);
+  const override = getFeatureFlagEnvOverride(key);
 
   if (override !== null) {
     return override;
@@ -27,7 +27,7 @@ export function clearFeatureFlagCache(): void {
 
 export const clearFeatureFlagCacheForTests = clearFeatureFlagCache;
 
-function readEnvOverride(key: FeatureFlagKey): boolean | null {
+export function getFeatureFlagEnvOverride(key: FeatureFlagKey): boolean | null {
   const overrideKey = `FF_${key.toUpperCase()}`;
   // Decision 4 defines dynamic FF_* escape hatches; these are intentionally
   // not enumerated in src/lib/env.ts because operators may add them per flag.

@@ -167,7 +167,7 @@ describe("admin settings", () => {
     );
   });
 
-  it("soft-deletes admin users and records archive audit", async () => {
+  it("deletes admin users and records delete audit", async () => {
     const before = adminFactory();
     mocks.listAuthAdmins.mockResolvedValueOnce([before]);
 
@@ -182,7 +182,7 @@ describe("admin settings", () => {
     expect(mocks.record).toHaveBeenCalledWith(
       expect.objectContaining({
         diff: expect.objectContaining({
-          action: "archive",
+          action: "delete",
           entity_type: "admin_user",
           user_id: before.id,
         }),

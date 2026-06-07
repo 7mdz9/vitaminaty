@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth/policies";
 import { isAppError, type ErrorCode } from "@/lib/errors";
 import { beginTotpChallenge, verifyTotpChallenge } from "@/lib/auth/mfa";
 import { record } from "@/features/audit-log/record";
-import { clearFeatureFlagCache } from "@/features/feature-flags/eval";
+import { clearFeatureFlagCache, getFeatureFlagEnvOverride } from "@/features/feature-flags/eval";
 import { getHighRigorFeatureFlagGate, hasHighRigorSignoff } from "@/features/feature-flags/gates";
 import {
   FeatureFlagToggleActionSchema,
@@ -67,6 +67,7 @@ export async function toggleFeatureFlag(
     const admin = await requireAdmin();
     const parsed = FeatureFlagToggleActionSchema.parse(input);
     const before = await getFeatureFlag(parsed.key);
+    const envOverride = getFeatureFlagEnvOverride(parsed.key);
 
     if (!before) {
       return {
@@ -135,13 +136,21 @@ export async function toggleFeatureFlag(
       actor: { userId: admin.userId, email: admin.email },
       diff: {
         version: 1,
-        action: "flag_toggle",
+        action: envOverride === null ? "flag_toggle" : "feature_flag_override",
         entity_type: "feature_flag",
         feature_flag_key: updated.key,
-        changes: [
-          { field: "enabled", before: before.enabled, after: updated.enabled },
-          { field: "gate", before: null, after: gate?.signoffLabel ?? null },
-        ],
+        changes:
+          envOverride === null
+            ? [
+                { field: "enabled", before: before.enabled, after: updated.enabled },
+                { field: "gate", before: null, after: gate?.signoffLabel ?? null },
+              ]
+            : [
+                { field: "enabled", before: before.enabled, after: updated.enabled },
+                { field: "env_override_value", before: null, after: envOverride },
+                { field: "effective_runtime_value", before: envOverride, after: envOverride },
+                { field: "gate", before: null, after: gate?.signoffLabel ?? null },
+              ],
       },
     });
 

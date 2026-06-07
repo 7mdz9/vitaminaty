@@ -14,12 +14,14 @@ export type AuditFieldChange = Readonly<{
 export type AuditSingleEntityUpdateAction =
   | "create"
   | "update"
+  | "delete"
   | "publish"
   | "unpublish"
   | "archive"
   | "restore"
   | "role_change"
   | "flag_toggle"
+  | "feature_flag_override"
   | "image_upload"
   | "mfa_reset"
   | "integration_credentials_update";

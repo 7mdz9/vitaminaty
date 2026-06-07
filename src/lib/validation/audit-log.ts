@@ -24,6 +24,8 @@ const auditActions = [
   "mfa_reset",
   "integration_credentials_update",
   "mfa_enrolled",
+  "delete",
+  "feature_flag_override",
 ] as const satisfies readonly AuditAction[];
 
 export const AuditLogListSearchParamsSchema = z.object({

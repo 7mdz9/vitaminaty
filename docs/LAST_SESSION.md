@@ -1,43 +1,45 @@
 # LAST_SESSION.md
 
-## M2 final audit recovery complete - human walkthrough pending
+## M2 Step 16 consolidated recovery - spec approval gate pending
 
 Date: 2026-05-25
 
-Objective completed: reconciled the five meta-model grading findings from the M2 Final Audit report so M2 can enter the human Final Walkthrough without carrying I1/spec-code drift into M3.
+Objective completed: closed the remaining Step 16 implementation work after Phase A2 was confirmed no-op and Phase A1.5 amended `API_SPEC.md §1.2`. The remaining spec text for `API_SPEC.md §3.9`, `PRODUCT_CONTENT_SPEC.md §22.1.1`, and `ADMIN_PORTAL_SPEC.md §13.1` is composed for a combined human approval gate.
 
-### Findings Reconciled
+### Work Completed
 
-- Finding A: ErrorCode drift closed. `API_SPEC.md §1.3` now defines the 17-value canonical enum, `src/lib/errors.ts` exports the same `ErrorCode`, `AppError.code` is typed as `ErrorCode`, and admin action failures now return `{ ok: false, error, message }` instead of the former non-canonical `code` field.
-- Finding B: completion-score cap removed. `PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md §22.1.1`, `src/features/admin-products/completion-score.ts`, and the unit test now use the formula result `allMVPComplete -> 66`.
-- Finding C: `API_SPEC.md §3.9` is authored for shipped admin-user management actions: MFA challenge, invite, deactivate, soft-delete, and MFA reset.
-- Finding D: `ADMIN_PORTAL_SPEC.md §16.4` documents the targeted `prettier-ignore` guard on the canonical `--admin-*` token block.
-- Finding E: the Step 15 MD import dry-run/commit UI is logged as a future data-operations deferral; M2 keeps the read-only, requireAdmin-gated import status page.
+- Phase G: added `supabase/migrations/0019_audit_action_recovery.sql` with exactly two audit actions: `delete` and `feature_flag_override`.
+- Phase H1: `deleteAdminUser` now writes `audit_action='delete'` instead of `archive`; admin-user tests assert the corrected audit diff.
+- Phase H2: `toggleFeatureFlag` now detects active `FF_*` env overrides, still allows the DB update, and writes one `feature_flag_override` audit row carrying DB before/after, env override value, and unchanged effective runtime value. Normal non-override toggles continue to write `flag_toggle`.
+- Phase B: completion-score code/spec/test were already in the corrected state: no MVP-only cap remains, `allMVPComplete -> 66`, and the raw 105 clamp test remains for the legitimate 100 clamp.
+- Phase D/E: `ADMIN_PORTAL_SPEC.md §16.4` and §15 already contain the prettier-ignore and MD import deferral text; `PROJECT_STATE.md §6` now logs the Step 16 audit-action recovery and the M3 follow-up for feature-flag env-override UI surfacing.
 
 ### Verification
 
 ```text
-Supabase changelog preflight: PASS
-Phase C recon: PASS - conditional self-delete code not present; self-actions map to unauthorized
+checkpoint commit before work: 811d21c
+pnpm db:reset: PASS (applied migrations 0001-0019)
+audit_action enum count: PASS (24)
+pnpm db:types: PASS
+focused tests: PASS (4 files / 19 tests)
+pnpm test: PASS (35 files / 147 tests)
 pnpm format:check: PASS
-pnpm typecheck: PASS
-focused recovery tests: PASS (10 files / 39 tests)
 pnpm lint: PASS (existing MFA QR <img> warning only)
-pnpm test: PASS (35 files / 146 tests)
-pnpm build: PASS (same existing MFA QR <img> warning)
-pnpm scan:bundle-secrets: PASS
+pnpm build: PASS (existing MFA QR <img> warning only)
+pnpm typecheck: PASS after build regenerated .next/types
 pnpm exec supabase db lint --local: PASS
-authz sweep #3: PASS (empty output for admin action files missing requireAdmin())
-ErrorCode drift grep: PASS (no old code-field/non-canonical action error matches)
-completion-score cap grep: PASS (no stale 60-point MVP-complete contract matches)
+pnpm scan:bundle-secrets: PASS
+authz sweep: PASS (no admin action file missing requireAdmin())
+ErrorCode drift sweep: PASS
+completion-score cap sweep: PASS
 ```
 
 ### HANDOFF
 
-files_modified: [`docs/API_SPEC.md`, `docs/ADMIN_PORTAL_SPEC.md`, `docs/PRODUCT_CONTENT_SPEC_v1.1_ADMIN_DRIVEN.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `src/lib/errors.ts`, `src/lib/auth/policies.ts`, `src/lib/auth/mfa.ts`, `src/lib/money/aed.ts`, `src/lib/rate-limit.ts`, `src/lib/paymob/stub-adapter.ts`, `src/lib/icarry/stub-adapter.ts`, `src/features/admin-products/actions.ts`, `src/features/admin-brands/actions.ts`, `src/features/admin-categories/actions.ts`, `src/features/admin-orders/actions.ts`, `src/features/admin-homepage/actions.ts`, `src/features/admin-settings/actions.ts`, `src/features/feature-flags/admin-actions.ts`, `src/features/admin-products/completion-score.ts`, admin action consumers/tests]
+files_modified: [`docs/DB_SCHEMA.md`, `docs/PROJECT_STATE.md`, `docs/LAST_SESSION.md`, `supabase/migrations/0019_audit_action_recovery.sql`, `src/features/admin-settings/actions.ts`, `src/features/feature-flags/admin-actions.ts`, `src/features/feature-flags/eval.ts`, `src/lib/audit/diff-types.ts`, `src/lib/supabase/types.generated.ts`, `src/lib/validation/audit-log.ts`, `src/types/audit-log.ts`, `tests/integration/admin-settings/admin-users.test.ts`, `tests/integration/admin-settings/feature-flags.test.ts`, `tests/integration/migrations/0013_audit_action_extension.test.ts`]
 
 known_issues_introduced: [none]
 
-known_deferred: [`human Final Walkthrough / axe / keyboard / performance sign-off`, `Supabase advisor performance backlog`, `pg_trgm public-extension advisor warning`, `Phase 2 support-chat admin route`, `future MD import dry-run/commit data-operations UI`]
+known_deferred: [`combined human approval for API_SPEC §3.9 / PRODUCT_CONTENT_SPEC §22.1.1 / ADMIN_PORTAL_SPEC §13.1`, `human Final Walkthrough / axe / keyboard / performance sign-off`, `feature-flag env-override UI surfacing in M3`, `possible M3 admin_invited audit enum unification`, `Supabase advisor performance backlog`, `pg_trgm public-extension advisor warning`, `future MD import dry-run/commit data-operations UI`]
 
-invariants_observed: [SECURITY - admin mutations remain requireAdmin-gated and sensitive admin-user/feature-flag actions still require MFA re-verification. PDPL - admin-user email remains admin-only PII and audit render redaction remains renderer-owned. I1 - ErrorCode enum, completion-score formula, token mechanic, and admin-user API text now align with shipped code/spec. SECRET - no secrets were added.]
+invariants_observed: [SECURITY - admin mutations remain requireAdmin-gated and sensitive admin-user/feature-flag actions still require MFA re-verification. PDPL - admin-user email remains admin-only PII and audit render redaction remains renderer-owned. I1 - ErrorCode and completion-score code paths are aligned; remaining spec text is held at the requested approval gate. SECRET - no secrets were added.]

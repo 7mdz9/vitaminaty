@@ -527,81 +527,147 @@ Output: {
 
 ### 3.9 Admin user management
 
-Admin user management is implemented in `src/features/admin-settings/actions.ts` and rendered under `/admin/settings/users`. These actions operate only on Supabase Auth admin users: users whose `app_metadata.role` is `admin` or `deactivated_admin`.
+Admin user management is implemented in `src/features/admin-settings/actions.ts` and `src/features/admin-settings/queries.ts`, rendered under `/admin/settings/users`. These actions operate only on Supabase Auth admin users: users whose `app_metadata.role` is `admin` or `deactivated_admin`.
 
 Authz model:
-- Caller: signed Vitaminaty admin session with `requireAdmin()`.
-- MFA: every mutating action requires Supabase TOTP re-verification through an MFA challenge payload.
+- Caller: signed Vitaminaty admin session through `requireAdmin()`.
+- MFA: every mutating admin-user action requires Supabase TOTP re-verification through an MFA challenge payload.
 - Target scope: another Auth admin user. Self-deactivate, self-delete, and self-MFA-reset are blocked server-side and return `unauthorized` with a specific message.
 - Data class: admin Auth identity metadata. Email addresses are PII and are visible only to admins in this surface; rendered audit views redact PII unless the admin explicitly opens raw JSON.
-- Residency/retention: stored in Supabase Auth/Postgres in the configured UAE deployment posture for the project. Audit rows are append-only and retained for forensic/compliance history; soft-deleted Auth users retain Supabase's provider-managed tombstone.
+- Residency/retention: stored in Supabase Auth/Postgres in the configured UAE deployment posture for the project. Audit rows are append-only and retained for forensic/compliance history.
+
+#### `getAdminUsers()`
+
+Input: none.
+
+Output:
+
+```typescript
+AuthAdminUserSummary[]
+```
+
+Auth: requires `requireAdmin()`.
+
+MFA re-verify: no.
+
+Audit: none; this is a read-only query.
 
 #### `beginAdminSettingsMfaChallenge()`
 
-Starts a TOTP challenge for the signed-in admin before invite/deactivate/delete/MFA-reset actions.
+Starts a TOTP challenge for the signed-in admin before invite, deactivate, delete, or MFA-reset actions.
+
+Input: none.
+
+Output:
 
 ```typescript
-Input: none
-Output:
-  | { ok: true, factorId: string, challengeId: string }
-  | { ok: false, error: ErrorCode, message: string }
+| { ok: true; factorId: string; challengeId: string }
+| { ok: false; error: ErrorCode; message: string }
 ```
+
+Auth: requires `requireAdmin()`.
+
+MFA re-verify: no; this action creates the challenge used by the next mutating call.
+
+Audit: none.
 
 #### `inviteAdminUser(input)`
 
-Invites a new Supabase Auth user by email, then assigns `app_metadata.role='admin'`. Writes one `audit_log` row with `action='create'`, `entity_type='admin_user'`, and changes for `email` and `app_metadata.role`.
+Input:
 
 ```typescript
-Input: {
-  email: string,
-  mfa: { factorId: string, challengeId: string, code: string }
+{
+  email: string;
+  mfa: { factorId: string; challengeId: string; code: string };
 }
-Output:
-  | { ok: true, user: AuthAdminUserSummary }
-  | { ok: false, error: ErrorCode, message: string }
 ```
+
+Output:
+
+```typescript
+| { ok: true; user: AuthAdminUserSummary }
+| { ok: false; error: ErrorCode; message: string }
+```
+
+Auth: requires `requireAdmin()`.
+
+MFA re-verify: yes.
+
+Audit: writes `create` for `entity_type='admin_user'`, with changes for `email` and `app_metadata.role`.
+
+Audit event semantics: M2 logs `create` when the invitation is sent. The row creation at invitation-accept time is logged separately by the acceptance flow. The two-event semantics may be unified in M3 if an `admin_invited` enum value is added; tracked in `PROJECT_STATE.md §6` as a M3 follow-up.
 
 #### `deactivateAdminUser(input)`
 
-Changes the target Auth user's `app_metadata.role` to `deactivated_admin`. Self-deactivation is blocked. Writes one `audit_log` row with `action='role_change'`, `entity_type='admin_user'`, and changes for `app_metadata.role` and `active`.
+Input:
 
 ```typescript
-Input: {
-  userId: uuid,
-  mfa: { factorId: string, challengeId: string, code: string }
+{
+  userId: string;
+  mfa: { factorId: string; challengeId: string; code: string };
 }
-Output:
-  | { ok: true, user: AuthAdminUserSummary }
-  | { ok: false, error: 'not_found' | 'unauthorized' | 'mfa_required' | 'validation_failed' | 'internal_error', message: string }
 ```
+
+Output:
+
+```typescript
+| { ok: true; user: AuthAdminUserSummary }
+| { ok: false; error: ErrorCode; message: string }
+```
+
+Auth: requires `requireAdmin()`. Self-deactivation is blocked and returns `unauthorized`.
+
+MFA re-verify: yes.
+
+Audit: writes `role_change` for `entity_type='admin_user'`, with changes for `app_metadata.role` and `active`.
 
 #### `deleteAdminUser(input)`
 
-Soft-deletes the target Auth admin through Supabase Auth admin APIs. Self-delete is blocked. Writes one `audit_log` row with `action='archive'`, `entity_type='admin_user'`, and changes for `deleted` and `email`.
+Input:
 
 ```typescript
-Input: {
-  userId: uuid,
-  mfa: { factorId: string, challengeId: string, code: string }
+{
+  userId: string;
+  mfa: { factorId: string; challengeId: string; code: string };
 }
-Output:
-  | { ok: true, affectedUserId: uuid }
-  | { ok: false, error: 'not_found' | 'unauthorized' | 'mfa_required' | 'validation_failed' | 'internal_error', message: string }
 ```
+
+Output:
+
+```typescript
+| { ok: true; affectedUserId: string }
+| { ok: false; error: ErrorCode; message: string }
+```
+
+Auth: requires `requireAdmin()`. Self-delete is blocked and returns `unauthorized`.
+
+MFA re-verify: yes.
+
+Audit: writes `delete` for `entity_type='admin_user'`, with changes for `deleted` and `email`.
 
 #### `revokeAdminMfa(input)`
 
-Deletes all TOTP factors attached to the target Auth admin. Self-MFA-reset is blocked. Writes one `audit_log` row with `action='mfa_reset'`, `entity_type='admin_user'`, and changes for `mfa_enrolled` and `mfa_factor_count`.
+Input:
 
 ```typescript
-Input: {
-  userId: uuid,
-  mfa: { factorId: string, challengeId: string, code: string }
+{
+  userId: string;
+  mfa: { factorId: string; challengeId: string; code: string };
 }
-Output:
-  | { ok: true, user: AuthAdminUserSummary }
-  | { ok: false, error: 'not_found' | 'unauthorized' | 'mfa_required' | 'validation_failed' | 'internal_error', message: string }
 ```
+
+Output:
+
+```typescript
+| { ok: true; user: AuthAdminUserSummary }
+| { ok: false; error: ErrorCode; message: string }
+```
+
+Auth: requires `requireAdmin()`. Self-MFA-reset is blocked and returns `unauthorized`.
+
+MFA re-verify: yes.
+
+Audit: writes `mfa_reset` for `entity_type='admin_user'`, with changes for `mfa_enrolled` and `mfa_factor_count`.
 
 ---
 

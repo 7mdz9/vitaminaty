@@ -1150,6 +1150,8 @@ export type Database = {
         | "mfa_reset"
         | "integration_credentials_update"
         | "mfa_enrolled"
+        | "delete"
+        | "feature_flag_override"
       goal_tag:
         | "build_muscle"
         | "boost_energy"
@@ -1369,6 +1371,8 @@ export const Constants = {
         "mfa_reset",
         "integration_credentials_update",
         "mfa_enrolled",
+        "delete",
+        "feature_flag_override",
       ],
       goal_tag: [
         "build_muscle",

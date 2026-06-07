@@ -1,11 +1,13 @@
 export type AuditAction =
   | "create"
   | "update"
+  | "delete"
   | "publish"
   | "unpublish"
   | "archive"
   | "restore"
   | "flag_toggle"
+  | "feature_flag_override"
   | "image_upload"
   | "role_change"
   | "bulk_operation"

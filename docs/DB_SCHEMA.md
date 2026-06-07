@@ -128,12 +128,13 @@ CREATE TYPE audit_action AS ENUM (
   'role_change'
 );
 
--- Added in M2 migrations 0013-0014 for admin portal audit coverage.
+-- Added in M2 migrations 0013-0014 and Step 16 migration 0019 for admin portal audit coverage.
 -- 0013 adds: bulk_operation, bulk_publish_override, stale_data_override,
 -- stock_adjustment, stock_recount, variant_create, variant_delete,
 -- low_stock_threshold_change, order_status_change, order_refund, mfa_reset,
 -- integration_credentials_update.
 -- 0014 adds: mfa_enrolled.
+-- 0019 adds: delete, feature_flag_override.
 
 -- Added in M1 addendum migration 0012 (inventory tracking). DDL lives in 0012,
 -- documented here in §3 for catalog completeness. See INVENTORY_SPEC.md.
@@ -1322,6 +1323,7 @@ Full inventory spec: `INVENTORY_SPEC.md`.
 16. `0016_category_parent_tree.sql` - adds `categories.parent_id`, `categories_parent_id_sort_idx`, and service-role-only `admin_reorder_categories(jsonb)` for atomic sibling reorder and re-parenting.
 17. `0017_homepage_config.sql` - adds singleton `homepage_configs` with public read/admin write RLS for curated hero, promo, product rails, featured brands, and goal order.
 18. `0018_harden_function_search_path.sql` - pins `search_path` on shared helper functions flagged by the Supabase security advisor (`touch_updated_at`, `is_admin`, `compute_stock_status`).
+19. `0019_audit_action_recovery.sql` - adds `delete` and `feature_flag_override` audit actions for Step 16 audit semantics recovery.
 
 The `scripts/import-products-from-md.ts` runs after migrations to populate `products` from `docs/reference/product.md`.
 

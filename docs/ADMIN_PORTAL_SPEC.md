@@ -753,7 +753,7 @@ For bulk operations, the renderer summarizes ("Sarah Khalil bulk-published 23 pr
 
 ### 13.1 Feature flags (`/admin/settings/feature-flags`)
 
-Per `DECISION_CAPTURE.md` §4, all flags listed in three sections (surface, feature, operational).
+Per `DECISION_CAPTURE.md` §4, all flags are listed in three sections: surface, feature, and operational.
 
 Each flag row:
 - Key
@@ -764,7 +764,30 @@ Each flag row:
 **HIGH_RIGOR-gated flags** show a "Locked" indicator until the corresponding cross-check sign-off note appears in `LAST_SESSION.md`. Toggling these flags requires:
 1. Confirmation modal with the HIGH_RIGOR consequences listed.
 2. MFA re-verification (re-enter TOTP code).
-3. Optional: typed confirmation phrase ("ENABLE PAYMOB LIVE").
+3. Optional typed confirmation phrase, for example `ENABLE PAYMOB LIVE`.
+
+Normal feature-flag DB-effective toggles write one `audit_log` row with `audit_action='flag_toggle'`.
+
+If an `FF_{KEY}` environment override is active, the admin UI still allows the DB toggle to proceed, but runtime evaluation remains controlled by the environment override. In that case the action writes one `audit_log` row with `audit_action='feature_flag_override'`, not `flag_toggle`. The diff shape is:
+
+```typescript
+{
+  version: 1,
+  action: "feature_flag_override",
+  entity_type: "feature_flag",
+  feature_flag_key: string,
+  changes: [
+    { field: "enabled", before: boolean, after: boolean },
+    { field: "env_override_value", before: null, after: boolean },
+    { field: "effective_runtime_value", before: boolean, after: boolean },
+    { field: "gate", before: null, after: string | null }
+  ]
+}
+```
+
+`effective_runtime_value.before` and `effective_runtime_value.after` are identical because the environment override wins both before and after the DB change. This makes forensic review unambiguous: `feature_flag_override` means "DB changed, runtime did not."
+
+UI surfacing of active environment overrides remains a M3 follow-up; the M2 recovery preserves the existing feature-flag table presentation.
 
 ### 13.2 Integrations (`/admin/settings/integrations`)
 

@@ -164,7 +164,7 @@ export async function deleteAdminUser(
       entityId: before.id,
       diff: {
         version: 1,
-        action: "archive",
+        action: "delete",
         entity_type: "admin_user",
         user_id: before.id,
         changes: [

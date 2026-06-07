@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   record: vi.fn(),
   revalidatePath: vi.fn(),
   clearFeatureFlagCache: vi.fn(),
+  getFeatureFlagEnvOverride: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/policies", () => ({
@@ -37,6 +38,7 @@ vi.mock("@/features/audit-log/record", () => ({
 
 vi.mock("@/features/feature-flags/eval", () => ({
   clearFeatureFlagCache: mocks.clearFeatureFlagCache,
+  getFeatureFlagEnvOverride: mocks.getFeatureFlagEnvOverride,
 }));
 
 vi.mock("next/cache", () => ({
@@ -52,6 +54,7 @@ describe("admin feature flag settings actions", () => {
       role: "admin",
     });
     mocks.readFile.mockResolvedValue("# LAST_SESSION\n\nNo sign-off yet.");
+    mocks.getFeatureFlagEnvOverride.mockReturnValue(null);
   });
 
   it("toggles a non-HIGH_RIGOR flag and writes a flag_toggle audit row", async () => {
@@ -96,6 +99,50 @@ describe("admin feature flag settings actions", () => {
     );
     expect(mocks.clearFeatureFlagCache).toHaveBeenCalledTimes(1);
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/admin/settings/feature-flags");
+  });
+
+  it("audits DB changes under an env override as feature_flag_override", async () => {
+    const before = flagFactory({ key: "support_chat_enabled", enabled: false });
+    const after = flagFactory({
+      key: "support_chat_enabled",
+      enabled: true,
+      updated_by: "00000000-0000-4000-8000-000000000100",
+      updated_at: "2026-05-24T18:05:00.000Z",
+    });
+    mocks.getFeatureFlagEnvOverride.mockReturnValueOnce(true);
+    mocks.getFeatureFlag.mockResolvedValueOnce(before);
+    mocks.updateFeatureFlagForAdminIfFresh.mockResolvedValueOnce(after);
+
+    const { toggleFeatureFlag } = await import("@/features/feature-flags/admin-actions");
+    const result = await toggleFeatureFlag({
+      key: "support_chat_enabled",
+      enabled: true,
+      expectedUpdatedAt: before.updated_at,
+    });
+
+    expect(result).toMatchObject({ ok: true, flag: { enabled: true } });
+    expect(mocks.updateFeatureFlagForAdminIfFresh).toHaveBeenCalledWith(
+      "support_chat_enabled",
+      before.updated_at,
+      expect.objectContaining({
+        enabled: true,
+      }),
+    );
+    expect(mocks.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: { userId: "00000000-0000-4000-8000-000000000100", email: "admin@example.test" },
+        diff: expect.objectContaining({
+          action: "feature_flag_override",
+          entity_type: "feature_flag",
+          feature_flag_key: "support_chat_enabled",
+          changes: expect.arrayContaining([
+            { field: "enabled", before: false, after: true },
+            { field: "env_override_value", before: null, after: true },
+            { field: "effective_runtime_value", before: true, after: true },
+          ]),
+        }),
+      }),
+    );
   });
 
   it("keeps HIGH_RIGOR flags locked until LAST_SESSION has the sign-off", async () => {
